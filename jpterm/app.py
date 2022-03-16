@@ -1,5 +1,5 @@
-import os
-from typing import Any
+from pathlib import Path
+
 from rich.console import RenderableType
 
 from rich.syntax import Syntax
@@ -15,9 +15,6 @@ from textual.widgets import (
     TreeNode,
 )
 from textual.widgets._directory_tree import DirEntry
-
-import httpx
-from os import scandir
 
 
 class JpDirectoryTree(DirectoryTree):
@@ -70,18 +67,18 @@ class JptermApp(App):
         """A message sent by the directory tree when a file is clicked."""
 
         syntax: RenderableType
+        text = await self.api.contents.get_content(message.path)
+        lexer = Syntax.guess_lexer(message.path, code=text)
         try:
-            # Construct a Syntax object for the path in the message
-            syntax = Syntax.from_path(
-                message.path,
+            syntax = Syntax(
+                text,
+                lexer,
                 line_numbers=True,
                 word_wrap=True,
                 indent_guides=True,
                 theme="monokai",
             )
         except Exception:
-            # Possibly a binary file
-            # For demonstration purposes we will show the traceback
             syntax = Traceback(theme="monokai", width=None, show_locals=True)
-        self.app.sub_title = os.path.basename(message.path)
+        self.app.sub_title = Path(message.path).name
         await self.body.update(syntax)

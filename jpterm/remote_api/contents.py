@@ -1,3 +1,5 @@
+from typing import List, Union
+
 import httpx
 
 from jpterm.jpterm import BASE_URL
@@ -21,7 +23,7 @@ class Entry:
         return self.entry["type"] == "directory"
 
 
-async def get_content(path: str):
+async def get_content(path: str) -> Union[List, str]:
     if path == ".":
         path = ""
     else:
@@ -30,6 +32,13 @@ async def get_content(path: str):
         r = await client.get(
             f"{BASE_URL}/api/contents{path}", params={"content": 1}
         )
-    content = [Entry(entry) for entry in r.json()["content"]]
-    content = sorted(content, key=lambda entry: (not entry.is_dir(), entry.name))
+    model = r.json()
+    type = model["type"]
+    if type == "directory":
+        content = [Entry(entry) for entry in model["content"]]
+        content = sorted(content, key=lambda entry: (not entry.is_dir(), entry.name))
+    elif type in ("file", "notebook"):
+        content = model["content"]
+    else:
+        content = ""
     return content
