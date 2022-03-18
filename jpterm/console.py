@@ -1,12 +1,11 @@
 import string
-from typing import List
+from typing import Optional
 
 from textual.app import App
 from textual import events
 from textual.reactive import Reactive
 from textual.widget import Widget
 from textual.keys import Keys
-from textual.events import Event
 
 from rich.console import RenderableType
 from rich.text import Text
@@ -14,7 +13,7 @@ from rich.syntax import Syntax
 
 
 class TextInput(Widget):
-    style: Reactive[str] = Reactive("")
+    style: Reactive[Optional[str]] = Reactive("")
 
     def __init__(
         self,
@@ -40,7 +39,7 @@ class TextInput(Widget):
 
         if self.row > 0:
             # text above prompt
-            text += self.highlight("\n".join(self.lines[:self.row]), end="\n")
+            text += self.highlight("\n".join(self.lines[: self.row]), end="\n")
 
         # prompt
         if self.col == len(self.lines[self.row]):
@@ -54,11 +53,13 @@ class TextInput(Widget):
 
         if self.row < len(self.lines) - 1:
             # text below prompt
-            text += self.highlight("\n".join(self.lines[self.row + 1:]), start="\n", end="")
+            text += self.highlight(
+                "\n".join(self.lines[self.row + 1 :]), start="\n", end=""  # noqa
+            )
 
         return text
 
-    async def on_key(self, event: Event) -> None:
+    async def on_key(self, event) -> None:
         if event.key == Keys.Escape:
             self.has_focus = False
         elif event.key == Keys.Up:
@@ -70,9 +71,9 @@ class TextInput(Widget):
                 self.row += 1
                 self.col = min(len(self.lines[self.row]), self.col)
         elif event.key == Keys.Return or event.key == Keys.Enter:
-            self.lines.insert(self.row, self.lines[self.row][:self.col])
+            self.lines.insert(self.row, self.lines[self.row][: self.col])
             self.row += 1
-            self.lines[self.row] = self.lines[self.row][self.col:]
+            self.lines[self.row] = self.lines[self.row][self.col :]  # noqa
             self.col = 0
         elif event.key == Keys.Home:
             self.col = 0
@@ -86,7 +87,10 @@ class TextInput(Widget):
                     self.lines[self.row] += self.lines[self.row + 1]
                     del self.lines[self.row + 1]
             else:
-                self.lines[self.row] = self.lines[self.row][:self.col - 1] + self.lines[self.row][self.col:]
+                self.lines[self.row] = (
+                    self.lines[self.row][: self.col - 1]
+                    + self.lines[self.row][self.col :]  # noqa
+                )
                 self.col -= 1
         elif event.key == Keys.Delete:
             if self.col == len(self.lines[self.row]):
@@ -94,7 +98,10 @@ class TextInput(Widget):
                     self.lines[self.row] += self.lines[self.row + 1]
                     del self.lines[self.row + 1]
             else:
-                self.lines[self.row] = self.lines[self.row][:self.col] + self.lines[self.row][self.col + 1:]
+                self.lines[self.row] = (
+                    self.lines[self.row][: self.col]
+                    + self.lines[self.row][self.col + 1 :]  # noqa
+                )
         elif event.key == Keys.Left:
             if self.col == 0:
                 if self.row != 0:
@@ -110,7 +117,11 @@ class TextInput(Widget):
             else:
                 self.col += 1
         elif event.key in string.printable:
-            self.lines[self.row] = self.lines[self.row][:self.col] + event.key + self.lines[self.row][self.col:]
+            self.lines[self.row] = (
+                self.lines[self.row][: self.col]
+                + event.key
+                + self.lines[self.row][self.col :]  # noqa
+            )
             self.col += 1
         self.refresh()
 
