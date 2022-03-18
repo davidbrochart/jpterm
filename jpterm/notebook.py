@@ -1,5 +1,5 @@
 import json
-from typing import List
+from typing import Dict, List
 
 from .cell import Cell
 
@@ -16,8 +16,13 @@ class Notebook:
         self.kd = None
 
     async def open(self):
-        text = await self.api.contents.get_content(self.path)
-        self.json = json.loads(text)
+        text_or_json = await self.api.contents.get_content(self.path)
+        if isinstance(text_or_json, Dict):
+            # with jupyter-server we get a Dict
+            self.json = text_or_json
+        else:
+            # with jupyverse we get a string
+            self.json = json.loads(text_or_json)
         self.cells = [
             Cell(notebook=self, cell_json=cell_json) for cell_json in self.json["cells"]
         ]
@@ -27,7 +32,6 @@ class Notebook:
         await self.kd.start()
 
     async def run_cell(self, cell: Cell):
-        print(cell.source)
         await self.kd.execute(cell.source)
 
     async def run_all(self):
