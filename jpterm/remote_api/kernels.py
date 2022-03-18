@@ -2,10 +2,10 @@ import asyncio
 import json
 from datetime import datetime, timezone
 from uuid import uuid4
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import httpx
-from websockets import connect
+from websockets import connect  # type: ignore
 
 from jpterm.jpterm import BASE_URL
 from .models import CreateSession, Session
@@ -13,7 +13,7 @@ from .models import CreateSession, Session
 
 class KernelDriver:
 
-    session: Optional[Session]
+    session: Session
     shell_channel: asyncio.Queue
     iopub_channel: asyncio.Queue
     web_channel: asyncio.Queue
@@ -29,13 +29,11 @@ class KernelDriver:
         self.session_name = session_name or ""
         self.session_path = session_path or uuid4().hex
         self.session_type = session_type or ""
-        self.session = None
-        self.websocket = None
         self.shell_channel = asyncio.Queue()
         self.iopub_channel = asyncio.Queue()
         self.web_channel = asyncio.Queue()
         self.execution_done = asyncio.Event()
-        self.channel_tasks = []
+        self.channel_tasks: List[asyncio.Task] = []
 
     async def start(self) -> None:
         s = {
@@ -50,16 +48,24 @@ class KernelDriver:
         self.channel_tasks.append(asyncio.create_task(self.listen_client()))
 
     async def open_kernel_channels(self):
-        base_url = "ws" + BASE_URL[BASE_URL.find("://"):]
-        self.websocket = await connect(f"{base_url}/api/kernels/{self.session.kernel.id}/channels?session_id={self.session.id}")
+        base_url = "ws" + BASE_URL[BASE_URL.find("://") :]  # noqa
+        self.websocket = await connect(
+            f"{base_url}/api/kernels/{self.session.kernel.id}/channels?session_id={self.session.id}"
+        )
         # send kernel_info_request
-        msg = create_message(channel="shell", msg_type="kernel_info_request", session=self.session.id)
+        msg = create_message(
+            channel="shell", msg_type="kernel_info_request", session=self.session.id
+        )
         header = msg["header"]
         await self.websocket.send(json.dumps(msg))
         # receive kernel_info_reply
         while True:
             msg = json.loads(await self.websocket.recv())
-            if msg["channel"] == "shell" and msg["msg_type"] == "kernel_info_reply" and msg["parent_header"] == header:
+            if (
+                msg["channel"] == "shell"
+                and msg["msg_type"] == "kernel_info_reply"
+                and msg["parent_header"] == header
+            ):
                 if msg["content"]["status"] != "ok":
                     raise RuntimeError("Error connecting to kernel")
                 return
@@ -69,7 +75,7 @@ class KernelDriver:
             task.cancel()
         await self.websocket.close()
         async with httpx.AsyncClient() as client:
-            r = await client.delete(f"{BASE_URL}/api/sessions/{self.session.id}")
+            await client.delete(f"{BASE_URL}/api/sessions/{self.session.id}")
 
     async def listen_server(self):
         queue = {
@@ -87,7 +93,11 @@ class KernelDriver:
             # receive execute_reply
             while True:
                 msg = await self.shell_channel.get()
-                if msg["channel"] == "shell" and msg["msg_type"] == "execute_reply" and msg["parent_header"] == header:
+                if (
+                    msg["channel"] == "shell"
+                    and msg["msg_type"] == "execute_reply"
+                    and msg["parent_header"] == header
+                ):
                     self.execution_done.set()
                     if msg["content"]["status"] != "ok":
                         raise RuntimeError("Error executing cell")
@@ -109,14 +119,22 @@ class KernelDriver:
             "deletedCells": [],
             "recordTiming": False,
         }
-        msg = create_message(channel="shell", msg_type="execute_request", session=self.session.id, content=content, metadata=metadata)
+        msg = create_message(
+            channel="shell",
+            msg_type="execute_request",
+            session=self.session.id,
+            content=content,
+            metadata=metadata,
+        )
         header = msg["header"]
         msg = json.dumps(msg)
         self.web_channel.put_nowait((msg, header))
         await self.execution_done.wait()
 
 
-def create_message(channel: str, msg_type: str, session:str, content={}, metadata={}) -> Dict[str, Any]:
+def create_message(
+    channel: str, msg_type: str, session: str, content={}, metadata={}
+) -> Dict[str, Any]:
     msg = {
         "buffers": [],
         "channel": channel,
@@ -134,9 +152,8 @@ def create_message(channel: str, msg_type: str, session:str, content={}, metadat
     }
     return msg
 
+
 async def create_session(session: CreateSession):
     async with httpx.AsyncClient() as client:
-        r = await client.post(
-            f"{BASE_URL}/api/sessions", json=session.dict()
-        )
+        r = await client.post(f"{BASE_URL}/api/sessions", json=session.dict())
     return Session(**r.json())

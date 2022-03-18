@@ -29,16 +29,13 @@ async def get_content(path: str) -> Union[List, str]:
     else:
         path = f"/{path}"
     async with httpx.AsyncClient() as client:
-        r = await client.get(
-            f"{BASE_URL}/api/contents{path}", params={"content": 1}
-        )
+        r = await client.get(f"{BASE_URL}/api/contents{path}", params={"content": 1})
     model = r.json()
     type = model["type"]
     if type == "directory":
         content = [Entry(entry) for entry in model["content"]]
-        content = sorted(content, key=lambda entry: (not entry.is_dir(), entry.name))
+        return sorted(content, key=lambda entry: (not entry.is_dir(), entry.name))
     elif type in ("file", "notebook"):
-        content = model["content"]
+        return model["content"]
     else:
-        content = ""
-    return content
+        return ""

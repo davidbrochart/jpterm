@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 
 from rich.console import RenderableType
 
@@ -33,7 +34,8 @@ class JpDirectoryTree(DirectoryTree):
 
 
 class JptermApp(App):
-    """An example of a very simple Textual App"""
+
+    api: Any
 
     async def on_load(self) -> None:
         """Sent before going in to application mode."""

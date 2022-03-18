@@ -1,5 +1,4 @@
 from typing import Any, Dict, Optional
-from uuid import uuid4
 
 
 class Cell:
@@ -29,6 +28,7 @@ class Cell:
             self.notebook.dirty = True
             if self.json["cell_type"] == "code":
                 self.json["outputs"] = []
+
 
 def empty_cell_json():
     return {

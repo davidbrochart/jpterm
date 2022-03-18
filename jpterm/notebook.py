@@ -18,11 +18,16 @@ class Notebook:
     async def open(self):
         text = await self.api.contents.get_content(self.path)
         self.json = json.loads(text)
-        self.cells = [Cell(notebook=self, cell_json=cell_json) for cell_json in self.json["cells"]]
-        self.kd = self.api.kernels.KernelDriver(kernel_name="python3", session_type="notebook", session_name=self.path)
+        self.cells = [
+            Cell(notebook=self, cell_json=cell_json) for cell_json in self.json["cells"]
+        ]
+        self.kd = self.api.kernels.KernelDriver(
+            kernel_name="python3", session_type="notebook", session_name=self.path
+        )
         await self.kd.start()
 
     async def run_cell(self, cell: Cell):
+        print(cell.source)
         await self.kd.execute(cell.source)
 
     async def run_all(self):
