@@ -33,8 +33,8 @@ async def get_content(path: str) -> Union[List, str]:
     model = r.json()
     type = model["type"]
     if type == "directory":
-        content = [Entry(entry) for entry in model["content"]]
-        return sorted(content, key=lambda entry: (not entry.is_dir(), entry.name))
+        dir_list = [Entry(entry) for entry in model["content"]]
+        return sorted(dir_list, key=lambda entry: (not entry.is_dir(), entry.name))
     elif type in ("file", "notebook"):
         return model["content"]
     else:

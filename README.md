@@ -3,3 +3,17 @@
 
 
 # jpterm
+
+Launch a Jupyter server:
+```bash
+# using jupyter-server:
+jupyter server --ServerApp.token='' --ServerApp.password='' --ServerApp.disable_check_xsrf=True
+# or
+# using jupyverse:
+jupyverse --authenticator.mode=noauth --port=8888
+```
+
+Execute a notebook through that server:
+```bash
+jpterm --use-server http://127.0.0.1:8888 --run Untitled.ipynb
+```
