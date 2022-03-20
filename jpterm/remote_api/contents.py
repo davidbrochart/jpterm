@@ -2,7 +2,7 @@ from typing import List, Union
 
 import httpx
 
-from jpterm.jpterm import BASE_URL, COOKIES
+from jpterm.jpterm import BASE_URL, COOKIES, query_params
 
 
 class Entry:
@@ -30,7 +30,9 @@ async def get_content(path: str) -> Union[List, str]:
         path = f"/{path}"
     async with httpx.AsyncClient() as client:
         r = await client.get(
-            f"{BASE_URL}api/contents{path}", params={"content": 1}, cookies=COOKIES
+            f"{BASE_URL}/api/contents{path}",
+            params={**{"content": 1}, **query_params()},
+            cookies=COOKIES,
         )
     COOKIES.update(r.cookies)
     model = r.json()

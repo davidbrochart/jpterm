@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest]
         python-version: [ '3.7', '3.8', '3.9', '3.10' ]
 
     steps:
@@ -41,6 +41,10 @@ jobs:
 
     - name: Check style
       run: |
-        black --check jpterm
-        flake8 jpterm
-        mypy jpterm
+        black --check jpterm tests
+        flake8 jpterm tests
+        mypy jpterm tests
+
+    - name: Run tests
+      run: |
+        pytest tests -v
