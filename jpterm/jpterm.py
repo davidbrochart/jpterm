@@ -1,14 +1,17 @@
 import asyncio
 import atexit
+import httpx
 import subprocess
 import sys
 from pathlib import Path
 from typing import List, Optional, cast
+from urllib import parse
 
 import typer
 
 SERVER_PROCESS = None
 BASE_URL = None
+COOKIES = httpx.Cookies()
 
 
 def stop_server():
@@ -50,9 +53,20 @@ def main(
                 break
     if launch_server or use_server:
         if use_server:
-            BASE_URL = use_server
+            parsed_url = parse.urlparse(use_server)
+            query_params = parse.parse_qs(parsed_url.query)
+            BASE_URL = parse.urljoin(use_server, parsed_url.path)
+
+            # send token and get back cookie
+            async def auth():
+                global COOKIES
+                async with httpx.AsyncClient() as client:
+                    r = await client.get(BASE_URL, params=query_params)
+                COOKIES = r.cookies
+
+            asyncio.run(auth())
         else:
-            BASE_URL = f"http://{server_host}:{server_port}"
+            BASE_URL = f"http://{server_host}:{server_port}/"
         import jpterm.remote_api as api  # type: ignore
     else:
         import jpterm.local_api as api  # type: ignore
