@@ -2,7 +2,7 @@ from typing import List, Union
 
 import httpx
 
-from jpterm.jpterm import BASE_URL
+from jpterm.jpterm import BASE_URL, COOKIES
 
 
 class Entry:
@@ -29,7 +29,10 @@ async def get_content(path: str) -> Union[List, str]:
     else:
         path = f"/{path}"
     async with httpx.AsyncClient() as client:
-        r = await client.get(f"{BASE_URL}/api/contents{path}", params={"content": 1})
+        r = await client.get(
+            f"{BASE_URL}api/contents{path}", params={"content": 1}, cookies=COOKIES
+        )
+    COOKIES.update(r.cookies)
     model = r.json()
     type = model["type"]
     if type == "directory":
