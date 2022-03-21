@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 import httpx
 from websockets import connect  # type: ignore
 
-from jpterm.jpterm import BASE_URL, COOKIES
+from jpterm.jpterm import BASE_URL, COOKIES, query_params
 from .models import CreateSession, Session
 
 
@@ -48,10 +48,10 @@ class KernelDriver:
         self.channel_tasks.append(asyncio.create_task(self.listen_client()))
 
     async def open_kernel_channels(self):
-        base_url = "ws" + BASE_URL[BASE_URL.find("://") :]  # noqa
+        base_url = "ws" + BASE_URL[BASE_URL.find("://") :]
         cookies = "; ".join([f"{k}={v}" for k, v in COOKIES.items()])
         self.websocket = await connect(
-            f"{base_url}api/kernels/{self.session.kernel.id}/channels?session_id={self.session.id}",
+            f"{base_url}/api/kernels/{self.session.kernel.id}/channels?session_id={self.session.id}",  # noqa
             extra_headers=[("Cookie", cookies)],
         )
         # send kernel_info_request
@@ -78,7 +78,9 @@ class KernelDriver:
         await self.websocket.close()
         async with httpx.AsyncClient() as client:
             r = await client.delete(
-                f"{BASE_URL}api/sessions/{self.session.id}", cookies=COOKIES
+                f"{BASE_URL}/api/sessions/{self.session.id}",
+                params=query_params(),
+                cookies=COOKIES,
             )
         COOKIES.update(r.cookies)
 
@@ -161,7 +163,10 @@ def create_message(
 async def create_session(session: CreateSession):
     async with httpx.AsyncClient() as client:
         r = await client.post(
-            f"{BASE_URL}api/sessions", json=session.dict(), cookies=COOKIES
+            f"{BASE_URL}/api/sessions",
+            json=session.dict(),
+            params=query_params(),
+            cookies=COOKIES,
         )
     COOKIES.update(r.cookies)
     return Session(**r.json())

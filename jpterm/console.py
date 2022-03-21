@@ -54,7 +54,7 @@ class TextInput(Widget):
         if self.row < len(self.lines) - 1:
             # text below prompt
             text += self.highlight(
-                "\n".join(self.lines[self.row + 1 :]), start="\n", end=""  # noqa
+                "\n".join(self.lines[self.row + 1 :]), start="\n", end=""
             )
 
         return text
@@ -73,7 +73,7 @@ class TextInput(Widget):
         elif event.key == Keys.Return or event.key == Keys.Enter:
             self.lines.insert(self.row, self.lines[self.row][: self.col])
             self.row += 1
-            self.lines[self.row] = self.lines[self.row][self.col :]  # noqa
+            self.lines[self.row] = self.lines[self.row][self.col :]
             self.col = 0
         elif event.key == Keys.Home:
             self.col = 0
@@ -89,7 +89,7 @@ class TextInput(Widget):
             else:
                 self.lines[self.row] = (
                     self.lines[self.row][: self.col - 1]
-                    + self.lines[self.row][self.col :]  # noqa
+                    + self.lines[self.row][self.col :]
                 )
                 self.col -= 1
         elif event.key == Keys.Delete:
@@ -100,7 +100,7 @@ class TextInput(Widget):
             else:
                 self.lines[self.row] = (
                     self.lines[self.row][: self.col]
-                    + self.lines[self.row][self.col + 1 :]  # noqa
+                    + self.lines[self.row][self.col + 1 :]
                 )
         elif event.key == Keys.Left:
             if self.col == 0:
@@ -120,7 +120,7 @@ class TextInput(Widget):
             self.lines[self.row] = (
                 self.lines[self.row][: self.col]
                 + event.key
-                + self.lines[self.row][self.col :]  # noqa
+                + self.lines[self.row][self.col :]
             )
             self.col += 1
         self.refresh()

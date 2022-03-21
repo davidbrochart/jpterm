@@ -4,14 +4,25 @@ import httpx
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Optional, cast
+from typing import Dict, List, Optional, cast
 from urllib import parse
 
 import typer
 
 SERVER_PROCESS = None
 BASE_URL = None
+QUERY_PARAMS: Dict[str, List[str]] = {}
 COOKIES = httpx.Cookies()
+
+
+def query_params():
+    """Return the query parameters the first time it is called.
+    Then return no parameter (very token specific!).
+    """
+    global QUERY_PARAMS
+    res = dict(QUERY_PARAMS)
+    QUERY_PARAMS = {}
+    return res
 
 
 def stop_server():
@@ -36,7 +47,7 @@ def main(
         None, help="Run the file passed as argument and exit."
     ),
 ):
-    global SERVER_PROCESS, BASE_URL
+    global SERVER_PROCESS, BASE_URL, QUERY_PARAMS
     if launch_server:
         SERVER_PROCESS = subprocess.Popen(
             [
@@ -54,19 +65,10 @@ def main(
     if launch_server or use_server:
         if use_server:
             parsed_url = parse.urlparse(use_server)
-            query_params = parse.parse_qs(parsed_url.query)
-            BASE_URL = parse.urljoin(use_server, parsed_url.path)
-
-            # send token and get back cookie
-            async def auth():
-                global COOKIES
-                async with httpx.AsyncClient() as client:
-                    r = await client.get(BASE_URL, params=query_params)
-                COOKIES = r.cookies
-
-            asyncio.run(auth())
+            QUERY_PARAMS = parse.parse_qs(parsed_url.query)
+            BASE_URL = parse.urljoin(use_server, parsed_url.path).rstrip("/")
         else:
-            BASE_URL = f"http://{server_host}:{server_port}/"
+            BASE_URL = f"http://{server_host}:{server_port}"
         import jpterm.remote_api as api  # type: ignore
     else:
         import jpterm.local_api as api  # type: ignore
