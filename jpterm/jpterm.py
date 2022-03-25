@@ -64,11 +64,9 @@ def main(
                 break
     if launch_server or use_server:
         if use_server:
-            parsed_url = parse.urlparse(use_server)
-            QUERY_PARAMS = parse.parse_qs(parsed_url.query)
-            BASE_URL = parse.urljoin(use_server, parsed_url.path).rstrip("/")
+            parse_url(use_server)
         else:
-            BASE_URL = f"http://{server_host}:{server_port}"
+            parse_url(f"http://{server_host}:{server_port}")
         import jpterm.remote_api as api  # type: ignore
     else:
         import jpterm.local_api as api  # type: ignore
@@ -98,6 +96,13 @@ def main(
         JptermApp.api = api
         JptermApp.run(title="JPTerm", log="textual.log")
         sys.exit()
+
+
+def parse_url(url: str):
+    global BASE_URL, QUERY_PARAMS
+    parsed_url = parse.urlparse(url)
+    QUERY_PARAMS = parse.parse_qs(parsed_url.query)
+    BASE_URL = parse.urljoin(url, parsed_url.path).rstrip("/")
 
 
 def cli():
