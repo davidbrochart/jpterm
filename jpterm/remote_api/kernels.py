@@ -1,5 +1,6 @@
 import asyncio
 import json
+import sys
 from datetime import datetime, timezone
 from uuid import uuid4
 from typing import Any, Dict, List, Optional
@@ -17,6 +18,7 @@ class KernelDriver:
     shell_channel: asyncio.Queue
     iopub_channel: asyncio.Queue
     web_channel: asyncio.Queue
+    execute_requests: Dict[str, Any]
 
     def __init__(
         self,
@@ -32,8 +34,8 @@ class KernelDriver:
         self.shell_channel = asyncio.Queue()
         self.iopub_channel = asyncio.Queue()
         self.web_channel = asyncio.Queue()
-        self.execution_done = asyncio.Event()
         self.channel_tasks: List[asyncio.Task] = []
+        self.execute_requests = {}
 
     async def start(self) -> None:
         s = {
@@ -45,7 +47,6 @@ class KernelDriver:
         self.session = await create_session(CreateSession(**s))
         await self.open_kernel_channels()
         self.channel_tasks.append(asyncio.create_task(self.listen_server()))
-        self.channel_tasks.append(asyncio.create_task(self.listen_client()))
 
     async def open_kernel_channels(self):
         base_url = "ws" + BASE_URL[BASE_URL.find("://") :]
@@ -85,33 +86,17 @@ class KernelDriver:
         COOKIES.update(r.cookies)
 
     async def listen_server(self):
-        queue = {
-            "shell": self.shell_channel,
-            "iopub": self.iopub_channel,
-        }
         while True:
             msg = json.loads(await self.websocket.recv())
-            queue[msg["channel"]].put_nowait(msg)
+            msg_id = msg["parent_header"].get("msg_id")
+            channel = msg["channel"]
+            if (
+                msg_id in self.execute_requests.keys()
+                and channel in self.execute_requests[msg_id]
+            ):
+                self.execute_requests[msg_id][channel].put_nowait(msg)
 
-    async def listen_client(self):
-        while True:
-            msg, header = await self.web_channel.get()
-            await self.websocket.send(msg)
-            # receive execute_reply
-            while True:
-                msg = await self.shell_channel.get()
-                if (
-                    msg["channel"] == "shell"
-                    and msg["msg_type"] == "execute_reply"
-                    and msg["parent_header"] == header
-                ):
-                    self.execution_done.set()
-                    if msg["content"]["status"] != "ok":
-                        raise RuntimeError("Error executing cell")
-                    break
-
-    async def execute(self, code):
-        self.execution_done.clear()
+    async def execute(self, code, msg_id=None):
         # send execute_request
         content = {
             "allow_stdin": False,
@@ -134,9 +119,27 @@ class KernelDriver:
             metadata=metadata,
         )
         header = msg["header"]
-        msg = json.dumps(msg)
-        self.web_channel.put_nowait((msg, header))
-        await self.execution_done.wait()
+        if msg_id:
+            header["msg_id"] = msg_id
+        else:
+            msg_id = header["msg_id"]
+        self.execute_requests[msg_id] = {
+            "iopub": asyncio.Queue(),
+            "shell": asyncio.Queue(),
+        }
+        await self.websocket.send(json.dumps(msg))
+        while True:
+            msg = await self.execute_requests[msg_id]["iopub"].get()
+            _output_hook(msg)
+            if (
+                msg["header"]["msg_type"] == "status"
+                and msg["content"]["execution_state"] == "idle"
+            ):
+                break
+        while True:
+            msg = await self.execute_requests[msg_id]["shell"].get()
+            if msg["msg_type"] == "execute_reply" and msg["parent_header"] == header:
+                break
 
 
 def create_message(
@@ -170,3 +173,22 @@ async def create_session(session: CreateSession):
         )
     COOKIES.update(r.cookies)
     return Session(**r.json())
+
+
+def set_output_hook(output_hook):
+    global _output_hook
+    _output_hook = output_hook
+
+
+def _output_hook(msg: Dict[str, Any]) -> None:
+    """Default hook for redisplaying plain-text output"""
+    msg_type = msg["header"]["msg_type"]
+    print(msg_type)
+    content = msg["content"]
+    if msg_type == "stream":
+        stream = getattr(sys, content["name"])
+        stream.write(content["text"])
+    elif msg_type in ("display_data", "execute_result"):
+        sys.stdout.write(content["data"].get("text/plain", ""))
+    elif msg_type == "error":
+        print("\n".join(content["traceback"]), file=sys.stderr)
