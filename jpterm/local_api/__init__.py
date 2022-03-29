@@ -1,1 +1,1 @@
-import jpterm.remote_api.contents as contents  # noqa
+from .api import API  # noqa

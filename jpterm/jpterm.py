@@ -1,18 +1,15 @@
 import asyncio
 import atexit
-import httpx
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, cast
-from urllib import parse
+from typing import List, Optional, Union, cast
 
 import typer
+import jpterm.remote_api
+import jpterm.local_api
 
 SERVER_PROCESS = None
-BASE_URL = None
-QUERY_PARAMS: Dict[str, List[str]] = {}
-COOKIES = httpx.Cookies()
 
 
 def query_params():
@@ -47,7 +44,8 @@ def main(
         None, help="Run the file passed as argument and exit."
     ),
 ):
-    global SERVER_PROCESS, BASE_URL, QUERY_PARAMS
+    global SERVER_PROCESS
+    api: Union[jpterm.remote_api.API, jpterm.local_api.API]
     if launch_server:
         SERVER_PROCESS = subprocess.Popen(
             [
@@ -64,12 +62,12 @@ def main(
                 break
     if launch_server or use_server:
         if use_server:
-            parse_url(use_server)
+            url = use_server
         else:
-            parse_url(f"http://{server_host}:{server_port}")
-        import jpterm.remote_api as api  # type: ignore
+            url = f"http://{server_host}:{server_port}"
+        api = jpterm.remote_api.API(url)
     else:
-        import jpterm.local_api as api  # type: ignore
+        api = jpterm.local_api.API()
 
     if run:
         if path is None:
@@ -96,13 +94,6 @@ def main(
         JptermApp.api = api
         JptermApp.run(title="JPTerm", log="textual.log")
         sys.exit()
-
-
-def parse_url(url: str):
-    global BASE_URL, QUERY_PARAMS
-    parsed_url = parse.urlparse(url)
-    QUERY_PARAMS = parse.parse_qs(parsed_url.query)
-    BASE_URL = parse.urljoin(url, parsed_url.path).rstrip("/")
 
 
 def cli():

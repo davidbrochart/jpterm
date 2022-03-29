@@ -20,7 +20,6 @@ class Notebook:
         self.cells = []
         self.msgid_to_cell = {}
         self.kd = None
-        api.kernels.set_output_hook(self.output_hook)
 
     async def open(self) -> None:
         text_or_json = await self.api.contents.get_content(self.path)
@@ -35,7 +34,10 @@ class Notebook:
             Cell(notebook=self, cell_json=cell_json) for cell_json in self.json["cells"]
         ]
         self.kd = self.api.kernels.KernelDriver(
-            kernel_name="python3", session_type="notebook", session_name=self.path
+            kernel_name="python3",
+            session_type="notebook",
+            session_name=self.path,
+            output_hook=self.output_hook,
         )
         assert self.kd is not None
         await self.kd.start()
