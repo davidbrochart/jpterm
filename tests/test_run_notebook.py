@@ -4,7 +4,6 @@ import sys
 from pathlib import Path
 
 import pytest
-from jpterm.jpterm import parse_url
 from jpterm.notebook import Notebook
 
 
@@ -41,8 +40,9 @@ def test_run_notebook_remotely_cli(start_jupyverse):
 )
 def test_run_notebook_remotely(start_jupyverse):
     url = start_jupyverse
-    parse_url(url)
-    import jpterm.remote_api as api
+    from jpterm.remote_api import API
+
+    api = API(url)
 
     nb = asyncio.run(run_nb(api, NB_DIR / "nb0.ipynb"))
     assert nb.cells[1].json["outputs"][0]["text"][0] == "Cell 2 executed!\n"

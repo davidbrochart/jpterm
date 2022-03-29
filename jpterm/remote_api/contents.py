@@ -1,8 +1,6 @@
-from typing import List, Union
+from typing import Dict, List, Union
 
 import httpx
-
-from jpterm.jpterm import BASE_URL, COOKIES, query_params
 
 
 class Entry:
@@ -23,24 +21,37 @@ class Entry:
         return self.entry["type"] == "directory"
 
 
-async def get_content(path: str) -> Union[List, str]:
-    if path == ".":
-        path = ""
-    else:
-        path = f"/{path}"
-    async with httpx.AsyncClient() as client:
-        r = await client.get(
-            f"{BASE_URL}/api/contents{path}",
-            params={**{"content": 1}, **query_params()},
-            cookies=COOKIES,
-        )
-    COOKIES.update(r.cookies)
-    model = r.json()
-    type = model["type"]
-    if type == "directory":
-        dir_list = [Entry(entry) for entry in model["content"]]
-        return sorted(dir_list, key=lambda entry: (not entry.is_dir(), entry.name))
-    elif type in ("file", "notebook"):
-        return model["content"]
-    else:
-        return ""
+class Contents:
+
+    base_url: str
+    query_params: Dict[str, List[str]]
+    cookies: httpx.Cookies
+
+    def __init__(
+        self, base_url: str, query_params: Dict[str, List[str]], cookies: httpx.Cookies
+    ) -> None:
+        self.base_url = base_url
+        self.query_params = query_params
+        self.cookies = cookies
+
+    async def get_content(self, path: str) -> Union[List, str]:
+        if path == ".":
+            path = ""
+        else:
+            path = f"/{path}"
+        async with httpx.AsyncClient() as client:
+            r = await client.get(
+                f"{self.base_url}/api/contents{path}",
+                params={**{"content": 1}, **self.query_params},
+                cookies=self.cookies,
+            )
+        self.cookies.update(r.cookies)
+        model = r.json()
+        type = model["type"]
+        if type == "directory":
+            dir_list = [Entry(entry) for entry in model["content"]]
+            return sorted(dir_list, key=lambda entry: (not entry.is_dir(), entry.name))
+        elif type in ("file", "notebook"):
+            return model["content"]
+        else:
+            return ""
