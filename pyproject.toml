@@ -1,0 +1,50 @@
+[build-system]
+requires = ["hatchling>=1.9.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jpterm"
+dynamic = ["version"]
+description = "Jupyter in the terminal"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.7"
+authors = [ { name = "David Brochart", email = "david.brochart@gmail.com" }, ]
+keywords = [
+    "jupyter",
+    "textual",
+]
+dependencies = [
+    "typer>=0.6.1,<1",
+]
+
+[project.scripts]
+jpterm = "txl.cli:run_main"
+
+[project.urls]
+Homepage = "https://github.com/davidbrochart/jpterm"
+
+[tool.hatch.version]
+path = "jpterm/__init__.py"
+
+[tool.hatch.envs.dev]
+# TODO: if/when hatch gets support for  defining editable dependencies, the
+# pre-install commands here and post-install commands in the matrix can be moved
+# to the dependencies section
+pre-install-commands = [
+    "pip install -e ./txl",
+    "pip install -e ./plugins/editors",
+    "pip install -e ./plugins/file_browser",
+    "pip install -e ./plugins/notebook_editor",
+    "pip install -e ./plugins/text_editor",
+    "pip install -e ./plugins/jpterm",
+]
+
+[tool.hatch.envs.dev.overrides]
+matrix.contents.post-install-commands = [
+    { value = "pip install -e ./plugins/local_contents", if = ["local_contents"] },
+    { value = "pip install -e ./plugins/remote_contents", if = ["remote_contents"] },
+]
+
+[[tool.hatch.envs.dev.matrix]]
+contents = ["local_contents", "remote_contents"]

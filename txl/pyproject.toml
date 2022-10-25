@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "txl"
+description = ''
+readme = "README.md"
+requires-python = ">=3.7"
+license = "MIT"
+keywords = []
+authors = [
+  { name = "David Brochart", email = "david.brochart@gmail.com" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+  "pluggy>=1.0.0,<2",
+  "asphalt>=4.10.1,<5",
+  "textual>=0.2.1<1"
+]
+dynamic = ["version"]
+
+[project.urls]
+Source = "https://github.com/davidbrochart/jpterm/txl"
+
+[tool.hatch.version]
+path = "txl/__init__.py"

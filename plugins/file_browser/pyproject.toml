@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "txl_file_browser"
+description = "TXL plugin for a file browser"
+readme = "README.md"
+requires-python = ">=3.7"
+license = "MIT"
+keywords = []
+authors = [
+  { name = "David Brochart", email = "david.brochart@gmail.com" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+  "txl"
+]
+dynamic = ["version"]
+
+[project.urls]
+Source = "https://github.com/davidbrochart/jpterm/plugins/file_browser"
+
+[project.entry-points.txl_component]
+txl_filebrowser = "txl_filebrowser.components"
+
+[tool.hatch.version]
+path = "txl_filebrowser/__init__.py"

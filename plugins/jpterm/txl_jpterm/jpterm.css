@@ -1,0 +1,26 @@
+Screen {
+    background: $surface-darken-1;
+}
+
+#browser-view {
+    display: none;
+    scrollbar-gutter: stable;
+    width: auto;
+}
+
+Jpterm.-show-browser #browser-view {
+    display: block;
+    dock: left;
+    height: 100%;            
+    max-width: 50%;
+    background: #151C25;    
+}
+
+FileBrowser {
+    padding-right: 1;   
+}
+
+#editors-view {
+    overflow: auto;  
+    min-width: 100%;  
+}

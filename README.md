@@ -1,39 +1,47 @@
-[![Build Status](https://github.com/davidbrochart/jpterm/workflows/CI/badge.svg)](https://github.com/davidbrochart/jpterm/actions)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-
 # jpterm
 
-`jpterm` is a terminal-based CLI and UI that allows to:
-- access documents either locally, or remotely through a Jupyter server.
-- execute Jupyter notebooks either interactively or in batch mode, locally or remotely.
+`jpterm` is a terminal UI that allows to access documents either locally, or remotely through a Jupyter server.
 
-## Command-line interface
+## Development install
 
-Launch a Jupyter server:
-```bash
-# using jupyter-server:
-jupyter server --ServerApp.token='' --ServerApp.password='' --ServerApp.disable_check_xsrf=True
-# or
-# using jupyverse:
-jupyverse --authenticator.mode=noauth --port=8888
+jpterm uses [hatch](https://hatch.pypa.io):
+
+```console
+pip install hatch
 ```
 
-Execute a notebook through that server:
-```bash
-jpterm --use-server http://127.0.0.1:8888 --run Untitled.ipynb
+Several development environments are available:
+
+```console
+hatch env show
 ```
 
-## Terminal user interface
+To run jpterm with no server, you need the `local_contents` plugin:
 
-Just launch:
-```bash
-jpterm
+```console
+hatch run dev.local_contents:jpterm
 ```
 
-And you will be presented with a file browser. You can click on a directory or on a file to show its
-content.
+To run jpterm as a client to a Jupyter server, you need, well, jupyter-server :) You can install it with:
 
-You can also access a remote file system through a Jupyter server (see above to launch one):
-```bash
-jpterm --use-server http://127.0.0.1:8888
+```console
+pip install jupyter-server
+```
+
+And then launch it (in another terminal):
+
+```console
+jupyter server --port=8000 --ServerApp.token='' --ServerApp.password='' --ServerApp.disable_check_xsrf=True
+```
+
+Then launch jpterm with the `remote_contents` plugin, including the configuration file:
+
+```console
+hatch run dev.remote_contents:jpterm config.yaml
+```
+
+If you need to remove the development environments:
+
+```console
+hatch env prune
 ```

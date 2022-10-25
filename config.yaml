@@ -1,0 +1,21 @@
+---
+max_threads: 20
+component:
+  type: txl.app:AppComponent
+  components:
+    contents:
+      url: http://127.0.0.1:8000
+
+logging:
+  version: 1
+  disable_existing_loggers: false
+  handlers:
+    console:
+      class: logging.StreamHandler
+      formatter: generic
+  formatters:
+    generic:
+        format: "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
+  root:
+    handlers: [console]
+    level: INFO
