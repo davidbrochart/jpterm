@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Union, Callable, List
 
 from asphalt.core import Event, Signal
+from textual.binding import Binding
 
 
 
@@ -24,6 +25,9 @@ class Editor(ABC):
     async def open(self, path: str) -> None:
         ...
 
+    def get_bindings(self) -> List[Binding] | None:
+        return None
+
 
 class Editors(ABC):
     @abstractmethod
@@ -39,3 +43,20 @@ class Contents(ABC):
     @abstractmethod
     async def get_content(self, path: str, is_dir: bool = True) -> Union[List, str]:
         ...
+
+
+class Cell(ABC):
+    @abstractmethod
+    async def run(self) -> None:
+        ...
+
+
+CellFactory = Callable[[], Cell]
+
+
+class Header(ABC):
+    ...
+
+
+class Footer(ABC):
+    ...
