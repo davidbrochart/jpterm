@@ -3,7 +3,8 @@ from typing import Callable, Dict, List
 
 from asphalt.core import Component, Context
 from textual.containers import Container
-from txl.base import Editor, Editors, FileOpenEvent
+from textual.widgets._header import HeaderTitle
+from txl.base import Editor, Editors, FileOpenEvent, Footer, Header
 from txl.hooks import register_component
 
 
@@ -14,8 +15,14 @@ class EditorsMeta(type(Editors), type(Container)):
 class _Editors(Editors, Container, metaclass=EditorsMeta):
     ext_editor_factories: Dict[str, List[Callable[[], Editor]]]
 
-    def __init__(self):
+    def __init__(
+        self,
+        header: Header | None = None,
+        footer: Footer | None = None,
+    ):
         super().__init__(id="editors")
+        self.header = header
+        self.footer = footer
         self.ext_editor_factories = {}
         self.editor_factories = []
 
@@ -27,8 +34,8 @@ class _Editors(Editors, Container, metaclass=EditorsMeta):
             self.ext_editor_factories[ext].append(editor_factory)
 
     async def on_open(self, event: FileOpenEvent) -> None:
-        path = event.path
-        extension = Path(path).suffix
+        path = Path(event.path)
+        extension = path.suffix
         for ext, editor_factories in self.ext_editor_factories.items():
             if ext == extension:
                 preferred_editor_factory = editor_factories[0]
@@ -42,6 +49,12 @@ class _Editors(Editors, Container, metaclass=EditorsMeta):
             editors.last().remove()
         preferred_editor = preferred_editor_factory()
         self.mount(preferred_editor)
+        if self.header:
+            self.header.query_one(HeaderTitle).text = path.name
+        if self.footer:
+            bindings = preferred_editor.get_bindings()
+            if bindings:
+                self.footer.update_bindings(bindings)
         await preferred_editor.open(path)
         preferred_editor.refresh(layout=True)
 
@@ -52,7 +65,9 @@ class EditorsComponent(Component):
         self,
         ctx: Context,
     ) -> None:
-        editors = _Editors()
+        header = await ctx.request_resource(Header, "header")
+        footer = await ctx.request_resource(Footer, "footer")
+        editors = _Editors(header, footer)
         ctx.add_resource(editors, name="editors", types=Editors)
 
 

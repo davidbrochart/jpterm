@@ -24,7 +24,8 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "txl"
+  "txl",
+  "txl_cell"
 ]
 dynamic = ["version"]
 

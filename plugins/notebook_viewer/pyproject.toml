@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "txl_jpterm"
-description = "TXL plugin for the jpterm app"
+name = "txl_notebook_viewer"
+description = "TXL plugin for a notebook viewer"
 readme = "README.md"
 requires-python = ">=3.7"
 license = "MIT"
@@ -24,17 +24,15 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "txl",
-  "txl_file_browser",
-  "txl_editors",
+  "txl"
 ]
 dynamic = ["version"]
 
 [project.urls]
-Source = "https://github.com/davidbrochart/jpterm/plugins/jpterm"
+Source = "https://github.com/davidbrochart/jpterm/plugins/notebook_viewer"
 
 [project.entry-points.txl_component]
-txl_jpterm = "txl_jpterm.components"
+txl_notebook_viewer = "txl_notebook_viewer.components"
 
 [tool.hatch.version]
-path = "txl_jpterm/__init__.py"
+path = "txl_notebook_viewer/__init__.py"

@@ -16,10 +16,10 @@ Several development environments are available:
 hatch env show
 ```
 
-To run jpterm with no server, you need the `local_contents` plugin:
+To run jpterm with no server, you need the `local_contents` plugin. You can also choose to show notebooks with the `notebook_viewer` or the `notebook_editor` plugin. This will run jpterm with local contents and the notebook viewer:
 
 ```console
-hatch run dev.local_contents:jpterm
+hatch run dev.local_contents-notebook_viewer:jpterm
 ```
 
 To run jpterm as a client to a Jupyter server, you need, well, jupyter-server :) You can install it with:
@@ -37,7 +37,7 @@ jupyter server --port=8000 --ServerApp.token='' --ServerApp.password='' --Server
 Then launch jpterm with the `remote_contents` plugin, including the configuration file:
 
 ```console
-hatch run dev.remote_contents:jpterm config.yaml
+hatch run dev.remote_contents-notebook_viewer:jpterm config.yaml
 ```
 
 If you need to remove the development environments:
