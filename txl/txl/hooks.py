@@ -12,7 +12,7 @@ class HookType(Enum):
 def component() -> Tuple[str, type[Component], Dict[str, Any]]:
     pass
 
-def register_component(name: str, component: type[Component], config: Dict[str, Any] = {}):
+def register_component(name: str, component: type[Component], **config: Dict[str, Any]):
     def callback() -> Tuple[str, type[Component], Dict[str, Any], str]:
         return name, component, config
 
