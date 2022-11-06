@@ -70,7 +70,7 @@ class RemoteContents(Contents):
 
 class ContentsComponent(Component):
 
-    def __init__(self, url: str, collaborative: bool = False):
+    def __init__(self, url: str = "http://127.0.0.1:8888", collaborative: bool = False):
         super().__init__()
         self.url = url
         self.collaborative = collaborative
@@ -86,5 +86,4 @@ class ContentsComponent(Component):
         contents = RemoteContents(base_url, query_params, cookies, self.collaborative)
         ctx.add_resource(contents, name="contents", types=Contents)
 
-
-c = register_component("contents", ContentsComponent)
+c = register_component("contents", ContentsComponent, enabled=False)
