@@ -15,7 +15,16 @@ keywords = [
     "textual",
 ]
 dependencies = [
-    "typer>=0.6.1,<1",
+    "typer >=0.6.1,<1",
+    "txl_cell",
+    "txl_editors",
+    "txl_file_browser",
+    "txl_jpterm",
+    "txl_local_contents",
+    "txl_notebook_editor",
+    "txl_notebook_viewer",
+    "txl_remote_contents",
+    "txl_text_viewer",
 ]
 
 [project.scripts]
