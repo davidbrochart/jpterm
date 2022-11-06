@@ -1,1 +1,1 @@
-# TXL plugin for a text editor
+# TXL plugin for a cell
