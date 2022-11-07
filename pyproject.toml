@@ -15,7 +15,7 @@ keywords = [
     "textual",
 ]
 dependencies = [
-    "typer >=0.6.1,<1",
+    "click",
     "txl_cell",
     "txl_editors",
     "txl_file_browser",
@@ -28,7 +28,7 @@ dependencies = [
 ]
 
 [project.scripts]
-jpterm = "txl.cli:run_main"
+jpterm = "jpterm.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/davidbrochart/jpterm"
