@@ -37,28 +37,15 @@ Homepage = "https://github.com/davidbrochart/jpterm"
 path = "jpterm/__init__.py"
 
 [tool.hatch.envs.dev]
-# TODO: if/when hatch gets support for  defining editable dependencies, the
-# pre-install commands here and post-install commands in the matrix can be moved
-# to the dependencies section
 pre-install-commands = [
     "pip install -e ./txl",
+    "pip install -e ./plugins/cell",
     "pip install -e ./plugins/editors",
     "pip install -e ./plugins/file_browser",
-    "pip install -e ./plugins/text_viewer",
     "pip install -e ./plugins/jpterm",
+    "pip install -e ./plugins/local_contents",
+    "pip install -e ./plugins/notebook_editor",
+    "pip install -e ./plugins/notebook_viewer",
+    "pip install -e ./plugins/remote_contents",
+    "pip install -e ./plugins/text_viewer",
 ]
-
-[tool.hatch.envs.dev.overrides]
-matrix.contents.post-install-commands = [
-    { value = "pip install -e ./plugins/local_contents", if = ["local_contents"] },
-    { value = "pip install -e ./plugins/remote_contents", if = ["remote_contents"] },
-]
-
-matrix.notebook.post-install-commands = [
-    { value = "pip install -e ./plugins/notebook_viewer", if = ["notebook_viewer"] },
-    { value = "pip install -e ./plugins/cell -e ./plugins/notebook_editor", if = ["notebook_editor"] },
-]
-
-[[tool.hatch.envs.dev.matrix]]
-contents = ["local_contents", "remote_contents"]
-notebook = ["notebook_viewer", "notebook_editor"]

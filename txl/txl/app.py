@@ -28,7 +28,7 @@ class AppComponent(CLIApplicationComponent):
 
     async def start(self, ctx: Context) -> None:
         for name, component, config in load_components():
-            add_component = config.pop("enabled", True)
+            add_component = config.pop("enable", True)
             plugin = component.__module__.split(".", 1)[0]
             if plugin in self.disabled_plugins and plugin in self.enabled_plugins:
                 raise RuntimeError(f"plugin cannot be disabled and enabled ({plugin})")
