@@ -28,10 +28,10 @@ And then launch it (in another terminal):
 jupyter server --port=8000 --ServerApp.token='' --ServerApp.password='' --ServerApp.disable_check_xsrf=True
 ```
 
-Then launch jpterm with the `txl_remote_contents` plugin enabled and the `txl_local_contents` plugin disabled:
+Then launch jpterm and pass it the URL to the Jupyter server:
 
 ```console
-hatch run dev:jpterm --enable txl_remote_contents --disable txl_local_contents
+hatch run dev:jpterm --server http://127.0.0.1:8000
 ```
 
 To run jpterm with the notebook viewer instead of the notebook editor, disable the `txl_notebook_editor` plugin:
@@ -45,3 +45,5 @@ If you need to remove the development environment:
 ```console
 hatch env prune
 ```
+
+<div><p>If you want to support jpterm: <a href="https://www.buymeacoffee.com/davidbrochart"><img src="https://img.shields.io/badge/Buy_Me_A_Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me a Coffee" style="vertical-align:middle"></a></p></div>
