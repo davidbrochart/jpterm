@@ -10,19 +10,13 @@ jpterm uses [hatch](https://hatch.pypa.io):
 pip install hatch
 ```
 
-Several development environments are available:
+By default, jpterm runs with no server:
 
 ```console
-hatch env show
+hatch run dev:jpterm
 ```
 
-To run jpterm with no server, you need the `local_contents` plugin. You can also choose to show notebooks with the `notebook_viewer` or the `notebook_editor` plugin. This will run jpterm with local contents and the notebook viewer:
-
-```console
-hatch run dev.local_contents-notebook_viewer:jpterm
-```
-
-To run jpterm as a client to a Jupyter server, you need, well, jupyter-server :) You can install it with:
+To run jpterm as a client to a Jupyter server, you need, well, jupyter-server :) You can install it (in another environment):
 
 ```console
 pip install jupyter-server
@@ -34,13 +28,19 @@ And then launch it (in another terminal):
 jupyter server --port=8000 --ServerApp.token='' --ServerApp.password='' --ServerApp.disable_check_xsrf=True
 ```
 
-Then launch jpterm with the `remote_contents` plugin, including the configuration file:
+Then launch jpterm with the `txl_remote_contents` plugin enabled and the `txl_local_contents` plugin disabled:
 
 ```console
-hatch run dev.remote_contents-notebook_viewer:jpterm config.yaml
+hatch run dev:jpterm --enable txl_remote_contents --disable txl_local_contents
 ```
 
-If you need to remove the development environments:
+To run jpterm with the notebook viewer instead of the notebook editor, disable the `txl_notebook_editor` plugin:
+
+```console
+hatch run dev:jpterm --disable txl_notebook_editor
+```
+
+If you need to remove the development environment:
 
 ```console
 hatch env prune

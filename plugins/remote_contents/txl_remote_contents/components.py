@@ -86,4 +86,4 @@ class ContentsComponent(Component):
         contents = RemoteContents(base_url, query_params, cookies, self.collaborative)
         ctx.add_resource(contents, name="contents", types=Contents)
 
-c = register_component("contents", ContentsComponent, enabled=False)
+c = register_component("contents", ContentsComponent, enable=False)
