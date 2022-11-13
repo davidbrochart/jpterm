@@ -1,11 +1,10 @@
 import click
-from asphalt.core.cli import run as asphalt_run
 
 from .app import run
 
 
-def MAIN(**kwargs):
-    return kwargs
+def MAIN(set_):
+    return set_
 
 
 def set_main(main):
@@ -13,20 +12,28 @@ def set_main(main):
     MAIN = main
 
 
-@click.option("--configfiles", default="", help="Comma-separated list of configuration files")
-@click.option("--disable", default="", help="Comma-separated list of plugins to disable")
-@click.option("--enable", default="", help="Comma-separated list of plugins to enable")
+@click.option(
+    "--configfile",
+    type=str,
+    multiple=True,
+    help="Read YAML configuration file",
+)
+@click.option(
+    "--set",
+    "set_",
+    multiple=True,
+    type=str,
+    help="Set configuration",
+)
 def txl_main(
+    # txl_main can be decorated with other Click options through MAIN
+    # they are passed in kwargs
     **kwargs,
 ) -> None:
-    kwargs = MAIN(**kwargs)
-    disabled_plugins = [plugin.strip() for plugin in kwargs["disable"].split(",")]
-    enabled_plugins = [plugin.strip() for plugin in kwargs["enable"].split(",")]
-    configfiles = kwargs["configfiles"]
-    if configfiles:
-        asphalt_run(configfiles)
-    else:
-        run(disabled_plugins, enabled_plugins)
+    kwargs = MAIN(kwargs)
+    # MAIN may have changed our options, based on its own options
+    kwargs["set_"].append("component.type=txl.app:AppComponent")
+    run(kwargs)
 
 def main():
     command = click.command(txl_main)

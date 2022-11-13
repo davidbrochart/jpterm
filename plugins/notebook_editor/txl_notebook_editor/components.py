@@ -26,7 +26,7 @@ class NotebookEditor(Editor, Container, metaclass=NotebookEditorMeta):
         await self.open(event.path)
 
     async def open(self, path: str) -> None:
-        nb = await self.contents.get_content(path)
+        nb = await self.contents.get(path)
 
         for cell in nb["cells"]:
             source = "".join(cell["source"])
@@ -61,4 +61,4 @@ class NotebookEditorComponent(Component):
             ctx.add_resource(notebook_editor, name="notebook_editor", types=Editor)
 
 
-c = register_component("notebook_editor", NotebookEditorComponent)
+c = register_component("notebook_editor", NotebookEditorComponent, enable=False)

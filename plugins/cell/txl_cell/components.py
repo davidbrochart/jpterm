@@ -1,46 +1,32 @@
+from typing import Any, Dict, List
+
 from asphalt.core import Component, Context
-from textual import events
-from textual.keys import Keys
-from textual.app import ComposeResult
-from textual.widgets import Input, Static
 from txl.base import Cell, CellFactory
 from txl.hooks import register_component
 
 
-class CellMeta(type(Cell), type(Static)):
-    pass
-
-
-class _Cell(Cell, Static, metaclass=CellMeta):
-    """A cell widget."""
+class _Cell(Cell):
+    """A cell."""
 
     def __init__(self, *args, **kwargs) -> None:
-        self.input_content = kwargs.pop("input_content")
-        self.output_content = kwargs.pop("output_content")
-        super().__init__(*args, **kwargs)
+        self.source = kwargs.pop("source", [])
+        self.outputs = kwargs.pop("outputs", [])
 
-    def on_key(self, event: events.Key) -> None:
-        """Handles key press events when this widget is in focus.
-        Pressing "escape" removes focus from this widget.
-        Pressing "shift+enter" runs the cell.
+    @property
+    def source(self) -> List[str]:
+        return self.source
 
-        Args:
-            event (events.Key): The Key event being handled
-        """
-        if event.key == Keys.Escape:
-            self.screen.set_focus(None)
-        elif event.key == "shift+enter":
-            self.run()
+    @source.setter
+    def source(self, value: List[str]):
+        self.source = value
 
-    def compose(self) -> ComposeResult:
-        """Create child widgets of a cell."""
-        self.input = Input(self.input_content)
-        self.output = Static(self.output_content)
-        yield self.input
-        yield self.output
+    @property
+    def outputs(self) -> List[Dict[str: Any]]:
+        return self.outputs
 
-    def run(self) -> None:
-        self.output.update(f"Run: {self.input.value}")
+    @source.setter
+    def outputs(self, value: List[Dict[str: Any]]):
+        self.outputs = value
 
 
 class CellFactoryComponent(Component):
@@ -49,8 +35,8 @@ class CellFactoryComponent(Component):
         self,
         ctx: Context,
     ) -> None:
-        def cell_factory(input_content: str = "", output_content: str = "") -> Cell:
-            return _Cell(input_content=input_content, output_content=output_content)
+        def cell_factory(source: List[str] = "", outputs: List[Dict[str: Any]] = "") -> Cell:
+            return _Cell(source=source, outputs=outputs)
         ctx.add_resource(cell_factory, name="cell_factory", types=CellFactory)
 
 

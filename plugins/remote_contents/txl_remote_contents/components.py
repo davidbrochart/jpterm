@@ -1,11 +1,16 @@
 import json
-from typing import Any, Dict, List, Union
+from functools import partial
+from typing import Any, Callable, Dict, List, Optional, Union
 from urllib import parse
 
 import httpx
+import y_py as Y
 from asphalt.core import Component, Context
+from jupyter_ydoc import ydocs
 from txl.base import Contents
 from txl.hooks import register_component
+from websockets import connect
+from ypy_websocket import WebsocketProvider
 
 
 class Entry:
@@ -33,20 +38,23 @@ class RemoteContents(Contents):
     cookies: httpx.Cookies
 
     def __init__(
-        self, base_url: str, query_params: Dict[str, List[str]], cookies: httpx.Cookies, collaborative: bool
+        self,
+        base_url: str,
+        query_params: Dict[str, List[str]],
+        cookies: httpx.Cookies,
+        collaborative: bool,
     ) -> None:
         self.base_url = base_url
         self.query_params = query_params
         self.cookies = cookies
         self.collaborative = collaborative
-        self.app = None
 
-    async def get_content(self, path: str, is_dir: bool = False) -> Union[List, str]:
-        path = "" if path == "." else f"/{path}"
+    async def get(self, path: str, is_dir: bool = False, on_change: Optional[Callable] = None) -> Union[List, str]:
+        path = "" if path == "." else path
         if is_dir or not self.collaborative:
             async with httpx.AsyncClient() as client:
                 r = await client.get(
-                    f"{self.base_url}/api/contents{path}",
+                    f"{self.base_url}/api/contents/{path}",
                     params={**{"content": 1}, **self.query_params},
                     cookies=self.cookies,
                 )
@@ -60,6 +68,29 @@ class RemoteContents(Contents):
                 document = content
                 if isinstance(content, (str, bytes)):
                     document = json.loads(content)
+        else:
+            # it's a collaborative document
+            doc_format = "json" if path.endswith(".ipynb") else "text"
+            doc_type = "notebook" if path.endswith(".ipynb") else "file"
+            async with httpx.AsyncClient() as client:
+                r = await client.put(
+                    f"{self.base_url}/api/yjs/roomid/{path}",
+                    json={"format": doc_format, "type": doc_type},
+                )
+            roomid = r.text
+            ws_url = f"ws{self.base_url[self.base_url.find(':'):]}/api/yjs/{roomid}"
+            ws_cookies = "; ".join([f"{k}={v}" for k, v in self.cookies.items()])
+            ydoc = Y.YDoc()
+            jupyter_ydoc = ydocs[doc_type](ydoc)
+            if on_change:
+                jupyter_ydoc.observe(partial(self.on_change, jupyter_ydoc, on_change))
+            self.websocket = await connect(ws_url, extra_headers=[("Cookie", ws_cookies)])
+            # AT_EXIT.append(self.websocket.close)
+            WebsocketProvider(ydoc, self.websocket)
+            if doc_type == "notebook":
+                return {}
+            else:
+                return ""
                 
         if type == "directory":
             dir_list = [Entry(entry) for entry in content]
@@ -67,10 +98,14 @@ class RemoteContents(Contents):
         else:
             return document
 
+    def on_change(self, jupyter_ydoc, on_change: Callable, events) -> None:
+        content = jupyter_ydoc.get()
+        on_change(content)
+
 
 class ContentsComponent(Component):
 
-    def __init__(self, url: str = "http://127.0.0.1:8888", collaborative: bool = False):
+    def __init__(self, url: str = "http://127.0.0.1:8000", collaborative: bool = True):
         super().__init__()
         self.url = url
         self.collaborative = collaborative

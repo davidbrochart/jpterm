@@ -40,21 +40,24 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
         await self.open(event.path)
 
     async def open(self, path: str) -> None:
-        nb = await self.contents.get_content(path)
+        self.nb = await self.contents.get(path, on_change=self.on_change)
+        self.update_viewer()
 
+    def update_viewer(self):
         self.add_column("", width=10)
         self.add_column("", width=100)
 
         head = None
         tail = None
         lexer = None
-        lexer = lexer or nb.get("metadata", {}).get("kernelspec", {}).get("language", "")
-        theme="ansi_dark"
-        for cell in nb["cells"]:
-            if "execution_count" in cell:
-                execution_count = f"[green]In [[#66ff00]{cell['execution_count'] or ' '}[/#66ff00]]:[/green]"
-            else:
-                execution_count = ""
+        lexer = lexer or self.nb.get("metadata", {}).get("kernelspec", {}).get("language", "")
+        theme = "ansi_dark"
+
+        if not "cells" in self.nb:
+            return
+
+        for cell in self.nb["cells"]:
+            execution_count = f"[green]In [[#66ff00]{cell['execution_count'] or ' '}[/#66ff00]]:[/green]" if "execution_count" in cell else ""
 
             source = "".join(cell["source"])
             num_lines = len(source.splitlines())
@@ -110,6 +113,10 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
                 num_lines = len(text.splitlines())
                 self.add_row(execution_count, renderable, height=num_lines)
 
+    def on_change(self, nb):
+        self.nb= nb
+        self.clear()
+        self.update_viewer()
 
 
 class NotebookViewerComponent(Component):

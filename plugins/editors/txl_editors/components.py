@@ -55,7 +55,7 @@ class _Editors(Editors, Container, metaclass=EditorsMeta):
             bindings = preferred_editor.get_bindings()
             if bindings:
                 self.footer.update_bindings(bindings)
-        await preferred_editor.open(path)
+        await preferred_editor.open(str(path))
         preferred_editor.refresh(layout=True)
 
 
