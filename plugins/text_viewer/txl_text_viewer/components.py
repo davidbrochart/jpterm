@@ -12,6 +12,10 @@ class TextViewerMeta(type(Editor), type(Static)):
 
 class TextViewer(Editor, Static, metaclass=TextViewerMeta):
 
+    code: str
+    contents: Contents
+    path: str
+
     def __init__(self, contents: Contents) -> None:
         super().__init__(id="editor", expand=True)
         self.contents = contents
@@ -20,11 +24,15 @@ class TextViewer(Editor, Static, metaclass=TextViewerMeta):
         await self.open(event.path)
 
     async def open(self, path: str) -> None:
+        self.path = path
+        self.code = await self.contents.get(path, on_change=self.on_change)
+        self.update_viewer()
+
+    def update_viewer(self):
         try:
-            code = await self.contents.get_content(path)
-            lexer = Syntax.guess_lexer(path, code=code)
+            lexer = Syntax.guess_lexer(self.path, code=self.code)
             syntax = Syntax(
-                code,
+                self.code,
                 lexer=lexer,
                 line_numbers=True,
                 word_wrap=False,
@@ -35,10 +43,14 @@ class TextViewer(Editor, Static, metaclass=TextViewerMeta):
             self.update(Traceback(theme="github-dark", width=None))
         else:
             self.update(syntax)
-            self.sub_title = path
+            self.sub_title = self.path
 
     def on_mount(self):
         self.expand
+
+    def on_change(self, code):
+        self.code = code
+        self.update_viewer()
 
 
 class TextViewerComponent(Component):

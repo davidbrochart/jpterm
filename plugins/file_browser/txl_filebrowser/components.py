@@ -93,7 +93,7 @@ class DirectoryTree(FileBrowser, TreeControl[DirEntry], metaclass=DirectoryTreeM
 
     async def load_directory(self, node: TreeNode[DirEntry]) -> None:
         path = node.data.path
-        content = await self.contents.get_content(path, is_dir=True)
+        content = await self.contents.get(path, is_dir=True)
         for entry in content:
             node.add(entry.name, DirEntry(entry.path, entry.is_dir()))
         node.loaded = True

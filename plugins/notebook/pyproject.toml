@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "txl"
-description = ''
+name = "txl_notebook"
+description = "TXL plugin for a notebook"
 readme = "README.md"
 requires-python = ">=3.7"
 license = "MIT"
@@ -24,14 +24,16 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "pluggy>=1.0.0,<2",
-  "asphalt>=4.11.0,<5",
-  "textual>=0.2.1<1"
+  "txl",
+  "jupyter_ydoc >=0.3.0a1"
 ]
 dynamic = ["version"]
 
 [project.urls]
-Source = "https://github.com/davidbrochart/jpterm/txl"
+Source = "https://github.com/davidbrochart/jpterm/plugins/notebook"
+
+[project.entry-points.txl_component]
+txl_notebook = "txl_notebook.components"
 
 [tool.hatch.version]
-path = "txl/__init__.py"
+path = "txl_notebook/__init__.py"

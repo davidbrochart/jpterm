@@ -1,7 +1,7 @@
 import json
 from os import scandir
 from pathlib import Path
-from typing import List, Union
+from typing import Callable, List, Optional, Union
 
 from asphalt.core import Component, Context
 from txl.base import Contents
@@ -10,7 +10,7 @@ from txl.hooks import register_component
 
 class LocalContents(Contents):
 
-    async def get_content(self, path: str, is_dir: bool = False) -> Union[List, str]:
+    async def get(self, path: str, is_dir: bool = False, on_change: Optional[Callable] = None) -> Union[List, str]:
         p = Path(path)
         assert p.is_dir() == is_dir
         if p.is_dir():
@@ -24,6 +24,9 @@ class LocalContents(Contents):
             return text
         else:
             return ""
+
+    def on_change(self, jupyter_ydoc, on_change: Callable, events) -> None:
+        pass
 
 
 class ContentsComponent(Component):

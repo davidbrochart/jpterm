@@ -2,6 +2,8 @@
 max_threads: 20
 component:
   type: txl.app:AppComponent
+  disable: [txl_local_contents]
+  enable: [txl_remote_contents]
   components:
     contents:
       url: http://127.0.0.1:8000
