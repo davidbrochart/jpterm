@@ -1,4 +1,4 @@
-import click
+import rich_click as click
 from txl.cli import set_main, txl_main
 
 
