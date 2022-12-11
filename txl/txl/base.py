@@ -89,3 +89,9 @@ class Header(ABC):
 
 class Footer(ABC):
     ...
+
+
+class Terminals(ABC):
+    @abstractmethod
+    async def open(self):
+        ...

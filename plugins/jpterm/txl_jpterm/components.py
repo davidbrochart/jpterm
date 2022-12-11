@@ -2,7 +2,7 @@ from asphalt.core import Component, Context
 from textual.app import App, ComposeResult
 from textual.containers import Container, Vertical
 from textual.reactive import var
-from txl.base import FileBrowser, Footer, Header
+from txl.base import FileBrowser, Terminals, Footer, Header
 from txl.hooks import register_component
 from txl_editors import Editors
 
@@ -15,6 +15,7 @@ class Jpterm(App):
     CSS_PATH = "jpterm.css"
     BINDINGS = [
         ("f", "toggle_files", "Toggle Files"),
+        ("z", "open_terminal", "Open Terminal"),
         ("q", "quit", "Quit"),
     ]
     show_browser = var(False)
@@ -22,6 +23,7 @@ class Jpterm(App):
     def __init__(self, *args, **kwargs):
         self.file_browser = kwargs.pop("file_browser")
         self.editors = kwargs.pop("editors")
+        self.terminals = kwargs.pop("terminals")
         self.header = kwargs.pop("header")
         self.footer = kwargs.pop("footer")
         super().__init__(*args, **kwargs)
@@ -33,12 +35,16 @@ class Jpterm(App):
         yield Container(
             self.header,
             Vertical(self.file_browser, id="browser-view"),
-            Vertical(self.editors, id="editors-view"),
+            #Vertical(self.editors, id="editors-view"),
+            Vertical(self.terminals, id="editors-view"),
             self.footer,
         )
 
     def action_toggle_files(self) -> None:
         self.show_browser = not self.show_browser
+
+    async def action_open_terminal(self) -> None:
+        await self.terminals.open()
 
 
 class JptermComponent(Component):
@@ -53,12 +59,14 @@ class JptermComponent(Component):
         ctx.add_resource(footer, name="footer", types=Footer)
         file_browser = await ctx.request_resource(FileBrowser, "file_browser")
         editors = await ctx.request_resource(Editors, "editors")
+        terminals = await ctx.request_resource(Terminals, "terminals")
         file_browser.open_file_signal.connect(editors.on_open)
         jpterm = Jpterm(
             header=header,
             footer=footer,
             file_browser=file_browser,
             editors=editors,
+            terminals=terminals,
         )
         ctx.add_resource(jpterm, name="app", types=App)
 
