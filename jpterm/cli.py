@@ -8,12 +8,16 @@ def jpterm_main(kwargs):
     set_ = list(kwargs["set_"])
     if server:
         set_.append("component.disable=[txl_local_contents]")
+        set_.append("component.disable=[txl_local_terminals]")
         set_.append("component.enable=[txl_remote_contents]")
+        set_.append("component.enable=[txl_remote_terminals]")
         set_.append(f"component.components.contents.url={server}")
         set_.append(f"component.components.contents.collaborative={collaborative}")
     else:
         set_.append("component.disable=[txl_remote_contents]")
+        set_.append("component.disable=[txl_remote_terminals]")
         set_.append("component.enable=[txl_local_contents]")
+        set_.append("component.enable=[txl_local_terminals]")
     kwargs["set_"] = set_
     return kwargs
 

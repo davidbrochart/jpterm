@@ -45,6 +45,7 @@ pre-install-commands = [
     "pip install -e ./plugins/file_browser",
     "pip install -e ./plugins/jpterm",
     "pip install -e ./plugins/local_contents",
+    "pip install -e ./plugins/local_terminals",
     #"pip install -e ./plugins/notebook_editor",
     "pip install -e ./plugins/notebook_viewer",
     "pip install -e ./plugins/remote_contents",
