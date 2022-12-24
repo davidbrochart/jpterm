@@ -11,7 +11,8 @@ from rich.text import Text
 from textual.containers import Container
 from textual import events
 from textual.widget import Widget
-from txl.base import Terminals
+from textual.widgets._header import HeaderTitle
+from txl.base import Terminals, Header
 from txl.hooks import register_component
 from urllib import parse
 
@@ -50,7 +51,7 @@ class TerminalsWidget(Widget, can_focus=True):
         return self._display
 
     async def on_key(self, event: events.Key) -> None:
-        char = CTRL_KEYS.get(event.key) or event.char
+        char = CTRL_KEYS.get(event.key) or event.character
         await self.send_queue.put(["stdin", char])
 
     async def recv(self):
@@ -89,10 +90,12 @@ class RemoteTerminals(Terminals, Container, metaclass=TerminalsMeta):
         base_url: str,
         query_params: Dict[str, List[str]],
         cookies: httpx.Cookies,
+        header: Header,
     ) -> None:
         self.base_url = base_url
         self.query_params = query_params
         self.cookies = cookies
+        self.header = header
         i = base_url.find(":")
         self.ws_url = ("wss" if base_url[i - 1] == "s" else "ws") + base_url[i:]
         self.ncol = 80
@@ -120,6 +123,7 @@ class RemoteTerminals(Terminals, Container, metaclass=TerminalsMeta):
             self.mount(self.widget)
             asyncio.create_task(self._recv())
             asyncio.create_task(self._send())
+        self.header.query_one(HeaderTitle).text = "Terminal"
 
     async def _send(self):
         while True:
@@ -130,7 +134,7 @@ class RemoteTerminals(Terminals, Container, metaclass=TerminalsMeta):
         while True:
             try:
                 message = await self.websocket.recv()
-            except websockets.ConnectionClosedOK:
+            except BaseException:
                 break
             await self.recv_queue.put(json.loads(message))
 
@@ -145,13 +149,13 @@ class RemoteTerminalsComponent(Component):
         self,
         ctx: Context,
     ) -> None:
+        header = await ctx.request_resource(Header, "header")
         parsed_url = parse.urlparse(self.url)
         base_url = parse.urljoin(self.url, parsed_url.path).rstrip("/")
         query_params = parse.parse_qs(parsed_url.query)
         cookies = httpx.Cookies()
         def terminals_factory():
-            return RemoteTerminals(base_url, query_params, cookies)
-        terminals = terminals_factory()
-        ctx.add_resource(terminals, name="terminals", types=Terminals)
+            return RemoteTerminals(base_url, query_params, cookies, header)
+        ctx.add_resource(terminals_factory, name="terminals", types=Terminals)
 
 c = register_component("terminals", RemoteTerminalsComponent)

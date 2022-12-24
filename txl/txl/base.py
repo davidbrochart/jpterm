@@ -91,6 +91,10 @@ class Footer(ABC):
     ...
 
 
+class MainArea(ABC):
+    ...
+
+
 class Terminals(ABC):
     @abstractmethod
     async def open(self):

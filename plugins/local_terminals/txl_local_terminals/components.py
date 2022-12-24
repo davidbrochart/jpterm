@@ -13,7 +13,8 @@ from rich.text import Text
 from textual.containers import Container
 from textual import events
 from textual.widget import Widget
-from txl.base import Terminals
+from textual.widgets._header import HeaderTitle
+from txl.base import Terminals, Header
 from txl.hooks import register_component
 
 
@@ -51,7 +52,7 @@ class TerminalsWidget(Widget, can_focus=True):
         return self._display
 
     async def on_key(self, event: events.Key) -> None:
-        char = CTRL_KEYS.get(event.key) or event.char
+        char = CTRL_KEYS.get(event.key) or event.character
         await self.send_queue.put(["stdin", char])
 
     async def recv(self):
@@ -85,7 +86,8 @@ class TerminalsMeta(type(Terminals), type(Container)):
 
 class LocalsTerminal(Terminals, Container, metaclass=TerminalsMeta):
 
-    def __init__(self):
+    def __init__(self, header: Header):
+        self.header = header
         self.ncol = 80
         self.nrow = 24
         self.data_or_disconnect = None
@@ -101,6 +103,7 @@ class LocalsTerminal(Terminals, Container, metaclass=TerminalsMeta):
         asyncio.create_task(self._run())
         asyncio.create_task(self._send_data())
         self.mount(terminals_widget)
+        self.header.query_one(HeaderTitle).text = "Terminal"
 
     def open_terminal(self):
         pid, fd = pty.fork()
@@ -148,9 +151,9 @@ class LocalTerminalsComponent(Component):
         self,
         ctx: Context,
     ) -> None:
+        header = await ctx.request_resource(Header, "header")
         def terminals_factory():
-            return LocalsTerminal()
-        terminals = terminals_factory()
-        ctx.add_resource(terminals, name="terminals", types=Terminals)
+            return LocalsTerminal(header)
+        ctx.add_resource(terminals_factory, name="terminals", types=Terminals)
 
 c = register_component("terminals", LocalTerminalsComponent)
