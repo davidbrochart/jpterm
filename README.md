@@ -31,5 +31,3 @@ hatch run dev:jpterm --server http://127.0.0.1:8000 --collaborative
 If the Jupyter server and jpterm are launched with `--collaborative`, you can open a document in
 JupyterLab, by opening your browser at http://127.0.0.1:8000, modify it, and see the changes live
 in jpterm.
-
-<div><p>If you want to support jpterm: <a href="https://www.buymeacoffee.com/davidbrochart"><img src="https://img.shields.io/badge/Buy_Me_A_Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me a Coffee" style="vertical-align:middle"></a></p></div>

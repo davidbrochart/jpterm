@@ -15,17 +15,18 @@ keywords = [
     "textual",
 ]
 dependencies = [
-    "rich-click>=1.6.0",
-    #"txl_cell",
-    "txl_editors",
-    "txl_file_browser",
-    "txl_jpterm",
-    "txl_local_contents",
-    #"txl_notebook_editor",
-    "txl_notebook_viewer",
-    "txl_remote_contents",
-    #"txl_remote_terminals",
-    "txl_text_viewer",
+    "rich-click >=1.6.0",
+    #"txl_cell >=0.1.0",
+    "txl_editors >=0.1.0",
+    "txl_file_browser >=0.1.0",
+    "txl_jpterm >=0.1.0",
+    "txl_local_contents >=0.1.0",
+    "txl_local_terminals >=0.1.0",
+    #"txl_notebook_editor >=0.1.0",
+    "txl_notebook_viewer >=0.1.0",
+    "txl_remote_contents >=0.1.0",
+    "txl_remote_terminals >=0.1.0",
+    "txl_text_viewer >=0.1.0",
 ]
 
 [project.scripts]
