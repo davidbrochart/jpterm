@@ -4,7 +4,7 @@ from typing import Callable, Dict, List
 from asphalt.core import Component, Context
 from textual.containers import Container
 from textual.widgets._header import HeaderTitle
-from txl.base import Editor, Editors, FileOpenEvent, Footer, Header
+from txl.base import Editor, Editors, FileOpenEvent, Footer, Header, MainArea
 from txl.hooks import register_component
 
 
@@ -17,12 +17,14 @@ class _Editors(Editors, Container, metaclass=EditorsMeta):
 
     def __init__(
         self,
-        header: Header | None = None,
-        footer: Footer | None = None,
+        header: Header,
+        footer: Footer,
+        main_area: MainArea,
     ):
         super().__init__(id="editors")
         self.header = header
         self.footer = footer
+        self.main_area = main_area
         self.ext_editor_factories = {}
         self.editor_factories = []
 
@@ -48,13 +50,11 @@ class _Editors(Editors, Container, metaclass=EditorsMeta):
         if editors:
             editors.last().remove()
         preferred_editor = preferred_editor_factory()
-        self.mount(preferred_editor)
-        if self.header:
-            self.header.query_one(HeaderTitle).text = path.name
-        if self.footer:
-            bindings = preferred_editor.get_bindings()
-            if bindings:
-                self.footer.update_bindings(bindings)
+        self.main_area.mount(preferred_editor)
+        self.header.query_one(HeaderTitle).text = path.name
+        bindings = preferred_editor.get_bindings()
+        if bindings:
+            self.footer.update_bindings(bindings)
         await preferred_editor.open(str(path))
         preferred_editor.refresh(layout=True)
 
@@ -67,7 +67,8 @@ class EditorsComponent(Component):
     ) -> None:
         header = await ctx.request_resource(Header, "header")
         footer = await ctx.request_resource(Footer, "footer")
-        editors = _Editors(header, footer)
+        main_area = await ctx.request_resource(MainArea, "main_area")
+        editors = _Editors(header, footer, main_area)
         ctx.add_resource(editors, name="editors", types=Editors)
 
 

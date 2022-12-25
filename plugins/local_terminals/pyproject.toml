@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "txl"
-description = ''
+name = "txl_local_terminals"
+description = "TXL plugin for local terminals"
 readme = "README.md"
 requires-python = ">=3.7"
 license = "MIT"
@@ -24,14 +24,16 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "pluggy>=1.0.0,<2",
-  "asphalt>=4.11.0,<5",
-  "textual>=0.8.0,<1"
+  "txl",
+  "pyte>=0.8.1",
 ]
 dynamic = ["version"]
 
 [project.urls]
-Source = "https://github.com/davidbrochart/jpterm/txl"
+Source = "https://github.com/davidbrochart/jpterm/plugins/local_terminals"
+
+[project.entry-points.txl_component]
+txl_local_terminals = "txl_local_terminals.components"
 
 [tool.hatch.version]
-path = "txl/__init__.py"
+path = "txl_local_terminals/__init__.py"

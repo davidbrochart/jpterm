@@ -24,6 +24,7 @@ dependencies = [
     #"txl_notebook_editor",
     "txl_notebook_viewer",
     "txl_remote_contents",
+    #"txl_remote_terminals",
     "txl_text_viewer",
 ]
 
@@ -44,9 +45,11 @@ pre-install-commands = [
     "pip install -e ./plugins/file_browser",
     "pip install -e ./plugins/jpterm",
     "pip install -e ./plugins/local_contents",
+    "pip install -e ./plugins/local_terminals",
     #"pip install -e ./plugins/notebook_editor",
     "pip install -e ./plugins/notebook_viewer",
     "pip install -e ./plugins/remote_contents",
+    "pip install -e ./plugins/remote_terminals",
     "pip install -e ./plugins/text_viewer",
 
     "pip install jupyter-server-fileid==0.6.0 jupyterlab==4.0.0a31 jupyter_server==2.0.0rc8",
