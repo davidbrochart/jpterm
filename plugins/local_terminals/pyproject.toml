@@ -25,7 +25,6 @@ classifiers = [
 ]
 dependencies = [
   "txl",
-  "pyte>=0.8.1",
 ]
 dynamic = ["version"]
 

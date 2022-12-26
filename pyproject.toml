@@ -27,6 +27,7 @@ dependencies = [
     "txl_remote_contents >=0.1.0",
     "txl_remote_terminals >=0.1.0",
     "txl_text_viewer >=0.1.0",
+    "txl_terminal >=0.1.0",
 ]
 
 [project.scripts]
@@ -52,6 +53,7 @@ pre-install-commands = [
     "pip install -e ./plugins/remote_contents",
     "pip install -e ./plugins/remote_terminals",
     "pip install -e ./plugins/text_viewer",
+    "pip install -e ./plugins/terminal",
 
     "pip install jupyter-server-fileid==0.6.0 jupyterlab==4.0.0a31 jupyter_server==2.0.0rc8",
     "pip install jupyter-server-ydoc==0.6.0 ypy-websocket==0.8.1",

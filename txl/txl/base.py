@@ -99,3 +99,10 @@ class Terminals(ABC):
     @abstractmethod
     async def open(self):
         ...
+
+
+class Terminal(ABC):
+    ...
+
+
+TerminalFactory = Callable[[int, int], Terminal]
