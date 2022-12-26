@@ -33,7 +33,7 @@ class NotebookViewerMeta(type(Editor), type(DataTable)):
 class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
 
     def __init__(self, contents: Contents) -> None:
-        super().__init__(id="editor")
+        super().__init__()
         self.contents = contents
 
     async def on_open(self, event: FileOpenEvent) -> None:

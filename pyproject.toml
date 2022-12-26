@@ -28,6 +28,7 @@ dependencies = [
     "txl_remote_terminals >=0.1.0",
     "txl_text_viewer >=0.1.0",
     "txl_terminal >=0.1.0",
+    "txl_launcher>=0.1.0",
 ]
 
 [project.scripts]
@@ -54,6 +55,7 @@ pre-install-commands = [
     "pip install -e ./plugins/remote_terminals",
     "pip install -e ./plugins/text_viewer",
     "pip install -e ./plugins/terminal",
+    "pip install -e ./plugins/launcher",
 
     "pip install jupyter-server-fileid==0.6.0 jupyterlab==4.0.0a31 jupyter_server==2.0.0rc8",
     "pip install jupyter-server-ydoc==0.6.0 ypy-websocket==0.8.1",
@@ -75,5 +77,6 @@ python_packages = [
     "plugins/remote_terminals:txl_remote_terminals",
     "plugins/terminal:txl_terminal",
     "plugins/text_viewer:txl_text_viewer",
-    ".:jpterm:txl,txl_cell,txl_editors,txl_file_browser,txl_jpterm,txl_local_contents,txl_local_terminals,txl_notebook,txl_notebook_editor,txl_notebook_viewer,txl_remote_contents,txl_remote_terminals,txl_terminal,txl_text_viewer"
+    "plugins/launcher:txl_launcher",
+    ".:jpterm:txl,txl_cell,txl_editors,txl_file_browser,txl_jpterm,txl_local_contents,txl_local_terminals,txl_notebook,txl_notebook_editor,txl_notebook_viewer,txl_remote_contents,txl_remote_terminals,txl_terminal,txl_text_viewer,txl_launcher"
 ]

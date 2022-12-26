@@ -54,6 +54,7 @@ class _Terminal(Terminal, Widget, metaclass=TerminalMeta, can_focus=True):
     async def on_key(self, event: events.Key) -> None:
         char = CTRL_KEYS.get(event.key) or event.character
         await self._send_queue.put(["stdin", char])
+        event.stop()
 
     async def _recv(self):
         await self._size_set.wait()

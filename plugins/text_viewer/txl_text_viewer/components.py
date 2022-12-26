@@ -18,7 +18,7 @@ class TextViewer(Editor, Static, metaclass=TextViewerMeta):
     path: str
 
     def __init__(self, contents: Contents) -> None:
-        super().__init__(id="editor", expand=True)
+        super().__init__(expand=True)
         self.contents = contents
 
     async def on_open(self, event: FileOpenEvent) -> None:

@@ -46,11 +46,8 @@ class _Editors(Editors, Container, metaclass=EditorsMeta):
             if None not in self.ext_editor_factories:
                 raise RuntimeError(f"Could not find an editor for file extension {extension}")
             preferred_editor_factory = self.ext_editor_factories[None][0]
-        editors = self.query("#editor")
-        if editors:
-            editors.last().remove()
         preferred_editor = preferred_editor_factory()
-        self.main_area.mount(preferred_editor)
+        self.main_area.show(preferred_editor)
         self.header.query_one(HeaderTitle).text = path.name
         bindings = preferred_editor.get_bindings()
         if bindings:

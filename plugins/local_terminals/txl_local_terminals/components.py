@@ -9,7 +9,7 @@ import termios
 from asphalt.core import Component, Context
 from textual.widget import Widget
 from textual.widgets._header import HeaderTitle
-from txl.base import Terminals, TerminalFactory, Header
+from txl.base import Terminals, TerminalFactory, Header, Launcher
 from txl.hooks import register_component
 
 
@@ -18,7 +18,7 @@ class TerminalsMeta(type(Terminals), type(Widget)):
     pass
 
 
-class LocalsTerminal(Terminals, Widget, metaclass=TerminalsMeta):
+class LocalTerminals(Terminals, Widget, metaclass=TerminalsMeta):
 
     def __init__(self, header: Header, terminal: TerminalFactory):
         self.header = header
@@ -90,8 +90,10 @@ class LocalTerminalsComponent(Component):
     ) -> None:
         header = await ctx.request_resource(Header, "header")
         terminal = await ctx.request_resource(TerminalFactory, "terminal")
+        launcher = await ctx.request_resource(Launcher, "launcher")
         def terminals_factory():
-            return LocalsTerminal(header, terminal)
+            return LocalTerminals(header, terminal)
+        launcher.register("terminal", terminals_factory)
         ctx.add_resource(terminals_factory, name="terminals", types=Terminals)
 
 c = register_component("terminals", LocalTerminalsComponent)

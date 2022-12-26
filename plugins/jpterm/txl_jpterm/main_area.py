@@ -12,14 +12,15 @@ class MainArea(Widget, AbstractMainArea, metaclass=MainAreaMeta):
 
     def __init__(self):
         super().__init__(id="main-view")
-        self.mounter = None
+        self.mounted = []
+        self.shown = None
 
-    def init(self):
-        self.mounted = Static()
-        super().mount(self.mounted)
-
-    def mount(self, widget):
-        if self.mounted:
-            self.mounted.remove()
-        self.mounted = widget
-        super().mount(widget)
+    def show(self, widget):
+        if self.shown:
+            self.shown.display = False
+        self.shown = widget
+        if widget in self.mounted:
+            widget.display = True
+        else:
+            self.mount(widget)
+            self.mounted.append(widget)

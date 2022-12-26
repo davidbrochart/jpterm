@@ -18,7 +18,7 @@ class NotebookEditor(Editor, Container, metaclass=NotebookEditorMeta):
         contents: Contents,
         cell_factory: CellFactory,
     ) -> None:
-        super().__init__(id="editor")
+        super().__init__()
         self.contents = contents
         self.cell_factory = cell_factory
 
