@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "txl_remote_terminals"
-description = "TXL plugin for remote terminals"
+name = "txl_terminal"
+description = "TXL plugin for a terminal widget"
 readme = "README.md"
 requires-python = ">=3.7"
 license = "MIT"
@@ -25,16 +25,15 @@ classifiers = [
 ]
 dependencies = [
   "txl",
-  "httpx>=0.23.1",
-  "websockets>=10.4",
+  "pyte>=0.8.1",
 ]
 dynamic = ["version"]
 
 [project.urls]
-Source = "https://github.com/davidbrochart/jpterm/plugins/remote_terminals"
+Source = "https://github.com/davidbrochart/jpterm/plugins/terminal"
 
 [project.entry-points.txl_component]
-txl_remote_terminals = "txl_remote_terminals.components"
+txl_terminal = "txl_terminal.components"
 
 [tool.hatch.version]
-path = "txl_remote_terminals/__init__.py"
+path = "txl_terminal/__init__.py"
