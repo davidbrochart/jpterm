@@ -64,6 +64,7 @@ python_packages = [
     "txl:txl",
     "plugins/cell:txl_cell",
     "plugins/editors:txl_editors",
+    "plugins/file_browser:txl_file_browser",
     "plugins/jpterm:txl_jpterm",
     "plugins/local_contents:txl_local_contents",
     "plugins/local_terminals:txl_local_terminals",
@@ -74,5 +75,5 @@ python_packages = [
     "plugins/remote_terminals:txl_remote_terminals",
     "plugins/terminal:txl_terminal",
     "plugins/text_viewer:txl_text_viewer",
-    ".:jpterm:txl,txl_cell,txl_editors,txl_jpterm,txl_local_contents,txl_local_terminals,txl_notebook,txl_notebook_editor,txl_notebook_viewer,txl_remote_contents,txl_remote_terminals,txl_terminal,txl_text_viewer"
+    ".:jpterm:txl,txl_cell,txl_editors,txl_file_browser,txl_jpterm,txl_local_contents,txl_local_terminals,txl_notebook,txl_notebook_editor,txl_notebook_viewer,txl_remote_contents,txl_remote_terminals,txl_terminal,txl_text_viewer"
 ]
