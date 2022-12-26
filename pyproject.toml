@@ -7,7 +7,7 @@ name = "jpterm"
 dynamic = ["version"]
 description = "Jupyter in the terminal"
 readme = "README.md"
-license = "MIT"
+license = { text = "MIT" }
 requires-python = ">=3.7"
 authors = [ { name = "David Brochart", email = "david.brochart@gmail.com" }, ]
 keywords = [
