@@ -9,41 +9,37 @@ It can work either locally, or remotely through a Jupyter server.
 
 ## Installation
 
-```console
-pip install jpterm
+```bash
+pip install jpterm --no-cache-dir
 ```
 
-To show the help:
+## Usage
 
-```console
-jpterm --help
-```
+To run jpterm without a server:
 
-To run jpterm with no server:
-
-```console
+```bash
 jpterm
 ```
 
 To run jpterm as a client to a Jupyter server, you need, well, jupyter-server :) You can install it through JupyterLab:
 
-```console
+```bash
 pip install --pre jupyterlab
 ```
 
 Then launch it with:
 
-```console
+```bash
 jupyter lab --port=8000 --no-browser
 
 # it will print a URL like: http://127.0.0.1:8000/lab?token=972cbd440db4b35581b25f90c0a88e3a1095534e18251ca8
-# you will need the token when launching jpterm, but if you don't want to be bothered with authentication:
-# jupyter lab --port=8000 --no-browser --ServerApp.token='' --ServerApp.password='' --ServerApp.disable_check_xsrf=True
+# you will need the token when launching jpterm, but if you don't want to bother with authentication:
+# jupyter lab --port=8000 --no-browser --ServerApp.token='' --ServerApp.password=''
 ```
 
 Then launch jpterm in another terminal:
 
-```console
+```bash
 jpterm --server http://127.0.0.1:8000/?token=972cbd440db4b35581b25f90c0a88e3a1095534e18251ca8
 
 # if you launched JupyterLab without authentication:
@@ -58,7 +54,7 @@ in jpterm.
 
 jpterm uses [hatch](https://hatch.pypa.io):
 
-```console
+```bash
 pip install hatch
 ```
 
