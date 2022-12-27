@@ -92,7 +92,9 @@ class Footer(ABC):
 
 
 class MainArea(ABC):
-    ...
+    @abstractmethod
+    def show(self, widget):
+        ...
 
 
 class Terminals(ABC):
@@ -106,3 +108,9 @@ class Terminal(ABC):
 
 
 TerminalFactory = Callable[[int, int], Terminal]
+
+
+class Launcher(ABC):
+    @abstractmethod
+    def register(self, i: str, document):
+        ...
