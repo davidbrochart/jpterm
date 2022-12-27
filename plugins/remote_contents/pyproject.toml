@@ -25,9 +25,9 @@ classifiers = [
 ]
 dependencies = [
   "txl",
-  "httpx",
+  "httpx>=0.23.1",
+  "httpx-ws>=0.2.4",
   "jupyter_ydoc >=0.3.0a1,<1",
-  "websockets >=10.4,<11",
   "ypy-websocket >=0.3.2,<1",
 ]
 dynamic = ["version"]

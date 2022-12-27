@@ -34,17 +34,24 @@ pip install --pre jupyterlab
 Then launch it with:
 
 ```console
-jupyter lab --port=8000 --ServerApp.token='' --ServerApp.password='' --ServerApp.disable_check_xsrf=True --no-browser
+jupyter lab --port=8000 --no-browser
+
+# it will print a URL like: http://127.0.0.1:8000/lab?token=972cbd440db4b35581b25f90c0a88e3a1095534e18251ca8
+# you will need the token when launching jpterm, but if you don't want to be bothered with authentication:
+# jupyter lab --port=8000 --no-browser --ServerApp.token='' --ServerApp.password='' --ServerApp.disable_check_xsrf=True
 ```
 
-Then launch jpterm in another terminal and pass it the URL to the Jupyter server:
+Then launch jpterm in another terminal:
 
 ```console
-jpterm --server http://127.0.0.1:8000
+jpterm --server http://127.0.0.1:8000/?token=972cbd440db4b35581b25f90c0a88e3a1095534e18251ca8
+
+# if you launched JupyterLab without authentication:
+# jpterm --server http://127.0.0.1:8000
 ```
 
 If JupyterLab and jpterm are launched with `--collaborative`, you can open a document in
-JupyterLab, by opening your browser at http://127.0.0.1:8000, modify it, and see the changes live
+JupyterLab (go to http://127.0.0.1:8000 in your browser), modify it, and see the changes live
 in jpterm.
 
 ## Development install

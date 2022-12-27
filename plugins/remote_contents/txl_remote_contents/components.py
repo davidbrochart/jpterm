@@ -1,3 +1,4 @@
+import asyncio
 import json
 from functools import partial
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -6,11 +7,37 @@ from urllib import parse
 import httpx
 import y_py as Y
 from asphalt.core import Component, Context
+from httpx_ws import aconnect_ws
 from jupyter_ydoc import ydocs
 from txl.base import Contents
 from txl.hooks import register_component
-from websockets import connect
 from ypy_websocket import WebsocketProvider
+
+
+class Websocket:
+    def __init__(self, websocket, roomid: str):
+        self.websocket = websocket
+        self.roomid = roomid
+
+    @property
+    def path(self) -> str:
+        return self.roomid
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self) -> bytes:
+        try:
+            message = await self.recv()
+        except:
+            raise StopAsyncIteration()
+        return message
+
+    async def send(self, message: bytes):
+        await self.websocket.send_bytes(message)
+
+    async def recv(self) -> bytes:
+        return await self.websocket.receive_bytes()
 
 
 class Entry:
@@ -48,6 +75,8 @@ class RemoteContents(Contents):
         self.query_params = query_params
         self.cookies = cookies
         self.collaborative = collaborative
+        i = base_url.find(":")
+        self.ws_url = ("wss" if base_url[i - 1] == "s" else "ws") + base_url[i:]
 
     async def get(
         self, path: str, is_dir: bool = False, on_change: Optional[Callable] = None
@@ -78,19 +107,16 @@ class RemoteContents(Contents):
                 r = await client.put(
                     f"{self.base_url}/api/yjs/roomid/{path}",
                     json={"format": doc_format, "type": doc_type},
+                    params={**self.query_params},
+                    cookies=self.cookies,
                 )
+            self.cookies.update(r.cookies)
             roomid = r.text
-            ws_url = f"ws{self.base_url[self.base_url.find(':'):]}/api/yjs/{roomid}"
-            ws_cookies = "; ".join([f"{k}={v}" for k, v in self.cookies.items()])
             ydoc = Y.YDoc()
             jupyter_ydoc = ydocs[doc_type](ydoc)
             if on_change:
                 jupyter_ydoc.observe(partial(self.on_change, jupyter_ydoc, on_change))
-            self.websocket = await connect(
-                ws_url, extra_headers=[("Cookie", ws_cookies)]
-            )
-            # AT_EXIT.append(self.websocket.close)
-            WebsocketProvider(ydoc, self.websocket)
+            asyncio.create_task(self._websocket_provider(roomid, ydoc))
             if doc_type == "notebook":
                 return {}
             else:
@@ -101,6 +127,12 @@ class RemoteContents(Contents):
             return sorted(dir_list, key=lambda entry: (not entry.is_dir(), entry.name))
         else:
             return document
+
+    async def _websocket_provider(self, roomid, ydoc):
+        ws_url = f"{self.ws_url}/api/yjs/{roomid}"
+        async with aconnect_ws(ws_url, cookies=self.cookies) as websocket:
+            WebsocketProvider(ydoc, Websocket(websocket, roomid))
+            await asyncio.Future()
 
     def on_change(self, jupyter_ydoc, on_change: Callable, events) -> None:
         content = jupyter_ydoc.get()
