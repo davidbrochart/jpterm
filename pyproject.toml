@@ -57,8 +57,7 @@ pre-install-commands = [
     "pip install -e ./plugins/terminal",
     "pip install -e ./plugins/launcher",
 
-    "pip install jupyter-server-fileid==0.6.0 jupyterlab==4.0.0a31 jupyter_server==2.0.0rc8",
-    "pip install jupyter-server-ydoc==0.6.0 ypy-websocket==0.8.1",
+    "pip install --pre jupyterlab",
 ]
 
 [tool.jupyter-releaser.options]

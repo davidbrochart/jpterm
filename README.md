@@ -1,6 +1,48 @@
 # jpterm
 
-`jpterm` is a terminal UI that allows to access documents either locally, or remotely through a Jupyter server.
+`jpterm` aims to be the equivalent of JupyterLab in the terminal.
+
+It can work either locally, or remotely through a Jupyter server.
+
+## Installation
+
+```console
+pip install jpterm
+```
+
+To show the help:
+
+```console
+jpterm --help
+```
+
+To run jpterm with no server:
+
+```console
+jpterm
+```
+
+To run jpterm as a client to a Jupyter server, you need, well, jupyter-server :) You can install it through JupyterLab:
+
+```console
+pip install --pre jupyterlab
+```
+
+Then launch it with:
+
+```console
+jupyter lab --port=8000 --ServerApp.token='' --ServerApp.password='' --ServerApp.disable_check_xsrf=True --no-browser
+```
+
+Then launch jpterm in another terminal and pass it the URL to the Jupyter server:
+
+```console
+jpterm --server http://127.0.0.1:8000
+```
+
+If JupyterLab and jpterm are launched with `--collaborative`, you can open a document in
+JupyterLab, by opening your browser at http://127.0.0.1:8000, modify it, and see the changes live
+in jpterm.
 
 ## Development install
 
@@ -10,24 +52,4 @@ jpterm uses [hatch](https://hatch.pypa.io):
 pip install hatch
 ```
 
-To run jpterm with no server:
-
-```console
-hatch run dev:jpterm
-```
-
-To run jpterm as a client to a Jupyter server, you need, well, jupyter-server :) You can launch it with:
-
-```console
-hatch run dev:jupyter lab --port=8000 --ServerApp.token='' --ServerApp.password='' --ServerApp.disable_check_xsrf=True --no-browser --collaborative
-```
-
-Then launch jpterm in another terminal and pass it the URL to the Jupyter server:
-
-```console
-hatch run dev:jpterm --server http://127.0.0.1:8000 --collaborative
-```
-
-If the Jupyter server and jpterm are launched with `--collaborative`, you can open a document in
-JupyterLab, by opening your browser at http://127.0.0.1:8000, modify it, and see the changes live
-in jpterm.
+To run a command, you need to point `hatch` to the `dev` environment, e.g. `hatch run dev:jpterm`.
