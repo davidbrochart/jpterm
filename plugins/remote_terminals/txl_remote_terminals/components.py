@@ -1,10 +1,9 @@
 import asyncio
-import json
 from typing import Dict, List
 
 import httpx
-import websockets
 from asphalt.core import Component, Context
+from httpx_ws import aconnect_ws
 from textual.widget import Widget
 from textual.widgets._header import HeaderTitle
 from txl.base import TerminalFactory, Terminals, Header, Launcher
@@ -34,6 +33,7 @@ class RemoteTerminals(Terminals, Widget, metaclass=TerminalsMeta):
         self.ws_url = ("wss" if base_url[i - 1] == "s" else "ws") + base_url[i:]
         self._recv_queue = asyncio.Queue()
         self._send_queue = asyncio.Queue()
+        self._done = asyncio.Event()
         super().__init__()
 
     async def open(self):
@@ -41,38 +41,41 @@ class RemoteTerminals(Terminals, Widget, metaclass=TerminalsMeta):
             response = await client.post(
                 f"{self.base_url}/api/terminals",
                 json={"cwd": ""},
-                # cookies=self.cookies,
+                params={**self.query_params},
+                cookies=self.cookies,
             )
-            # self.cookies.update(response.cookies)
+            self.cookies.update(response.cookies)
             name = response.json()["name"]
             response = await client.get(
                 f"{self.base_url}/api/terminals",
                 cookies=self.cookies,
             )
         if name in [terminal["name"] for terminal in response.json()]:
+            self.header.query_one(HeaderTitle).text = "Terminal"
             terminal = self.terminal(self._send_queue, self._recv_queue)
             terminal.focus()
             await self.mount(terminal)
             terminal.set_size(self.size)
-            self.websocket = await websockets.connect(
-                f"{self.ws_url}/terminals/websocket/{name}"
-            )
-            asyncio.create_task(self._recv())
-            asyncio.create_task(self._send())
-        self.header.query_one(HeaderTitle).text = "Terminal"
+            async with aconnect_ws(
+                f"{self.ws_url}/terminals/websocket/{name}", cookies=self.cookies
+            ) as self.websocket:
+                asyncio.create_task(self._recv())
+                asyncio.create_task(self._send())
+                await self._done.wait()
 
     async def _send(self):
         while True:
             message = await self._send_queue.get()
-            await self.websocket.send(json.dumps(message))
+            try:
+                await self.websocket.send_json(message)
+            except BaseException:
+                self._done.set()
+                break
 
     async def _recv(self):
         while True:
-            try:
-                message = await self.websocket.recv()
-            except BaseException:
-                break
-            await self._recv_queue.put(json.loads(message))
+            message = await self.websocket.receive_json()
+            await self._recv_queue.put(message)
 
 
 class RemoteTerminalsComponent(Component):
