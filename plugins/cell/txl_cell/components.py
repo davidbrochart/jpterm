@@ -21,22 +21,24 @@ class _Cell(Cell):
         self.source = value
 
     @property
-    def outputs(self) -> List[Dict[str: Any]]:
+    def outputs(self) -> List[Dict[str:Any]]:
         return self.outputs
 
     @source.setter
-    def outputs(self, value: List[Dict[str: Any]]):
+    def outputs(self, value: List[Dict[str:Any]]):
         self.outputs = value
 
 
 class CellFactoryComponent(Component):
-
     async def start(
         self,
         ctx: Context,
     ) -> None:
-        def cell_factory(source: List[str] = "", outputs: List[Dict[str: Any]] = "") -> Cell:
+        def cell_factory(
+            source: List[str] = "", outputs: List[Dict[str:Any]] = ""
+        ) -> Cell:
             return _Cell(source=source, outputs=outputs)
+
         ctx.add_resource(cell_factory, name="cell_factory", types=CellFactory)
 
 

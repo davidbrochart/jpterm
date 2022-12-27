@@ -35,6 +35,7 @@ def txl_main(
     kwargs["set_"].append("component.type=txl.app:AppComponent")
     run(kwargs)
 
+
 def main():
     command = click.command(txl_main)
     command()

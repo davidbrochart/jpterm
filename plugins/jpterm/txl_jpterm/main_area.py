@@ -9,7 +9,6 @@ class MainAreaMeta(type(Widget), type(AbstractMainArea)):
 
 
 class MainArea(Widget, AbstractMainArea, metaclass=MainAreaMeta):
-
     def __init__(self):
         super().__init__(id="main-view")
         self.mounted = []

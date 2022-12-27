@@ -6,7 +6,8 @@ from txl.base import Launcher, MainArea
 from txl.hooks import register_component
 
 
-class LauncherMeta(type(Launcher), type(Widget)): pass
+class LauncherMeta(type(Launcher), type(Widget)):
+    pass
 
 
 class _Launcher(Launcher, Widget, metaclass=LauncherMeta):
@@ -41,7 +42,6 @@ class _Launcher(Launcher, Widget, metaclass=LauncherMeta):
 
 
 class LauncherComponent(Component):
-
     async def start(
         self,
         ctx: Context,

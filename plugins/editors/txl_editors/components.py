@@ -28,7 +28,9 @@ class _Editors(Editors, Container, metaclass=EditorsMeta):
         self.ext_editor_factories = {}
         self.editor_factories = []
 
-    def register_editor_factory(self, editor_factory: Callable[[], Editor], extensions: List[str] = [None]):
+    def register_editor_factory(
+        self, editor_factory: Callable[[], Editor], extensions: List[str] = [None]
+    ):
         self.editor_factories.append(editor_factory)
         for ext in extensions:
             if ext not in self.ext_editor_factories:
@@ -44,7 +46,9 @@ class _Editors(Editors, Container, metaclass=EditorsMeta):
                 break
         else:
             if None not in self.ext_editor_factories:
-                raise RuntimeError(f"Could not find an editor for file extension {extension}")
+                raise RuntimeError(
+                    f"Could not find an editor for file extension {extension}"
+                )
             preferred_editor_factory = self.ext_editor_factories[None][0]
         preferred_editor = preferred_editor_factory()
         self.main_area.show(preferred_editor)
@@ -57,7 +61,6 @@ class _Editors(Editors, Container, metaclass=EditorsMeta):
 
 
 class EditorsComponent(Component):
-
     async def start(
         self,
         ctx: Context,

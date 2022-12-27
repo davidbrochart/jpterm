@@ -49,7 +49,9 @@ class RemoteContents(Contents):
         self.cookies = cookies
         self.collaborative = collaborative
 
-    async def get(self, path: str, is_dir: bool = False, on_change: Optional[Callable] = None) -> Union[List, str]:
+    async def get(
+        self, path: str, is_dir: bool = False, on_change: Optional[Callable] = None
+    ) -> Union[List, str]:
         path = "" if path == "." else path
         if is_dir or not self.collaborative:
             async with httpx.AsyncClient() as client:
@@ -84,14 +86,16 @@ class RemoteContents(Contents):
             jupyter_ydoc = ydocs[doc_type](ydoc)
             if on_change:
                 jupyter_ydoc.observe(partial(self.on_change, jupyter_ydoc, on_change))
-            self.websocket = await connect(ws_url, extra_headers=[("Cookie", ws_cookies)])
+            self.websocket = await connect(
+                ws_url, extra_headers=[("Cookie", ws_cookies)]
+            )
             # AT_EXIT.append(self.websocket.close)
             WebsocketProvider(ydoc, self.websocket)
             if doc_type == "notebook":
                 return {}
             else:
                 return ""
-                
+
         if type == "directory":
             dir_list = [Entry(entry) for entry in content]
             return sorted(dir_list, key=lambda entry: (not entry.is_dir(), entry.name))
@@ -104,7 +108,6 @@ class RemoteContents(Contents):
 
 
 class ContentsComponent(Component):
-
     def __init__(self, url: str = "http://127.0.0.1:8000", collaborative: bool = True):
         super().__init__()
         self.url = url
@@ -120,5 +123,6 @@ class ContentsComponent(Component):
         cookies = httpx.Cookies()
         contents = RemoteContents(base_url, query_params, cookies, self.collaborative)
         ctx.add_resource(contents, name="contents", types=Contents)
+
 
 c = register_component("contents", ContentsComponent, enable=False)

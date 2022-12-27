@@ -5,7 +5,6 @@ from asphalt.core import Event, Signal
 from textual.binding import Binding
 
 
-
 class FileOpenEvent(Event):
     def __init__(self, source, topic, path):
         super().__init__(source, topic)
@@ -31,7 +30,9 @@ class Editor(ABC):
 
 class Editors(ABC):
     @abstractmethod
-    def register_editor_factory(self, editor_factory: Callable, extensions: List[str] = [None]):
+    def register_editor_factory(
+        self, editor_factory: Callable, extensions: List[str] = [None]
+    ):
         ...
 
     @abstractmethod
@@ -41,7 +42,9 @@ class Editors(ABC):
 
 class Contents(ABC):
     @abstractmethod
-    async def get(self, path: str, is_dir: bool = True, on_change: Optional[Callable] = None) -> Union[List, str]:
+    async def get(
+        self, path: str, is_dir: bool = True, on_change: Optional[Callable] = None
+    ) -> Union[List, str]:
         ...
 
     @abstractmethod

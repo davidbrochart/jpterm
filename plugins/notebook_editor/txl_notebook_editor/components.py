@@ -12,7 +12,6 @@ class NotebookEditorMeta(type(Editor), type(Container)):
 
 
 class NotebookEditor(Editor, Container, metaclass=NotebookEditorMeta):
-
     def __init__(
         self,
         contents: Contents,
@@ -33,14 +32,17 @@ class NotebookEditor(Editor, Container, metaclass=NotebookEditorMeta):
             self.mount(self.cell_factory(source))
 
     def get_bindings(self):
-        return [Binding(key="b", action="insert_cell_below", description="Insert cell below")]
-    
+        return [
+            Binding(
+                key="b", action="insert_cell_below", description="Insert cell below"
+            )
+        ]
+
     def action_insert_cell_below(self):
         pass
 
 
 class NotebookEditorComponent(Component):
-
     def __init__(self, register: bool = True):
         super().__init__()
         self.register = register
@@ -51,8 +53,10 @@ class NotebookEditorComponent(Component):
     ) -> None:
         contents = await ctx.request_resource(Contents, "contents")
         cell_factory = await ctx.request_resource(CellFactory, "cell_factory")
+
         def notebook_editor_factory():
             return NotebookEditor(contents, cell_factory)
+
         if self.register:
             editors = await ctx.request_resource(Editors, "editors")
             editors.register_editor_factory(notebook_editor_factory, [".ipynb"])

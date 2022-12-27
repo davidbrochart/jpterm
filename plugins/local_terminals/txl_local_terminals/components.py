@@ -13,13 +13,11 @@ from txl.base import Terminals, TerminalFactory, Header, Launcher
 from txl.hooks import register_component
 
 
-
 class TerminalsMeta(type(Terminals), type(Widget)):
     pass
 
 
 class LocalTerminals(Terminals, Widget, metaclass=TerminalsMeta):
-
     def __init__(self, header: Header, terminal: TerminalFactory):
         self.header = header
         self.terminal = terminal
@@ -46,7 +44,12 @@ class LocalTerminals(Terminals, Widget, metaclass=TerminalsMeta):
         pid, fd = pty.fork()
         if pid == 0:
             argv = shlex.split("bash")
-            env = dict(TERM="linux", LC_ALL="en_GB.UTF-8", COLUMNS=str(self._ncol), LINES=str(self._nrow))
+            env = dict(
+                TERM="linux",
+                LC_ALL="en_GB.UTF-8",
+                COLUMNS=str(self._ncol),
+                LINES=str(self._nrow),
+            )
             os.execvpe(argv[0], argv, env)
         return fd
 
@@ -83,7 +86,6 @@ class LocalTerminals(Terminals, Widget, metaclass=TerminalsMeta):
 
 
 class LocalTerminalsComponent(Component):
-
     async def start(
         self,
         ctx: Context,
@@ -91,9 +93,12 @@ class LocalTerminalsComponent(Component):
         header = await ctx.request_resource(Header, "header")
         terminal = await ctx.request_resource(TerminalFactory, "terminal")
         launcher = await ctx.request_resource(Launcher, "launcher")
+
         def terminals_factory():
             return LocalTerminals(header, terminal)
+
         launcher.register("terminal", terminals_factory)
         ctx.add_resource(terminals_factory, name="terminals", types=Terminals)
+
 
 c = register_component("terminals", LocalTerminalsComponent)

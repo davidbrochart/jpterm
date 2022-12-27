@@ -42,16 +42,16 @@ class DirectoryTree(FileBrowser, Tree[DirEntry], metaclass=DirectoryTreeMeta):
 
     DEFAULT_CSS = """
     DirectoryTree > .directory-tree--folder {
-        text-style: bold;        
+        text-style: bold;
     }
     DirectoryTree > .directory-tree--file {
-        
+
     }
-    DirectoryTree > .directory-tree--extension {               
-        text-style: italic;   
+    DirectoryTree > .directory-tree--extension {
+        text-style: italic;
     }
     DirectoryTree > .directory-tree--hidden {
-        color: $text 50%;        
+        color: $text 50%;
     }
     """
 
@@ -72,7 +72,9 @@ class DirectoryTree(FileBrowser, Tree[DirEntry], metaclass=DirectoryTreeMeta):
         self.path = os.path.expanduser(path.rstrip("/"))
         name = os.path.basename(self.path)
         self.contents = contents
-        super().__init__(self.path, data=DirEntry(self.path, True), name=name, id=id, classes=classes)
+        super().__init__(
+            self.path, data=DirEntry(self.path, True), name=name, id=id, classes=classes
+        )
 
     def process_label(self, label: TextType):
         """Process a str or Text in to a label. Maybe overridden in a subclass to change modify how labels are rendered.
@@ -157,7 +159,6 @@ class DirectoryTree(FileBrowser, Tree[DirEntry], metaclass=DirectoryTreeMeta):
 
 
 class FileBrowserComponent(Component):
-
     async def start(
         self,
         ctx: Context,

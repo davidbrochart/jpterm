@@ -22,7 +22,11 @@ def main():
     set_main(jpterm_main)
     decorators = [
         click.option("--server", default="", help="The URL to the Jupyter server."),
-        click.option("--collaborative/--no-collaborative", default=False, help="Collaborative mode (with a server)."),
+        click.option(
+            "--collaborative/--no-collaborative",
+            default=False,
+            help="Collaborative mode (with a server).",
+        ),
     ]
     _main = txl_main
     for decorator in decorators[::-1]:
