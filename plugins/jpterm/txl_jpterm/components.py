@@ -21,7 +21,17 @@ class Jpterm(App):
     ]
     show_browser = var(True)
 
-    def __init__(self, header, footer, main_area, file_browser, editors, launcher, *args, **kwargs):
+    def __init__(
+        self,
+        header,
+        footer,
+        main_area,
+        file_browser,
+        editors,
+        launcher,
+        *args,
+        **kwargs
+    ):
         self.header = header
         self.footer = footer
         self.main_area = main_area
@@ -50,7 +60,6 @@ class Jpterm(App):
 
 
 class JptermComponent(Component):
-
     async def start(
         self,
         ctx: Context,

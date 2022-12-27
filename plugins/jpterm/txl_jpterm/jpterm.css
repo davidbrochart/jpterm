@@ -3,20 +3,20 @@ Screen {
 }
 
 #browser-view {
-    display: none; 
+    display: none;
     scrollbar-gutter: stable;
-    overflow: auto;    
-    width: auto;    
-    height: 100%;            
-    dock: left;       
+    overflow: auto;
+    width: auto;
+    height: 100%;
+    dock: left;
 }
 
 Jpterm.-show-browser #browser-view {
-    display: block;        
+    display: block;
     max-width: 50%;
 }
 
 #main-view {
-    min-width: 100%;        
+    min-width: 100%;
     overflow: auto auto;
 }

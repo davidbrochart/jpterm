@@ -17,7 +17,6 @@ class TerminalsMeta(type(Terminals), type(Widget)):
 
 
 class RemoteTerminals(Terminals, Widget, metaclass=TerminalsMeta):
-
     def __init__(
         self,
         base_url: str,
@@ -42,9 +41,9 @@ class RemoteTerminals(Terminals, Widget, metaclass=TerminalsMeta):
             response = await client.post(
                 f"{self.base_url}/api/terminals",
                 json={"cwd": ""},
-                #cookies=self.cookies,
+                # cookies=self.cookies,
             )
-            #self.cookies.update(response.cookies)
+            # self.cookies.update(response.cookies)
             name = response.json()["name"]
             response = await client.get(
                 f"{self.base_url}/api/terminals",
@@ -55,7 +54,9 @@ class RemoteTerminals(Terminals, Widget, metaclass=TerminalsMeta):
             terminal.focus()
             await self.mount(terminal)
             terminal.set_size(self.size)
-            self.websocket = await websockets.connect(f"{self.ws_url}/terminals/websocket/{name}")
+            self.websocket = await websockets.connect(
+                f"{self.ws_url}/terminals/websocket/{name}"
+            )
             asyncio.create_task(self._recv())
             asyncio.create_task(self._send())
         self.header.query_one(HeaderTitle).text = "Terminal"
@@ -75,7 +76,6 @@ class RemoteTerminals(Terminals, Widget, metaclass=TerminalsMeta):
 
 
 class RemoteTerminalsComponent(Component):
-
     def __init__(self, url: str = "http://127.0.0.1:8000"):
         super().__init__()
         self.url = url
@@ -91,9 +91,12 @@ class RemoteTerminalsComponent(Component):
         base_url = parse.urljoin(self.url, parsed_url.path).rstrip("/")
         query_params = parse.parse_qs(parsed_url.query)
         cookies = httpx.Cookies()
+
         def terminals_factory():
             return RemoteTerminals(base_url, query_params, cookies, header, terminal)
+
         launcher.register("terminal", terminals_factory)
         ctx.add_resource(terminals_factory, name="terminals", types=Terminals)
+
 
 c = register_component("terminals", RemoteTerminalsComponent)

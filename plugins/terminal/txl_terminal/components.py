@@ -32,7 +32,6 @@ class TerminalMeta(type(Terminal), type(Widget)):
 
 
 class _Terminal(Terminal, Widget, metaclass=TerminalMeta, can_focus=True):
-
     def __init__(self, send_queue, recv_queue):
         super().__init__()
         self._send_queue = send_queue
@@ -62,7 +61,9 @@ class _Terminal(Terminal, Widget, metaclass=TerminalMeta, can_focus=True):
             message = await self._recv_queue.get()
             cmd = message[0]
             if cmd == "setup":
-                await self._send_queue.put(["set_size", self._nrow, self._ncol, 567, 573])
+                await self._send_queue.put(
+                    ["set_size", self._nrow, self._ncol, 567, 573]
+                )
             elif cmd == "stdout":
                 chars = message[1]
                 self._stream.feed(chars)
@@ -75,7 +76,7 @@ class _Terminal(Terminal, Widget, metaclass=TerminalMeta, can_focus=True):
                         cursor.stylize("reverse")
                         new_text = text[:x]
                         new_text.append(cursor)
-                        new_text.append(text[x + 1:])
+                        new_text.append(text[x + 1 :])
                         text = new_text
                     lines.append(text)
                 self._display = PyteDisplay(lines)
@@ -83,11 +84,11 @@ class _Terminal(Terminal, Widget, metaclass=TerminalMeta, can_focus=True):
 
 
 class TerminalComponent(Component):
-
     async def start(
         self,
         ctx: Context,
     ) -> None:
         ctx.add_resource(_Terminal, name="terminal", types=TerminalFactory)
+
 
 c = register_component("terminal", TerminalComponent)

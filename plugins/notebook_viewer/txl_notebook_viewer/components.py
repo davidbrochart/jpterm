@@ -31,7 +31,6 @@ class NotebookViewerMeta(type(Editor), type(DataTable)):
 
 
 class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
-
     def __init__(self, contents: Contents) -> None:
         super().__init__()
         self.contents = contents
@@ -50,14 +49,20 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
         head = None
         tail = None
         lexer = None
-        lexer = lexer or self.nb.get("metadata", {}).get("kernelspec", {}).get("language", "")
+        lexer = lexer or self.nb.get("metadata", {}).get("kernelspec", {}).get(
+            "language", ""
+        )
         theme = "ansi_dark"
 
         if not "cells" in self.nb:
             return
 
         for cell in self.nb["cells"]:
-            execution_count = f"[green]In [[#66ff00]{cell['execution_count'] or ' '}[/#66ff00]]:[/green]" if "execution_count" in cell else ""
+            execution_count = (
+                f"[green]In [[#66ff00]{cell['execution_count'] or ' '}[/#66ff00]]:[/green]"
+                if "execution_count" in cell
+                else ""
+            )
 
             source = "".join(cell["source"])
             num_lines = len(source.splitlines())
@@ -114,13 +119,12 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
                 self.add_row(execution_count, renderable, height=num_lines)
 
     def on_change(self, nb):
-        self.nb= nb
+        self.nb = nb
         self.clear()
         self.update_viewer()
 
 
 class NotebookViewerComponent(Component):
-
     def __init__(self, register: bool = True):
         super().__init__()
         self.register = register
@@ -130,8 +134,10 @@ class NotebookViewerComponent(Component):
         ctx: Context,
     ) -> None:
         contents = await ctx.request_resource(Contents, "contents")
+
         def notebook_viewer_factory():
             return NotebookViewer(contents)
+
         if self.register:
             editors = await ctx.request_resource(Editors, "editors")
             editors.register_editor_factory(notebook_viewer_factory, [".ipynb"])

@@ -19,7 +19,6 @@ def load_components():
 
 
 class AppComponent(CLIApplicationComponent):
-
     def __init__(self, components=None, disable=[], enable=[]):
         super().__init__(components)
         self.disable = disable

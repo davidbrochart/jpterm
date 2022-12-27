@@ -55,7 +55,6 @@ class TextViewer(Editor, Static, metaclass=TextViewerMeta):
 
 
 class TextViewerComponent(Component):
-
     def __init__(self, register: bool = True):
         super().__init__()
         self.register = register
@@ -65,8 +64,10 @@ class TextViewerComponent(Component):
         ctx: Context,
     ) -> None:
         contents = await ctx.request_resource(Contents, "contents")
+
         def text_viewer_factory():
             return TextViewer(contents)
+
         if self.register:
             editors = await ctx.request_resource(Editors, "editors")
             editors.register_editor_factory(text_viewer_factory)
