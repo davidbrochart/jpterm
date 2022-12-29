@@ -81,6 +81,22 @@ class Cell(ABC):
 CellFactory = Callable[[], Cell]
 
 
+class Kernel(ABC):
+    @abstractmethod
+    async def start(self):
+        ...
+
+    @abstractmethod
+    def execute(self, code: str):
+        ...
+
+
+class Kernels(ABC):
+    @abstractmethod
+    def __init__(self, kernel_name: str):
+        ...
+
+
 class Notebook(ABC):
     @abstractmethod
     def set(self, value: Dict[str, Any]):

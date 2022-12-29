@@ -16,3 +16,8 @@ repos:
     - id: ruff
       # Respect `exclude` and `extend-exclude` settings.
       args: ["--force-exclude"]
+- repo: https://github.com/pycqa/isort
+  rev: 5.11.4
+  hooks:
+    - id: isort
+      name: isort (python)

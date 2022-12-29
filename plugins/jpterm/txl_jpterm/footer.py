@@ -5,7 +5,6 @@ from collections import defaultdict
 import rich.repr
 from rich.console import RenderableType
 from rich.text import Text
-
 from textual import events
 from textual.reactive import Reactive, watch
 from textual.widget import Widget
@@ -129,11 +128,6 @@ class Footer(AbstractFooter, Widget, metaclass=FooterMeta):
             )
             text.append_text(key_text)
         return text
-
-    def update_bindings(self, bindings) -> None:
-        self._bindings = bindings
-        self._key_text = self.make_key_text()
-        self.refresh()
 
     def post_render(self, renderable):
         return renderable

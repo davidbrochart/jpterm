@@ -2,7 +2,8 @@ from asphalt.core import Component, Context
 from rich.syntax import Syntax
 from rich.traceback import Traceback
 from textual.widgets import Static
-from txl.base import Editor, Editors, Contents, FileOpenEvent
+
+from txl.base import Contents, Editor, Editors, FileOpenEvent
 from txl.hooks import register_component
 
 

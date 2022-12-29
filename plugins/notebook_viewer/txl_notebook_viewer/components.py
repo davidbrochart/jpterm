@@ -5,8 +5,11 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.text import Text
+from textual import events
 from textual.widgets import DataTable
-from txl.base import Editor, Editors, Contents, FileOpenEvent
+from textual.widgets._data_table import Coord
+
+from txl.base import Contents, Editor, Editors, FileOpenEvent, Kernels
 from txl.hooks import register_component
 
 
@@ -31,15 +34,20 @@ class NotebookViewerMeta(type(Editor), type(DataTable)):
 
 
 class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
-    def __init__(self, contents: Contents) -> None:
+    def __init__(self, contents: Contents, kernels: Kernels) -> None:
         super().__init__()
         self.contents = contents
+        self.kernels = kernels
+        self._row_to_cell = []
+        self._selected_cell = None
 
     async def on_open(self, event: FileOpenEvent) -> None:
         await self.open(event.path)
 
     async def open(self, path: str) -> None:
         self.nb = await self.contents.get(path, type="json", on_change=self.on_change)
+        kernel_name = self.nb["metadata"]["kernelspec"]["name"]
+        self.kernel = self.kernels(kernel_name)
         self.update_viewer()
 
     def update_viewer(self):
@@ -57,6 +65,7 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
         if "cells" not in self.nb:
             return
 
+        self._row_to_cell = []
         for cell in self.nb["cells"]:
             execution_count = (
                 f"[green]In [[#66ff00]{cell['execution_count'] or ' '}"
@@ -90,6 +99,7 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
                 renderable = Text(source)
 
             self.add_row(execution_count, renderable, height=num_lines)
+            self._row_to_cell.append(cell)
 
             for output in cell.get("outputs", []):
                 output_type = output["output_type"]
@@ -118,11 +128,25 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
 
                 num_lines = len(text.splitlines())
                 self.add_row(execution_count, renderable, height=num_lines)
+                self._row_to_cell.append(cell)
+
+    def on_click(self, event: events.Click) -> None:
+        meta = self.get_style_at(event.x, event.y).meta
+        if meta:
+            self._selected_cell = self._row_to_cell[meta["row"]]
+            self.cursor_cell = Coord(meta["row"], meta["column"])
+            self._scroll_cursor_in_to_view()
+            event.stop()
 
     def on_change(self, nb):
         self.nb = nb
         self.clear()
         self.update_viewer()
+
+    async def key_e(self) -> None:
+        print(f"Executing: {self._selected_cell}")
+        await self.kernel.execute(self._selected_cell)
+        print(f"Executed: {self._selected_cell}")
 
 
 class NotebookViewerComponent(Component):
@@ -135,9 +159,10 @@ class NotebookViewerComponent(Component):
         ctx: Context,
     ) -> None:
         contents = await ctx.request_resource(Contents, "contents")
+        kernels = await ctx.request_resource(Kernels, "kernels")
 
         def notebook_viewer_factory():
-            return NotebookViewer(contents)
+            return NotebookViewer(contents, kernels)
 
         if self.register:
             editors = await ctx.request_resource(Editors, "editors")

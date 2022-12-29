@@ -1,8 +1,8 @@
 from enum import Enum
 from typing import Any, Dict, Tuple
 
-from asphalt.core import Component
 import pluggy
+from asphalt.core import Component
 
 
 class HookType(Enum):

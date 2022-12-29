@@ -10,9 +10,10 @@ import y_py as Y
 from asphalt.core import Component, Context
 from httpx_ws import aconnect_ws
 from jupyter_ydoc import ydocs
+from ypy_websocket import WebsocketProvider
+
 from txl.base import Contents
 from txl.hooks import register_component
-from ypy_websocket import WebsocketProvider
 
 
 class Websocket:

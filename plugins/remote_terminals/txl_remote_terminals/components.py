@@ -1,14 +1,15 @@
 import asyncio
 from typing import Dict, List
+from urllib import parse
 
 import httpx
 from asphalt.core import Component, Context
 from httpx_ws import aconnect_ws
 from textual.widget import Widget
 from textual.widgets._header import HeaderTitle
-from txl.base import TerminalFactory, Terminals, Header, Launcher
+
+from txl.base import Header, Launcher, TerminalFactory, Terminals
 from txl.hooks import register_component
-from urllib import parse
 
 
 class TerminalsMeta(type(Terminals), type(Widget)):
