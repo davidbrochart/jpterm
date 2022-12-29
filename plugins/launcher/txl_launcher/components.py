@@ -1,5 +1,4 @@
 from asphalt.core import Component, Context
-from textual.app import ComposeResult
 from textual.widget import Widget
 from textual.widgets import Button
 from txl.base import Launcher, MainArea

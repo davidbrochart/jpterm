@@ -68,7 +68,7 @@ class Cell(ABC):
     def outputs(self) -> List[Dict[str, Any]]:
         ...
 
-    @source.setter
+    @outputs.setter
     @abstractmethod
     def outputs(self, value: List[Dict[str, Any]]):
         ...

@@ -77,7 +77,8 @@ class DirectoryTree(FileBrowser, Tree[DirEntry], metaclass=DirectoryTreeMeta):
         )
 
     def process_label(self, label: TextType):
-        """Process a str or Text in to a label. Maybe overridden in a subclass to change modify how labels are rendered.
+        """Process a str or Text in to a label. Maybe overridden in a subclass to change
+        modify how labels are rendered.
         Args:
             label (TextType): Label.
         Returns:

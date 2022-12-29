@@ -1,5 +1,4 @@
 from textual.widget import Widget
-from textual.widgets import Static
 
 from txl.base import MainArea as AbstractMainArea
 

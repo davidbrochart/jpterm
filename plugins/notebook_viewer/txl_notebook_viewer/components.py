@@ -54,12 +54,13 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
         )
         theme = "ansi_dark"
 
-        if not "cells" in self.nb:
+        if "cells" not in self.nb:
             return
 
         for cell in self.nb["cells"]:
             execution_count = (
-                f"[green]In [[#66ff00]{cell['execution_count'] or ' '}[/#66ff00]]:[/green]"
+                f"[green]In [[#66ff00]{cell['execution_count'] or ' '}"
+                "[/#66ff00]]:[/green]"
                 if "execution_count" in cell
                 else ""
             )
