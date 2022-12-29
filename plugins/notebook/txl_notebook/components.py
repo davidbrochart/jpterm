@@ -1,5 +1,3 @@
-from typing import Any, Dict, List
-
 from asphalt.core import Component, Context
 from jupyter_ydoc import YNotebook
 from txl.base import Notebook, NotebookFactory

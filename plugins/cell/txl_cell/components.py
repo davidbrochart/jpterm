@@ -24,7 +24,7 @@ class _Cell(Cell):
     def outputs(self) -> List[Dict[str:Any]]:
         return self.outputs
 
-    @source.setter
+    @outputs.setter
     def outputs(self, value: List[Dict[str:Any]]):
         self.outputs = value
 

@@ -1,7 +1,6 @@
 from asphalt.core import Component, Context
 from rich.syntax import Syntax
 from rich.traceback import Traceback
-from textual.scroll_view import ScrollView
 from textual.widgets import Static
 from txl.base import Editor, Editors, Contents, FileOpenEvent
 from txl.hooks import register_component

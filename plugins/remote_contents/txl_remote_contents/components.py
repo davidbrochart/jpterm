@@ -29,7 +29,7 @@ class Websocket:
     async def __anext__(self) -> bytes:
         try:
             message = await self.recv()
-        except:
+        except BaseException:
             raise StopAsyncIteration()
         return message
 

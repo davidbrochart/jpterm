@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from asphalt.core import Component, Context
 from textual.binding import Binding
 from textual.containers import Container
