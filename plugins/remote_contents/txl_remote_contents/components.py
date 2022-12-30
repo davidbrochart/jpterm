@@ -1,8 +1,6 @@
 import asyncio
-import base64
 import json
-from functools import partial
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union
 from urllib import parse
 
 import httpx
@@ -84,9 +82,8 @@ class RemoteContents(Contents):
         self,
         path: str,
         is_dir: bool = False,
-        type: str = "text",
-        on_change: Optional[Callable] = None,
-    ) -> Union[List, str, bytes, Dict[str, Any]]:
+        type: str = "unicode",
+    ) -> Union[List, Y.YDoc]:
         path = "" if path == "." else path
         if is_dir or not self.collaborative:
             async with httpx.AsyncClient() as client:
@@ -97,26 +94,23 @@ class RemoteContents(Contents):
                 )
             self.cookies.update(r.cookies)
             model = r.json()
-            if model["type"] == "file":
-                document = model["content"]
-            elif model["type"] == "notebook":
-                document = model["content"]
-                if isinstance(model["content"], (str, bytes)):
-                    document = json.loads(model["content"])
-            elif model["type"] == "directory":
+            if model["type"] == "directory":
                 dir_list = [Entry(entry) for entry in model["content"]]
-                document = sorted(
+                return sorted(
                     dir_list, key=lambda entry: (not entry.is_dir(), entry.name)
                 )
-            if model["format"] == "base64":
-                document = document.encode()
-                document = base64.b64decode(document)
-            return document
+            document = model["content"]
+            if type == "notebook":
+                if isinstance(model["content"], (str, bytes)):
+                    # jupyverse doesn't return JSON
+                    document = json.loads(model["content"])
+            jupyter_ydoc = ydocs[type]()
+            jupyter_ydoc.source = document
+            return jupyter_ydoc
 
         else:
-            # it's a collaborative document
-            doc_format = "json" if path.endswith(".ipynb") else "text"
-            doc_type = "notebook" if path.endswith(".ipynb") else "file"
+            doc_format = {"blob": "base64"}.get(type, "text")
+            doc_type = type  # if type == "notebook" else "file"
             async with httpx.AsyncClient() as client:
                 r = await client.put(
                     f"{self.base_url}/api/yjs/roomid/{path}",
@@ -127,24 +121,15 @@ class RemoteContents(Contents):
             self.cookies.update(r.cookies)
             roomid = r.text
             ydoc = Y.YDoc()
-            jupyter_ydoc = ydocs[doc_type](ydoc)
-            if on_change:
-                jupyter_ydoc.observe(partial(self.on_change, jupyter_ydoc, on_change))
+            jupyter_ydoc = ydocs[type](ydoc)
             asyncio.create_task(self._websocket_provider(roomid, ydoc))
-            if doc_type == "notebook":
-                return {}
-            else:
-                return ""
+            return jupyter_ydoc
 
     async def _websocket_provider(self, roomid, ydoc):
         ws_url = f"{self.ws_url}/api/yjs/{roomid}"
         async with aconnect_ws(ws_url, cookies=self.cookies) as websocket:
             WebsocketProvider(ydoc, Websocket(websocket, roomid))
             await asyncio.Future()
-
-    def on_change(self, jupyter_ydoc, on_change: Callable, events) -> None:
-        content = jupyter_ydoc.get()
-        on_change(content)
 
 
 class ContentsComponent(Component):

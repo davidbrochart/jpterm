@@ -43,6 +43,7 @@ class KernelDriver:
         self.msg_cnt = 0
         self.execute_requests: Dict[str, Dict[str, asyncio.Future]] = {}
         self.channel_tasks: List[asyncio.Task] = []
+        self.started = asyncio.create_task(self.start())
 
     async def restart(self, startup_timeout: float = float("inf")) -> None:
         for task in self.channel_tasks:
@@ -117,6 +118,7 @@ class KernelDriver:
         msg_id: str = "",
         wait_for_executed: bool = True,
     ) -> None:
+        await self.started
         if cell["cell_type"] != "code":
             return
         cell_source = cell["source"]

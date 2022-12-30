@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "txl_local_kernels"
-description = "TXL plugin for local kernels"
+name = "txl_remote_kernels"
+description = "TXL plugin for remote kernels"
 readme = "README.md"
 requires-python = ">=3.7"
 license = "MIT"
@@ -26,15 +26,16 @@ classifiers = [
 dependencies = [
   "txl",
   "python-dateutil >=2.8.2",
-  "pyzmq >=24.0.1",
+  "httpx>=0.23.1",
+  "httpx-ws>=0.2.6",
 ]
 dynamic = ["version"]
 
 [project.urls]
-Source = "https://github.com/davidbrochart/jpterm/plugins/local_kernels"
+Source = "https://github.com/davidbrochart/jpterm/plugins/remote_kernels"
 
 [project.entry-points.txl_component]
-txl_local_kernels = "txl_local_kernels.components"
+txl_remote_kernels = "txl_remote_kernels.components"
 
 [tool.hatch.version]
-path = "txl_local_kernels/__init__.py"
+path = "txl_remote_kernels/__init__.py"

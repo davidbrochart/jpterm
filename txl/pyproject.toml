@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "txl"
-description = ''
+description = ""
 readme = "README.md"
 requires-python = ">=3.7"
 license = "MIT"
@@ -24,9 +24,9 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "pluggy>=1.0.0,<2",
-  "asphalt>=4.11.0,<5",
-  "textual>=0.8.0,<1"
+  "pluggy >=1.0.0,<2",
+  "asphalt >=4.11.0,<5",
+  "textual >=0.10.1,<1"
 ]
 dynamic = ["version"]
 

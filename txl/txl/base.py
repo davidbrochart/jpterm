@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Union
 
 from asphalt.core import Event, Signal
 from textual.binding import Binding
@@ -47,12 +47,7 @@ class Contents(ABC):
         path: str,
         is_dir: bool = True,
         type: str = "text",
-        on_change: Optional[Callable] = None,
     ) -> Union[List, str, bytes, Dict[str, Any]]:
-        ...
-
-    @abstractmethod
-    def on_change(self, jupyter_ydoc, on_change: Callable, events) -> None:
         ...
 
 
@@ -98,12 +93,10 @@ class Kernels(ABC):
 
 
 class Notebook(ABC):
-    @abstractmethod
-    def set(self, value: Dict[str, Any]):
-        ...
+    ...
 
 
-NotebookFactory = Callable[[], Notebook]
+NotebookFactory = Callable[[Dict[str, Any] | None], Notebook]
 
 
 class Header(ABC):

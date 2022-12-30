@@ -1,4 +1,3 @@
-import asyncio
 from typing import Any, Dict
 
 from asphalt.core import Component, Context
@@ -12,10 +11,8 @@ from .driver import KernelDriver
 class LocalKernels(Kernels):
     def __init__(self, kernel_name: str | None = None):
         self.kernel = KernelDriver(kernel_name)
-        self.started = asyncio.create_task(self.kernel.start())
 
     async def execute(self, cell: Dict[str, Any]):
-        await self.started
         await self.kernel.execute(cell)
 
 
