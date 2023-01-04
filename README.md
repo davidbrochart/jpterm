@@ -7,6 +7,8 @@
 
 It can work either locally, or remotely through a Jupyter server.
 
+**WARNING**: jpterm is a work in progress, and it is not usable yet.
+
 ## Installation
 
 ```bash
