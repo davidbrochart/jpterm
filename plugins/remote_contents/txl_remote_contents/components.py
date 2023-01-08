@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import json
 from functools import partial
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -79,8 +80,12 @@ class RemoteContents(Contents):
         self.ws_url = ("wss" if base_url[i - 1] == "s" else "ws") + base_url[i:]
 
     async def get(
-        self, path: str, is_dir: bool = False, on_change: Optional[Callable] = None
-    ) -> Union[List, str]:
+        self,
+        path: str,
+        is_dir: bool = False,
+        type: str = "text",
+        on_change: Optional[Callable] = None,
+    ) -> Union[List, str, bytes, Dict[str, Any]]:
         path = "" if path == "." else path
         if is_dir or not self.collaborative:
             async with httpx.AsyncClient() as client:
@@ -91,14 +96,22 @@ class RemoteContents(Contents):
                 )
             self.cookies.update(r.cookies)
             model = r.json()
-            content = model["content"]
-            type = model["type"]
-            if type == "file":
-                document = content
-            elif type == "notebook":
-                document = content
-                if isinstance(content, (str, bytes)):
-                    document = json.loads(content)
+            if model["type"] == "file":
+                document = model["content"]
+            elif model["type"] == "notebook":
+                document = model["content"]
+                if isinstance(model["content"], (str, bytes)):
+                    document = json.loads(model["content"])
+            elif model["type"] == "directory":
+                dir_list = [Entry(entry) for entry in model["content"]]
+                document = sorted(
+                    dir_list, key=lambda entry: (not entry.is_dir(), entry.name)
+                )
+            if model["format"] == "base64":
+                document = document.encode()
+                document = base64.b64decode(document)
+            return document
+
         else:
             # it's a collaborative document
             doc_format = "json" if path.endswith(".ipynb") else "text"
@@ -121,12 +134,6 @@ class RemoteContents(Contents):
                 return {}
             else:
                 return ""
-
-        if type == "directory":
-            dir_list = [Entry(entry) for entry in content]
-            return sorted(dir_list, key=lambda entry: (not entry.is_dir(), entry.name))
-        else:
-            return document
 
     async def _websocket_provider(self, roomid, ydoc):
         ws_url = f"{self.ws_url}/api/yjs/{roomid}"

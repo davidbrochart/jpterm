@@ -12,7 +12,7 @@ class TextViewerMeta(type(Editor), type(Static)):
 
 class TextViewer(Editor, Static, metaclass=TextViewerMeta):
 
-    code: str
+    text: str
     contents: Contents
     path: str
 
@@ -25,14 +25,14 @@ class TextViewer(Editor, Static, metaclass=TextViewerMeta):
 
     async def open(self, path: str) -> None:
         self.path = path
-        self.code = await self.contents.get(path, on_change=self.on_change)
+        self.text = await self.contents.get(path, type="text", on_change=self.on_change)
         self.update_viewer()
 
     def update_viewer(self):
         try:
-            lexer = Syntax.guess_lexer(self.path, code=self.code)
+            lexer = Syntax.guess_lexer(self.path, code=self.text)
             syntax = Syntax(
-                self.code,
+                self.text,
                 lexer=lexer,
                 line_numbers=True,
                 word_wrap=False,
@@ -48,8 +48,8 @@ class TextViewer(Editor, Static, metaclass=TextViewerMeta):
     def on_mount(self):
         self.expand
 
-    def on_change(self, code):
-        self.code = code
+    def on_change(self, text):
+        self.text = text
         self.update_viewer()
 
 

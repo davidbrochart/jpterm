@@ -43,8 +43,12 @@ class Editors(ABC):
 class Contents(ABC):
     @abstractmethod
     async def get(
-        self, path: str, is_dir: bool = True, on_change: Optional[Callable] = None
-    ) -> Union[List, str]:
+        self,
+        path: str,
+        is_dir: bool = True,
+        type: str = "text",
+        on_change: Optional[Callable] = None,
+    ) -> Union[List, str, bytes, Dict[str, Any]]:
         ...
 
     @abstractmethod
