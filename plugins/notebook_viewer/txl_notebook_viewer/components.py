@@ -39,7 +39,7 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
         await self.open(event.path)
 
     async def open(self, path: str) -> None:
-        self.nb = await self.contents.get(path, on_change=self.on_change)
+        self.nb = await self.contents.get(path, type="json", on_change=self.on_change)
         self.update_viewer()
 
     def update_viewer(self):
