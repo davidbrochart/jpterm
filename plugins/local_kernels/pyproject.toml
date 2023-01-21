@@ -27,6 +27,7 @@ dependencies = [
   "txl",
   "python-dateutil >=2.8.2",
   "pyzmq >=24.0.1",
+  "y_py >=0.5.5",
 ]
 dynamic = ["version"]
 

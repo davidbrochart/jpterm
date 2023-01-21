@@ -1,10 +1,11 @@
 import asyncio
 import time
 import uuid
-from typing import Any, Dict, List
+from typing import Dict, List
 from urllib import parse
 
 import httpx
+import y_py as Y
 from httpx_ws import WebSocketNetworkError, aconnect_ws
 
 from .message import create_message, send_message, str_to_date
@@ -133,18 +134,17 @@ class KernelDriver:
 
     async def execute(
         self,
-        cell: Dict[str, Any],
+        ydoc: Y.YDoc,
+        ycell: Y.YMap,
         timeout: float = float("inf"),
         msg_id: str = "",
         wait_for_executed: bool = True,
     ) -> None:
         await self.started.wait()
-        if cell["cell_type"] != "code":
+        if ycell["cell_type"] != "code":
             return
-        cell_source = cell["source"]
-        if isinstance(cell_source, list):
-            cell_source = "".join(cell_source)
-        content = {"code": cell_source, "silent": False}
+        code = str(ycell["source"])
+        content = {"code": code, "silent": False}
         msg = create_message(
             "execute_request",
             content,
@@ -172,9 +172,8 @@ class KernelDriver:
                 error_message = f"Kernel didn't respond in {timeout} seconds"
                 del self.execute_requests[msg_id]
                 raise RuntimeError(error_message)
-            cell["outputs"] = []
             await self._handle_outputs(
-                cell["outputs"], self.execute_requests[msg_id]["iopub"]
+                ydoc, ycell, self.execute_requests[msg_id]["iopub"]
             )
             try:
                 await asyncio.wait_for(
@@ -186,12 +185,16 @@ class KernelDriver:
                 error_message = f"Kernel didn't respond in {timeout} seconds"
                 raise RuntimeError(error_message)
             msg = self.execute_requests[msg_id]["shell"][0].result()
-            cell["execution_count"] = msg["content"]["execution_count"]
+            with ydoc.begin_transaction() as txn:
+                ycell.set(txn, "execution_count", msg["content"]["execution_count"])
             del self.execute_requests[msg_id]
 
     async def _handle_outputs(
-        self, outputs: List[Dict[str, Any]], future_messages: List[asyncio.Future]
+        self, ydoc: Y.YDoc, ycell: Y.YMap, future_messages: List[asyncio.Future]
     ):
+        with ydoc.begin_transaction() as txn:
+            ycell.set(txn, "outputs", [])
+
         while True:
             if not future_messages:
                 future_messages.append(asyncio.Future())
@@ -202,8 +205,9 @@ class KernelDriver:
             msg = fut.result()
             msg_type = msg["header"]["msg_type"]
             content = msg["content"]
+            outputs = list(ycell["outputs"])
             if msg_type == "stream":
-                if (not outputs) or (outputs[-1]["name"] != content["name"]):
+                if (len(outputs) == 0) or (outputs[-1]["name"] != content["name"]):
                     outputs.append(
                         {"name": content["name"], "output_type": msg_type, "text": []}
                     )
@@ -227,4 +231,7 @@ class KernelDriver:
                     }
                 )
             elif msg_type == "status" and msg["content"]["execution_state"] == "idle":
-                return
+                break
+
+            with ydoc.begin_transaction() as txn:
+                ycell.set(txn, "outputs", outputs)
