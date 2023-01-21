@@ -1,6 +1,6 @@
 from functools import partial
-from typing import Any, Dict
 
+import y_py as Y
 from asphalt.core import Component, Context
 
 from txl.base import Kernels
@@ -17,8 +17,8 @@ class RemoteKernels(Kernels):
     ):
         self.kernel = KernelDriver(url, kernel_name)
 
-    async def execute(self, cell: Dict[str, Any]):
-        await self.kernel.execute(cell)
+    async def execute(self, ydoc: Y.YDoc, ycell: Y.YMap):
+        await self.kernel.execute(ydoc, ycell)
 
 
 class RemoteKernelsComponent(Component):

@@ -4,6 +4,8 @@ import time
 import uuid
 from typing import Any, Dict, List, Optional, cast
 
+import y_py as Y
+
 from .connect import cfg_t, connect_channel, launch_kernel, read_connection_file
 from .connect import write_connection_file as _write_connection_file
 from .kernelspec import find_kernelspec
@@ -113,18 +115,17 @@ class KernelDriver:
 
     async def execute(
         self,
-        cell: Dict[str, Any],
+        ydoc: Y.YDoc,
+        ycell: Dict[str, Any],
         timeout: float = float("inf"),
         msg_id: str = "",
         wait_for_executed: bool = True,
     ) -> None:
         await self.started
-        if cell["cell_type"] != "code":
+        if ycell["cell_type"] != "code":
             return
-        cell_source = cell["source"]
-        if isinstance(cell_source, list):
-            cell_source = "".join(cell_source)
-        content = {"code": cell_source, "silent": False}
+        code = str(ycell["source"])
+        content = {"code": code, "silent": False}
         msg = create_message(
             "execute_request",
             content,
@@ -143,6 +144,8 @@ class KernelDriver:
                 "iopub_msg": asyncio.Future(),
                 "shell_msg": asyncio.Future(),
             }
+            with ydoc.begin_transaction() as txn:
+                ycell.set(txn, "outputs", [])
             while True:
                 try:
                     await asyncio.wait_for(
@@ -153,7 +156,7 @@ class KernelDriver:
                     error_message = f"Kernel didn't respond in {timeout} seconds"
                     raise RuntimeError(error_message)
                 msg = self.execute_requests[msg_id]["iopub_msg"].result()
-                self._handle_outputs(cell["outputs"], msg)
+                self._handle_outputs(ydoc, ycell, msg)
                 if (
                     msg["header"]["msg_type"] == "status"
                     and msg["content"]["execution_state"] == "idle"
@@ -169,7 +172,8 @@ class KernelDriver:
                 error_message = f"Kernel didn't respond in {timeout} seconds"
                 raise RuntimeError(error_message)
             msg = self.execute_requests[msg_id]["shell_msg"].result()
-            cell["execution_count"] = msg["content"]["execution_count"]
+            with ydoc.begin_transaction() as txn:
+                ycell.set(txn, "execution_count", msg["content"]["execution_count"])
             del self.execute_requests[msg_id]
 
     async def _wait_for_ready(self, timeout):
@@ -199,11 +203,12 @@ class KernelDriver:
                     break
             new_timeout = deadline_to_timeout(deadline)
 
-    def _handle_outputs(self, outputs: List[Dict[str, Any]], msg: Dict[str, Any]):
+    def _handle_outputs(self, ydoc: Y.YDoc, ycell: Y.YMap, msg: Dict[str, Any]):
         msg_type = msg["header"]["msg_type"]
         content = msg["content"]
+        outputs = list(ycell["outputs"])
         if msg_type == "stream":
-            if (not outputs) or (outputs[-1]["name"] != content["name"]):
+            if (len(outputs) == 0) or (outputs[-1]["name"] != content["name"]):
                 outputs.append(
                     {"name": content["name"], "output_type": msg_type, "text": []}
                 )
@@ -228,3 +233,6 @@ class KernelDriver:
             )
         else:
             return
+
+        with ydoc.begin_transaction() as txn:
+            ycell.set(txn, "outputs", outputs)

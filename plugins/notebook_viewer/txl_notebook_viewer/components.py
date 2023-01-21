@@ -7,7 +7,6 @@ from rich.syntax import Syntax
 from rich.text import Text
 from textual import events
 from textual.widgets import DataTable
-from textual.widgets._data_table import Coordinate
 
 from txl.base import Contents, Editor, Editors, FileOpenEvent, Kernels, NotebookFactory
 from txl.hooks import register_component
@@ -42,8 +41,8 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
         self.notebook = notebook
         self.kernels = kernels
         self.kernel = None
-        self._row_to_cell = []
-        self._selected_cell = None
+        self._row_to_cell_idx = []
+        self._selected_cell_idx = None
 
     async def on_open(self, event: FileOpenEvent) -> None:
         await self.open(event.path)
@@ -61,6 +60,8 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
         self.ynb.observe(self.on_change)
 
     def update_viewer(self):
+        self.clear()
+
         self.add_column("", width=10)
         self.add_column("", width=100)
 
@@ -71,7 +72,7 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
         if self.ynb.cell_number == 0:
             return
 
-        self._row_to_cell = []
+        self._row_to_cell_idx = []
         for i_cell in range(self.ynb.cell_number):
             cell = self.ynb.get_cell(i_cell)
             execution_count = (
@@ -106,7 +107,7 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
                 renderable = Text(source)
 
             self.add_row(execution_count, renderable, height=num_lines)
-            self._row_to_cell.append(cell)
+            self._row_to_cell_idx.append(i_cell)
 
             for output in cell.get("outputs", []):
                 output_type = output["output_type"]
@@ -135,29 +136,23 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
 
                 num_lines = len(text.splitlines())
                 self.add_row(execution_count, renderable, height=num_lines)
-                self._row_to_cell.append(cell)
+                self._row_to_cell_idx.append(i_cell)
 
     def on_click(self, event: events.Click) -> None:
-        self._set_hover_cursor(True)
+        DataTable.on_click(self, event)
         if self.show_cursor and self.cursor_type != "none":
-            # Only emit selection events if there is a visible row/col/cell cursor.
-            self._emit_selected_message()
             meta = self.get_style_at(event.x, event.y).meta
             if meta:
-                self._selected_cell = self._row_to_cell[meta["row"]]
-                self.cursor_cell = Coordinate(meta["row"], meta["column"])
-                self._scroll_cursor_into_view(animate=True)
-                event.stop()
+                self._selected_cell_idx = self._row_to_cell_idx[meta["row"]]
 
     def on_change(self, target, event):
-        self.clear()
         self.update_viewer()
 
     async def key_e(self) -> None:
         if self.kernel:
-            print(f"Executing: {self._selected_cell}")
-            await self.kernel.execute(self._selected_cell)
-            print(f"Executed: {self._selected_cell}")
+            ycell = self.ynb._ycells[self._selected_cell_idx]
+            await self.kernel.execute(self.ynb.ydoc, ycell)
+            print(f"Executed {ycell}")
 
 
 class NotebookViewerComponent(Component):
