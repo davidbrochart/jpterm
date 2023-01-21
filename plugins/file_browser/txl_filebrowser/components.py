@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import os.path
+from dataclasses import dataclass
 from typing import ClassVar
 
 from asphalt.core import Component, Context
 from rich.style import Style
 from rich.text import Text, TextType
-from textual.message import Message
 from textual._types import MessageTarget
-from textual.widgets._tree import Tree, TreeNode, TOGGLE_STYLE
+from textual.message import Message
+from textual.widgets._tree import TOGGLE_STYLE, Tree, TreeNode
+
 from txl.base import Contents, FileBrowser
 from txl.hooks import register_component
 

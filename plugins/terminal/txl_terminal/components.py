@@ -6,9 +6,9 @@ from rich.console import RenderableType
 from rich.text import Text
 from textual import events
 from textual.widget import Widget
-from txl.base import TerminalFactory, Terminal
-from txl.hooks import register_component
 
+from txl.base import Terminal, TerminalFactory
+from txl.hooks import register_component
 
 CTRL_KEYS = {
     "left": "\u001b[D",

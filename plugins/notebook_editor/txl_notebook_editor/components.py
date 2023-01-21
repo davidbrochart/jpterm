@@ -1,7 +1,8 @@
 from asphalt.core import Component, Context
 from textual.binding import Binding
 from textual.containers import Container
-from txl.base import CellFactory, Editor, Editors, Contents, FileOpenEvent
+
+from txl.base import CellFactory, Contents, Editor, Editors, FileOpenEvent
 from txl.hooks import register_component
 
 

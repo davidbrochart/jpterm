@@ -9,7 +9,8 @@ import termios
 from asphalt.core import Component, Context
 from textual.widget import Widget
 from textual.widgets._header import HeaderTitle
-from txl.base import Terminals, TerminalFactory, Header, Launcher
+
+from txl.base import Header, Launcher, TerminalFactory, Terminals
 from txl.hooks import register_component
 
 

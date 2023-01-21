@@ -1,14 +1,16 @@
 import asyncio
 from typing import Dict, List
+from urllib import parse
 
 import httpx
+import httpx_ws
 from asphalt.core import Component, Context
 from httpx_ws import aconnect_ws
 from textual.widget import Widget
 from textual.widgets._header import HeaderTitle
-from txl.base import TerminalFactory, Terminals, Header, Launcher
+
+from txl.base import Header, Launcher, TerminalFactory, Terminals
 from txl.hooks import register_component
-from urllib import parse
 
 
 class TerminalsMeta(type(Terminals), type(Widget)):
@@ -60,7 +62,7 @@ class RemoteTerminals(Terminals, Widget, metaclass=TerminalsMeta):
                 f"{self.ws_url}/terminals/websocket/{name}", cookies=self.cookies
             ) as self.websocket:
                 asyncio.create_task(self._recv())
-                asyncio.create_task(self._send())
+                self.send_task = asyncio.create_task(self._send())
                 await self._done.wait()
 
     async def _send(self):
@@ -74,7 +76,11 @@ class RemoteTerminals(Terminals, Widget, metaclass=TerminalsMeta):
 
     async def _recv(self):
         while True:
-            message = await self.websocket.receive_json()
+            try:
+                message = await self.websocket.receive_json()
+            except httpx_ws._api.WebSocketNetworkError:
+                self.send_task.cancel()
+                return
             await self._recv_queue.put(message)
 
 

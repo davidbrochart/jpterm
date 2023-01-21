@@ -1,6 +1,7 @@
 from asphalt.core import Component, Context
 from textual.widget import Widget
 from textual.widgets import Button
+
 from txl.base import Launcher, MainArea
 from txl.hooks import register_component
 

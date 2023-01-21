@@ -4,6 +4,7 @@ from typing import Callable, Dict, List
 from asphalt.core import Component, Context
 from textual.containers import Container
 from textual.widgets._header import HeaderTitle
+
 from txl.base import Editor, Editors, FileOpenEvent, Footer, Header, MainArea
 from txl.hooks import register_component
 

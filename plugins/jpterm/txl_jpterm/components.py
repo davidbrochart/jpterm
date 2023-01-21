@@ -2,7 +2,8 @@ from asphalt.core import Component, Context
 from textual.app import App, ComposeResult
 from textual.containers import Container
 from textual.reactive import var
-from txl.base import Editors, FileBrowser, Launcher, Footer, Header, MainArea
+
+from txl.base import Editors, FileBrowser, Footer, Header, Launcher, MainArea
 from txl.hooks import register_component
 
 from .footer import Footer as _Footer

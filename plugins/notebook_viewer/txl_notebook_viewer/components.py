@@ -5,8 +5,11 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.text import Text
+from textual import events
 from textual.widgets import DataTable
-from txl.base import Editor, Editors, Contents, FileOpenEvent
+from textual.widgets._data_table import Coordinate
+
+from txl.base import Contents, Editor, Editors, FileOpenEvent, Kernels, NotebookFactory
 from txl.hooks import register_component
 
 
@@ -31,16 +34,31 @@ class NotebookViewerMeta(type(Editor), type(DataTable)):
 
 
 class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
-    def __init__(self, contents: Contents) -> None:
+    def __init__(
+        self, contents: Contents, notebook: NotebookFactory, kernels: Kernels
+    ) -> None:
         super().__init__()
         self.contents = contents
+        self.notebook = notebook
+        self.kernels = kernels
+        self.kernel = None
+        self._row_to_cell = []
+        self._selected_cell = None
 
     async def on_open(self, event: FileOpenEvent) -> None:
         await self.open(event.path)
 
     async def open(self, path: str) -> None:
-        self.nb = await self.contents.get(path, type="json", on_change=self.on_change)
+        self.ynb = await self.contents.get(path, type="notebook")
+        ipynb = self.ynb.source
+        self.language = (
+            ipynb.get("metadata", {}).get("kernelspec", {}).get("language", "")
+        )
+        kernel_name = ipynb.get("metadata", {}).get("kernelspec", {}).get("name")
+        if kernel_name:
+            self.kernel = self.kernels(kernel_name)
         self.update_viewer()
+        self.ynb.observe(self.on_change)
 
     def update_viewer(self):
         self.add_column("", width=10)
@@ -48,16 +66,14 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
 
         head = None
         tail = None
-        lexer = None
-        lexer = lexer or self.nb.get("metadata", {}).get("kernelspec", {}).get(
-            "language", ""
-        )
         theme = "ansi_dark"
 
-        if "cells" not in self.nb:
+        if self.ynb.cell_number == 0:
             return
 
-        for cell in self.nb["cells"]:
+        self._row_to_cell = []
+        for i_cell in range(self.ynb.cell_number):
+            cell = self.ynb.get_cell(i_cell)
             execution_count = (
                 f"[green]In [[#66ff00]{cell['execution_count'] or ' '}"
                 "[/#66ff00]]:[/green]"
@@ -74,7 +90,7 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
                 renderable = Panel(
                     Syntax(
                         source,
-                        lexer,
+                        self.language,
                         theme=theme,
                         line_numbers=True,
                         indent_guides=True,
@@ -90,6 +106,7 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
                 renderable = Text(source)
 
             self.add_row(execution_count, renderable, height=num_lines)
+            self._row_to_cell.append(cell)
 
             for output in cell.get("outputs", []):
                 output_type = output["output_type"]
@@ -118,11 +135,29 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
 
                 num_lines = len(text.splitlines())
                 self.add_row(execution_count, renderable, height=num_lines)
+                self._row_to_cell.append(cell)
 
-    def on_change(self, nb):
-        self.nb = nb
+    def on_click(self, event: events.Click) -> None:
+        self._set_hover_cursor(True)
+        if self.show_cursor and self.cursor_type != "none":
+            # Only emit selection events if there is a visible row/col/cell cursor.
+            self._emit_selected_message()
+            meta = self.get_style_at(event.x, event.y).meta
+            if meta:
+                self._selected_cell = self._row_to_cell[meta["row"]]
+                self.cursor_cell = Coordinate(meta["row"], meta["column"])
+                self._scroll_cursor_into_view(animate=True)
+                event.stop()
+
+    def on_change(self, target, event):
         self.clear()
         self.update_viewer()
+
+    async def key_e(self) -> None:
+        if self.kernel:
+            print(f"Executing: {self._selected_cell}")
+            await self.kernel.execute(self._selected_cell)
+            print(f"Executed: {self._selected_cell}")
 
 
 class NotebookViewerComponent(Component):
@@ -135,9 +170,11 @@ class NotebookViewerComponent(Component):
         ctx: Context,
     ) -> None:
         contents = await ctx.request_resource(Contents, "contents")
+        notebook = await ctx.request_resource(NotebookFactory, "notebook")
+        kernels = await ctx.request_resource(Kernels, "kernels")
 
         def notebook_viewer_factory():
-            return NotebookViewer(contents)
+            return NotebookViewer(contents, notebook, kernels)
 
         if self.register:
             editors = await ctx.request_resource(Editors, "editors")

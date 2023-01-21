@@ -1,9 +1,12 @@
 import json
 from os import scandir
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import List, Union
 
+import y_py as Y
 from asphalt.core import Component, Context
+from jupyter_ydoc import ydocs
+
 from txl.base import Contents
 from txl.hooks import register_component
 
@@ -13,26 +16,23 @@ class LocalContents(Contents):
         self,
         path: str,
         is_dir: bool = False,
-        type: str = "text",
-        on_change: Optional[Callable] = None,
-    ) -> Union[List, str, bytes, Dict[str, Any]]:
+        type: str = "unicode",
+    ) -> Union[List, Y.YDoc]:
         p = Path(path)
         assert p.is_dir() == is_dir
         if p.is_dir():
             return sorted(
                 list(scandir(path)), key=lambda entry: (not entry.is_dir(), entry.name)
             )
-        elif p.is_file():
-            if type == "text":
-                return p.read_text()
-            elif type == "bytes":
-                return p.read_bytes()
-            elif type == "json":
-                return json.loads(p.read_text())
-        return ""
-
-    def on_change(self, jupyter_ydoc, on_change: Callable, events) -> None:
-        pass
+        if p.is_file():
+            jupyter_ydoc = ydocs[type]()
+            if type == "unicode":
+                jupyter_ydoc.source = p.read_text()
+            elif type == "blob":
+                jupyter_ydoc.source = p.read_bytes()
+            elif type == "notebook":
+                jupyter_ydoc.source = json.loads(p.read_text())
+        return jupyter_ydoc
 
 
 class ContentsComponent(Component):

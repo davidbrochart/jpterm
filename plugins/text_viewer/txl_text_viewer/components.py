@@ -2,7 +2,8 @@ from asphalt.core import Component, Context
 from rich.syntax import Syntax
 from rich.traceback import Traceback
 from textual.widgets import Static
-from txl.base import Editor, Editors, Contents, FileOpenEvent
+
+from txl.base import Contents, Editor, Editors, FileOpenEvent
 from txl.hooks import register_component
 
 
@@ -25,8 +26,10 @@ class TextViewer(Editor, Static, metaclass=TextViewerMeta):
 
     async def open(self, path: str) -> None:
         self.path = path
-        self.text = await self.contents.get(path, type="text", on_change=self.on_change)
+        self.ytext = await self.contents.get(path, type="unicode")
+        self.text = self.ytext.source
         self.update_viewer()
+        self.ytext.observe(self.on_change)
 
     def update_viewer(self):
         try:
@@ -48,8 +51,8 @@ class TextViewer(Editor, Static, metaclass=TextViewerMeta):
     def on_mount(self):
         self.expand
 
-    def on_change(self, text):
-        self.text = text
+    def on_change(self, target, event):
+        self.text = self.ytext.source
         self.update_viewer()
 
 
