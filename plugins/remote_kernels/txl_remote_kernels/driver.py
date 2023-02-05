@@ -1,26 +1,30 @@
 import asyncio
+import json
 import time
 import uuid
-from typing import Dict, List
+from typing import Any, Dict
 from urllib import parse
 
 import httpx
-import y_py as Y
-from httpx_ws import WebSocketNetworkError, aconnect_ws
+from httpx_ws import aconnect_ws
+from txl_kernel.driver import KernelMixin
+from txl_kernel.message import date_to_str
 
-from .message import create_message, send_message, str_to_date
+from .message import from_binary, to_binary
 
 
 def deadline_to_timeout(deadline: float) -> float:
     return max(0, deadline - time.time())
 
 
-class KernelDriver:
+class KernelDriver(KernelMixin):
     def __init__(
         self,
         url: str,
-        kernel_name: str = "",
+        kernel_name: str | None = "",
+        comm_handlers=[],
     ) -> None:
+        super().__init__()
         self.kernel_name = kernel_name
         parsed_url = parse.urlparse(url)
         self.base_url = parse.urljoin(url, parsed_url.path).rstrip("/")
@@ -30,10 +34,11 @@ class KernelDriver:
         self.ws_url = ("wss" if self.base_url[i - 1] == "s" else "ws") + self.base_url[
             i:
         ]
-        self.msg_cnt = 0
-        self.execute_requests: Dict[str, Dict[str, List[asyncio.Future]]] = {}
-        self.started = asyncio.Event()
         self.start_task = asyncio.create_task(self.start())
+        self.comm_handlers = comm_handlers
+        self.shell_channel = "shell"
+        self.control_channel = "control"
+        self.iopub_channel = "iopub"
 
     async def start(self):
         i = str(uuid.uuid4())
@@ -67,171 +72,36 @@ class KernelDriver:
         ) as self.websocket:
             recv_task = asyncio.create_task(self._recv())
             try:
-                await self._wait_for_ready()
+                await self.wait_for_ready()
+                self.started.set()
                 await asyncio.Future()
             except BaseException:
                 recv_task.cancel()
                 self.start_task.cancel()
 
     async def _recv(self):
-        try:
-            while True:
-                message = await self.websocket.receive_json()
-                channel = message.pop("channel")
-                message["header"] = str_to_date(message["header"])
-                message["parent_header"] = str_to_date(message["parent_header"])
-                msg_id = message["parent_header"].get("msg_id")
-                if msg_id in self.execute_requests:
-                    future_messages = self.execute_requests[msg_id][channel]
-                    if future_messages:
-                        fut = future_messages[-1]
-                        if fut.done():
-                            fut = asyncio.Future()
-                            future_messages.append(fut)
-                    else:
-                        fut = asyncio.Future()
-                        future_messages.append(fut)
-                    fut.set_result(message)
-        except WebSocketNetworkError:
-            pass
-
-    async def _wait_for_ready(self, timeout: float = float("inf")):
-        deadline = time.time() + timeout
-        new_timeout = timeout
         while True:
-            msg = create_message(
-                "kernel_info_request",
-                session_id=self.session_id,
-                msg_id=str(self.msg_cnt),
-            )
-            self.msg_cnt += 1
-            await send_message(msg, "shell", self.websocket, change_date_to_str=True)
-            msg_id = msg["header"]["msg_id"]
-            self.execute_requests[msg_id] = {
-                "iopub": [asyncio.Future()],
-                "shell": [asyncio.Future()],
-            }
-            try:
-                msg = await asyncio.wait_for(
-                    self.execute_requests[msg_id]["shell"][0], new_timeout
-                )
-            except asyncio.TimeoutError:
-                del self.execute_requests[msg_id]
-                error_message = f"Kernel didn't respond in {timeout} seconds"
-                raise RuntimeError(error_message)
-            if msg["header"]["msg_type"] == "kernel_info_reply":
-                try:
-                    msg = await asyncio.wait_for(
-                        self.execute_requests[msg_id]["iopub"][0], 0.2
-                    )
-                except asyncio.TimeoutError:
-                    pass
-                else:
-                    break
-            del self.execute_requests[msg_id]
-            new_timeout = deadline_to_timeout(deadline)
-        self.started.set()
+            message = await self.websocket.receive()
+            if isinstance(message.data, str):
+                message = json.loads(message.data)
+            else:
+                message = from_binary(message.data)
+            self.recv_queue.put_nowait(message)
 
-    async def execute(
+    async def send_message(
         self,
-        ydoc: Y.YDoc,
-        ycell: Y.YMap,
-        timeout: float = float("inf"),
-        msg_id: str = "",
-        wait_for_executed: bool = True,
-    ) -> None:
-        await self.started.wait()
-        if ycell["cell_type"] != "code":
-            return
-        code = str(ycell["source"])
-        content = {"code": code, "silent": False}
-        msg = create_message(
-            "execute_request",
-            content,
-            session_id=self.session_id,
-            msg_id=str(self.msg_cnt),
-        )
-        if msg_id:
-            msg["header"]["msg_id"] = msg_id
-        else:
-            msg_id = msg["header"]["msg_id"]
-        self.msg_cnt += 1
-        await send_message(msg, "shell", self.websocket, change_date_to_str=True)
-        if wait_for_executed:
-            deadline = time.time() + timeout
-            self.execute_requests[msg_id] = {
-                "iopub": [asyncio.Future()],
-                "shell": [asyncio.Future()],
-            }
-            try:
-                await asyncio.wait_for(
-                    self.execute_requests[msg_id]["iopub"][0],
-                    deadline_to_timeout(deadline),
-                )
-            except asyncio.TimeoutError:
-                error_message = f"Kernel didn't respond in {timeout} seconds"
-                del self.execute_requests[msg_id]
-                raise RuntimeError(error_message)
-            await self._handle_outputs(
-                ydoc, ycell, self.execute_requests[msg_id]["iopub"]
-            )
-            try:
-                await asyncio.wait_for(
-                    self.execute_requests[msg_id]["shell"][0],
-                    deadline_to_timeout(deadline),
-                )
-            except asyncio.TimeoutError:
-                del self.execute_requests[msg_id]
-                error_message = f"Kernel didn't respond in {timeout} seconds"
-                raise RuntimeError(error_message)
-            msg = self.execute_requests[msg_id]["shell"][0].result()
-            with ydoc.begin_transaction() as txn:
-                ycell.set(txn, "execution_count", msg["content"]["execution_count"])
-            del self.execute_requests[msg_id]
-
-    async def _handle_outputs(
-        self, ydoc: Y.YDoc, ycell: Y.YMap, future_messages: List[asyncio.Future]
+        msg: Dict[str, Any],
+        channel,
+        change_date_to_str: bool = False,
     ):
-        with ydoc.begin_transaction() as txn:
-            ycell.set(txn, "outputs", [])
-
-        while True:
-            if not future_messages:
-                future_messages.append(asyncio.Future())
-            fut = future_messages[0]
-            if not fut.done():
-                await fut
-            future_messages.pop(0)
-            msg = fut.result()
-            msg_type = msg["header"]["msg_type"]
-            content = msg["content"]
-            outputs = list(ycell["outputs"])
-            if msg_type == "stream":
-                if (len(outputs) == 0) or (outputs[-1]["name"] != content["name"]):
-                    outputs.append(
-                        {"name": content["name"], "output_type": msg_type, "text": []}
-                    )
-                outputs[-1]["text"].append(content["text"])
-            elif msg_type in ("display_data", "execute_result"):
-                outputs.append(
-                    {
-                        "data": {"text/plain": [content["data"].get("text/plain", "")]},
-                        "execution_count": content["execution_count"],
-                        "metadata": {},
-                        "output_type": msg_type,
-                    }
-                )
-            elif msg_type == "error":
-                outputs.append(
-                    {
-                        "ename": content["ename"],
-                        "evalue": content["evalue"],
-                        "output_type": "error",
-                        "traceback": content["traceback"],
-                    }
-                )
-            elif msg_type == "status" and msg["content"]["execution_state"] == "idle":
-                break
-
-            with ydoc.begin_transaction() as txn:
-                ycell.set(txn, "outputs", outputs)
+        _date_to_str = date_to_str if change_date_to_str else lambda x: x
+        msg["header"] = _date_to_str(msg["header"])
+        msg["parent_header"] = _date_to_str(msg["parent_header"])
+        msg["metadata"] = _date_to_str(msg["metadata"])
+        msg["content"] = _date_to_str(msg.get("content", {}))
+        msg["channel"] = channel
+        bmsg = to_binary(msg)
+        if bmsg is None:
+            await self.websocket.send_json(msg)
+        else:
+            await self.websocket.send_bytes(bmsg)

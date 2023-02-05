@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "txl_notebook_editor"
-description = "TXL plugin for a notebook editor"
+name = "txl_kernel"
+description = "TXL plugin for a kernel driver"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
@@ -22,15 +22,12 @@ classifiers = [
 ]
 dependencies = [
   "txl",
-  "textual >=0.10.1,<1",
+  "python-dateutil >=2.8.2",
 ]
 dynamic = ["version"]
 
 [project.urls]
-Source = "https://github.com/davidbrochart/jpterm/plugins/notebook_editor"
-
-[project.entry-points.txl_component]
-txl_notebook_editor = "txl_notebook_editor.components"
+Source = "https://github.com/davidbrochart/jpterm/plugins/kernel"
 
 [tool.hatch.version]
-path = "txl_notebook_editor/__init__.py"
+path = "txl_kernel/__init__.py"

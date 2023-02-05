@@ -8,7 +8,7 @@ from rich.text import Text
 from textual import events
 from textual.widgets import DataTable
 
-from txl.base import Contents, Editor, Editors, FileOpenEvent, Kernels, NotebookFactory
+from txl.base import Contents, Editor, Editors, FileOpenEvent, Kernels, Widgets
 from txl.hooks import register_component
 
 
@@ -34,12 +34,15 @@ class NotebookViewerMeta(type(Editor), type(DataTable)):
 
 class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
     def __init__(
-        self, contents: Contents, notebook: NotebookFactory, kernels: Kernels
+        self,
+        contents: Contents,
+        kernels: Kernels,
+        widgets: Widgets,
     ) -> None:
         super().__init__()
         self.contents = contents
-        self.notebook = notebook
         self.kernels = kernels
+        self.widgets = widgets
         self.kernel = None
         self._row_to_cell_idx = []
         self._selected_cell_idx = None
@@ -112,6 +115,7 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
             for output in cell.get("outputs", []):
                 output_type = output["output_type"]
                 execution_count = ""
+                widget = None
                 if output_type == "stream":
                     text = "".join(output["text"])
                     renderable = Text.from_ansi(text)
@@ -123,20 +127,39 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
                     execution_count = Text.from_markup(
                         f"[red]Out[[#ee4b2b]{execution_count}[/#ee4b2b]]:[/red]\n"
                     )
-                    data = output["data"].get("text/plain", "")
-                    renderable = Text()
-                    if isinstance(data, list):
-                        text = "".join(data)
-                        renderable += Text.from_ansi(text)
-                    else:
-                        text = data
-                        renderable += Text.from_ansi(text)
+                    if "application/vnd.jupyter.ywidget-view+json" in output["data"]:
+                        print(
+                            f'{output["data"]["application/vnd.jupyter.ywidget-view+json"]=}'
+                        )
+                        model_id = output["data"][
+                            "application/vnd.jupyter.ywidget-view+json"
+                        ]["model_id"]
+                        print(f"{model_id=}")
+                        print(f"{self.widgets.widgets=}")
+                        if model_id in self.widgets.widgets:
+                            widget = self.widgets.widgets[model_id]["widget"]
+                    if not widget:
+                        data = output["data"].get("text/plain", "")
+                        renderable = Text()
+                        if isinstance(data, list):
+                            text = "".join(data)
+                            renderable += Text.from_ansi(text)
+                        else:
+                            text = data
+                            renderable += Text.from_ansi(text)
                 else:
                     continue
 
-                num_lines = len(text.splitlines())
-                self.add_row(execution_count, renderable, height=num_lines)
-                self._row_to_cell_idx.append(i_cell)
+                with open("debug.txt", "at") as f:
+                    f.write(f"{widget=}\n")
+                if widget is None:
+                    num_lines = len(text.splitlines())
+                    self.add_row(execution_count, renderable, height=num_lines)
+                    self._row_to_cell_idx.append(i_cell)
+                else:
+                    # it's a widget
+                    self.add_row(execution_count, widget, height=10)
+                    self._row_to_cell_idx.append(i_cell)
 
     def on_click(self, event: events.Click) -> None:
         DataTable.on_click(self, event)
@@ -151,8 +174,11 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
     async def key_e(self) -> None:
         if self.kernel:
             ycell = self.ynb._ycells[self._selected_cell_idx]
+            with open("debug.txt", "at") as f:
+                f.write(f"executing {ycell=}\n")
             await self.kernel.execute(self.ynb.ydoc, ycell)
-            print(f"Executed {ycell}")
+            with open("debug.txt", "at") as f:
+                f.write("executing done\n")
 
 
 class NotebookViewerComponent(Component):
@@ -165,11 +191,11 @@ class NotebookViewerComponent(Component):
         ctx: Context,
     ) -> None:
         contents = await ctx.request_resource(Contents, "contents")
-        notebook = await ctx.request_resource(NotebookFactory, "notebook")
         kernels = await ctx.request_resource(Kernels, "kernels")
+        widgets = await ctx.request_resource(Widgets, "widgets")
 
         def notebook_viewer_factory():
-            return NotebookViewer(contents, notebook, kernels)
+            return NotebookViewer(contents, kernels, widgets)
 
         if self.register:
             editors = await ctx.request_resource(Editors, "editors")

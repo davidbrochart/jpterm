@@ -1,5 +1,3 @@
-from functools import partial
-
 import y_py as Y
 from asphalt.core import Component, Context
 
@@ -10,12 +8,15 @@ from .driver import KernelDriver
 
 
 class RemoteKernels(Kernels):
+
+    comm_handlers = []
+
     def __init__(
         self,
         url: str,
-        kernel_name: str,
+        kernel_name: str | None,
     ):
-        self.kernel = KernelDriver(url, kernel_name)
+        self.kernel = KernelDriver(url, kernel_name, comm_handlers=self.comm_handlers)
 
     async def execute(self, ydoc: Y.YDoc, ycell: Y.YMap):
         await self.kernel.execute(ydoc, ycell)
@@ -30,8 +31,13 @@ class RemoteKernelsComponent(Component):
         self,
         ctx: Context,
     ) -> None:
-        terminals_factory = partial(RemoteKernels, self.url)
-        ctx.add_resource(terminals_factory, name="kernels", types=Kernels)
+        url = self.url
+
+        class _RemoteKernels(RemoteKernels):
+            def __init__(self, *args, **kwargs):
+                super().__init__(url, *args, **kwargs)
+
+        ctx.add_resource(_RemoteKernels, name="kernels", types=Kernels)
 
 
 c = register_component("kernels", RemoteKernelsComponent)
