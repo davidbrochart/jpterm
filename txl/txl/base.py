@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, List, Union
 
+import y_py as Y
 from asphalt.core import Event, Signal
 from textual.binding import Binding
 
@@ -54,22 +55,7 @@ class Contents(ABC):
 class Cell(ABC):
     @property
     @abstractmethod
-    def source(self) -> List[str]:
-        ...
-
-    @source.setter
-    @abstractmethod
-    def source(self, value: List[str]):
-        ...
-
-    @property
-    @abstractmethod
-    def outputs(self) -> List[Dict[str, Any]]:
-        ...
-
-    @outputs.setter
-    @abstractmethod
-    def outputs(self, value: List[Dict[str, Any]]):
+    def update(self):
         ...
 
 
@@ -82,13 +68,17 @@ class Kernel(ABC):
         ...
 
     @abstractmethod
-    def execute(self, code: str):
+    async def execute(self, ydoc: Y.YDoc, ycell: Y.YMap):
         ...
 
 
 class Kernels(ABC):
     @abstractmethod
-    def __init__(self, kernel_name: str):
+    def __init__(self, kernel_name: str | None):
+        ...
+
+    @abstractmethod
+    async def execute(self, ydoc: Y.YDoc, ycell: Y.YMap):
         ...
 
 
@@ -129,4 +119,14 @@ TerminalFactory = Callable[[int, int], Terminal]
 class Launcher(ABC):
     @abstractmethod
     def register(self, i: str, document):
+        ...
+
+
+class Widgets(ABC):
+    @abstractmethod
+    def comm_open(self, msg, comm) -> None:
+        ...
+
+    @abstractmethod
+    def comm_msg(self, msg) -> None:
         ...

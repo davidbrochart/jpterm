@@ -8,31 +8,41 @@ dynamic = ["version"]
 description = "Jupyter in the terminal"
 readme = "README.md"
 license = { text = "MIT" }
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 authors = [ { name = "David Brochart", email = "david.brochart@gmail.com" }, ]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
 keywords = [
     "jupyter",
     "textual",
 ]
 dependencies = [
     "rich-click >=1.6.0",
-    #"txl_cell >=0.1.0",
+    "txl_cell >=0.1.0",
     "txl_editors >=0.1.0",
     "txl_file_browser >=0.1.0",
     "txl_image_viewer >=0.1.0",
     "txl_jpterm >=0.1.0",
+    "txl_kernel >=0.1.0",
     "txl_local_contents >=0.1.0",
     "txl_local_terminals >=0.1.0",
     "txl_local_kernels >=0.1.0",
     "txl_notebook >=0.1.0",
-    #"txl_notebook_editor >=0.1.0",
-    "txl_notebook_viewer >=0.1.0",
+    "txl_notebook_editor >=0.1.0",
+    #"txl_notebook_viewer >=0.1.0",
     "txl_remote_contents >=0.1.0",
     "txl_remote_terminals >=0.1.0",
     "txl_remote_kernels >=0.1.0",
     "txl_text_viewer >=0.1.0",
     "txl_terminal >=0.1.0",
     "txl_launcher>=0.1.0",
+    "txl_widgets>=0.1.0",
 ]
 
 [project.scripts]
@@ -48,23 +58,25 @@ path = "jpterm/__init__.py"
 pre-install-commands = [
     "pip install textual[dev]",
     "pip install -e ./txl",
-    #"pip install -e ./plugins/cell",
+    "pip install -e ./plugins/cell",
     "pip install -e ./plugins/editors",
     "pip install -e ./plugins/file_browser",
     "pip install -e ./plugins/image_viewer",
     "pip install -e ./plugins/jpterm",
+    "pip install -e ./plugins/kernel",
     "pip install -e ./plugins/local_contents",
     "pip install -e ./plugins/local_terminals",
     "pip install -e ./plugins/local_kernels",
     "pip install -e ./plugins/notebook",
-    #"pip install -e ./plugins/notebook_editor",
-    "pip install -e ./plugins/notebook_viewer",
+    "pip install -e ./plugins/notebook_editor",
+    #"pip install -e ./plugins/notebook_viewer",
     "pip install -e ./plugins/remote_contents",
     "pip install -e ./plugins/remote_terminals",
     "pip install -e ./plugins/remote_kernels",
     "pip install -e ./plugins/text_viewer",
     "pip install -e ./plugins/terminal",
     "pip install -e ./plugins/launcher",
+    "pip install -e ./plugins/widgets",
 
     "pip install --pre jupyterlab",
 ]
@@ -77,6 +89,7 @@ python_packages = [
     "plugins/file_browser:txl_file_browser",
     "plugins/image_viewer:txl_image_viewer",
     "plugins/jpterm:txl_jpterm",
+    "plugins/kernel:txl_kernel",
     "plugins/local_contents:txl_local_contents",
     "plugins/local_terminals:txl_local_terminals",
     "plugins/local_kernels:txl_local_kernels",
@@ -89,7 +102,8 @@ python_packages = [
     "plugins/terminal:txl_terminal",
     "plugins/text_viewer:txl_text_viewer",
     "plugins/launcher:txl_launcher",
-    ".:jpterm:txl,txl_cell,txl_editors,txl_file_browser,txl_image_viewer,txl_jpterm,txl_local_contents,txl_local_terminals,txl_local_kernels,txl_notebook,txl_notebook_editor,txl_notebook_viewer,txl_remote_contents,txl_remote_terminals,txl_remote_kernels,txl_terminal,txl_text_viewer,txl_launcher"
+    "plugins/widgets:txl_widgets",
+    ".:jpterm:txl,txl_cell,txl_editors,txl_file_browser,txl_image_viewer,txl_jpterm,txl_kernel,txl_local_contents,txl_local_terminals,txl_local_kernels,txl_notebook,txl_notebook_editor,txl_notebook_viewer,txl_remote_contents,txl_remote_terminals,txl_remote_kernels,txl_terminal,txl_text_viewer,txl_launcher,txl_widgets"
 ]
 
 [tool.ruff]

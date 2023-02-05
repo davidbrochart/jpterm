@@ -1,8 +1,9 @@
+from functools import partial
+
 from asphalt.core import Component, Context
-from textual.binding import Binding
 from textual.containers import Container
 
-from txl.base import CellFactory, Contents, Editor, Editors, FileOpenEvent
+from txl.base import CellFactory, Contents, Editor, Editors, FileOpenEvent, Kernels
 from txl.hooks import register_component
 
 
@@ -14,31 +15,35 @@ class NotebookEditor(Editor, Container, metaclass=NotebookEditorMeta):
     def __init__(
         self,
         contents: Contents,
+        kernels: Kernels,
         cell_factory: CellFactory,
     ) -> None:
         super().__init__()
         self.contents = contents
+        self.kernels = kernels
         self.cell_factory = cell_factory
+        self.kernel = None
 
     async def on_open(self, event: FileOpenEvent) -> None:
         await self.open(event.path)
 
     async def open(self, path: str) -> None:
-        nb = await self.contents.get(path)
+        self.ynb = await self.contents.get(path, type="notebook")
+        ipynb = self.ynb.source
+        self.language = (
+            ipynb.get("metadata", {}).get("kernelspec", {}).get("language", "")
+        )
+        kernel_name = ipynb.get("metadata", {}).get("kernelspec", {}).get("name")
+        if kernel_name:
+            self.kernel = self.kernels(kernel_name)
+        self.update()
 
-        for cell in nb["cells"]:
-            source = "".join(cell["source"])
-            self.mount(self.cell_factory(source))
-
-    def get_bindings(self):
-        return [
-            Binding(
-                key="b", action="insert_cell_below", description="Insert cell below"
+    def update(self):
+        for i_cell in range(self.ynb.cell_number):
+            cell = self.cell_factory(
+                self.ynb._ycells[i_cell], self.ynb.ydoc, self.language, self.kernel
             )
-        ]
-
-    def action_insert_cell_below(self):
-        pass
+            self.mount(cell)
 
 
 class NotebookEditorComponent(Component):
@@ -51,10 +56,12 @@ class NotebookEditorComponent(Component):
         ctx: Context,
     ) -> None:
         contents = await ctx.request_resource(Contents, "contents")
-        cell_factory = await ctx.request_resource(CellFactory, "cell_factory")
+        kernels = await ctx.request_resource(Kernels, "kernels")
+        cell_factory = await ctx.request_resource(CellFactory, "cell")
 
-        def notebook_editor_factory():
-            return NotebookEditor(contents, cell_factory)
+        notebook_editor_factory = partial(
+            NotebookEditor, contents, kernels, cell_factory
+        )
 
         if self.register:
             editors = await ctx.request_resource(Editors, "editors")
@@ -64,4 +71,4 @@ class NotebookEditorComponent(Component):
             ctx.add_resource(notebook_editor, name="notebook_editor", types=Editor)
 
 
-c = register_component("notebook_editor", NotebookEditorComponent, enable=False)
+c = register_component("notebook_editor", NotebookEditorComponent)

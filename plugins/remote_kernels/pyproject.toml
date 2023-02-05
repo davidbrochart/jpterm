@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "txl_remote_kernels"
 description = "TXL plugin for remote kernels"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 license = "MIT"
 keywords = []
 authors = [
@@ -15,9 +15,6 @@ authors = [
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.7",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: Implementation :: CPython",
@@ -25,10 +22,10 @@ classifiers = [
 ]
 dependencies = [
   "txl",
-  "python-dateutil >=2.8.2",
+  "txl_kernel",
   "httpx >=0.23.1",
   "httpx-ws >=0.2.6",
-  "y_py >=0.5.5",
+  "y_py >=0.5.5,<1",
 ]
 dynamic = ["version"]
 
