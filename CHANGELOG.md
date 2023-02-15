@@ -2,11 +2,26 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 0.1.11
+
+([Full Changelog](https://github.com/davidbrochart/jpterm/compare/v0.1.10...9086c92860eeceb1ddaa16633e9f2300b0453cb5))
+
+### Merged PRs
+
+- Add markdown viewer plugin [#34](https://github.com/davidbrochart/jpterm/pull/34) ([@davidbrochart](https://github.com/davidbrochart))
+- Support kernel WebSocket protocol v1 [#33](https://github.com/davidbrochart/jpterm/pull/33) ([@davidbrochart](https://github.com/davidbrochart))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/davidbrochart/jpterm/graphs/contributors?from=2023-02-05&to=2023-02-15&type=c))
+
+[@davidbrochart](https://github.com/search?q=repo%3Adavidbrochart%2Fjpterm+involves%3Adavidbrochart+updated%3A2023-02-05..2023-02-15&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 0.1.10
 
 No merged PRs
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 0.1.9
 
