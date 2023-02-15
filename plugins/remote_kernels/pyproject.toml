@@ -24,7 +24,7 @@ dependencies = [
   "txl",
   "txl_kernel",
   "httpx >=0.23.1",
-  "httpx-ws >=0.2.6",
+  "httpx-ws >=0.3.0",
   "y_py >=0.5.5,<1",
 ]
 dynamic = ["version"]

@@ -10,7 +10,12 @@ from httpx_ws import aconnect_ws
 from txl_kernel.driver import KernelMixin
 from txl_kernel.message import date_to_str
 
-from .message import from_binary, to_binary
+from .message import (
+    deserialize_msg_from_ws_v1,
+    from_binary,
+    serialize_msg_to_ws_v1,
+    to_binary,
+)
 
 
 def deadline_to_timeout(deadline: float) -> float:
@@ -69,6 +74,7 @@ class KernelDriver(KernelMixin):
             f"{self.ws_url}/api/kernels/{kernel_id}/channels",
             params={"session_id": self.session_id},
             cookies=self.cookies,
+            subprotocols=["v1.kernel.websocket.jupyter.org"],
         ) as self.websocket:
             recv_task = asyncio.create_task(self._recv())
             try:
@@ -82,11 +88,14 @@ class KernelDriver(KernelMixin):
     async def _recv(self):
         while True:
             message = await self.websocket.receive()
-            if isinstance(message.data, str):
-                message = json.loads(message.data)
+            if self.websocket.subprotocol == "v1.kernel.websocket.jupyter.org":
+                msg = deserialize_msg_from_ws_v1(message.data)
             else:
-                message = from_binary(message.data)
-            self.recv_queue.put_nowait(message)
+                if isinstance(message.data, str):
+                    msg = json.loads(message.data)
+                else:
+                    msg = from_binary(message.data)
+            self.recv_queue.put_nowait(msg)
 
     async def send_message(
         self,
@@ -100,8 +109,12 @@ class KernelDriver(KernelMixin):
         msg["metadata"] = _date_to_str(msg["metadata"])
         msg["content"] = _date_to_str(msg.get("content", {}))
         msg["channel"] = channel
-        bmsg = to_binary(msg)
-        if bmsg is None:
-            await self.websocket.send_json(msg)
-        else:
+        if self.websocket.subprotocol == "v1.kernel.websocket.jupyter.org":
+            bmsg = serialize_msg_to_ws_v1(msg)
             await self.websocket.send_bytes(bmsg)
+        else:
+            bmsg = to_binary(msg)
+            if bmsg is None:
+                await self.websocket.send_json(msg)
+            else:
+                await self.websocket.send_bytes(bmsg)
