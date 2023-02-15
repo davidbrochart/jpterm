@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from typing import ClassVar
 
 import rich.repr
 from rich.console import RenderableType
 from rich.text import Text
 from textual import events
-from textual.reactive import Reactive, watch
+from textual.reactive import Reactive
 from textual.widget import Widget
 
 from txl.base import Footer as AbstractFooter
@@ -18,7 +19,22 @@ class FooterMeta(type(AbstractFooter), type(Widget)):
 
 @rich.repr.auto
 class Footer(AbstractFooter, Widget, metaclass=FooterMeta):
-    """A simple header widget which docks itself to the top of the parent container."""
+    """A simple footer widget which docks itself to the bottom of the parent container."""
+
+    COMPONENT_CLASSES: ClassVar[set[str]] = {
+        "footer--description",
+        "footer--key",
+        "footer--highlight",
+        "footer--highlight-key",
+    }
+    """
+    | Class | Description |
+    | :- | :- |
+    | `footer--description` | Targets the descriptions of the key bindings. |
+    | `footer--highlight` | Targets the highlighted key binding. |
+    | `footer--highlight-key` | Targets the key portion of the highlighted key binding. |
+    | `footer--key` | Targets the key portions of the key bindings. |
+    """
 
     DEFAULT_CSS = """
     Footer {
@@ -42,27 +58,20 @@ class Footer(AbstractFooter, Widget, metaclass=FooterMeta):
     }
     """
 
-    COMPONENT_CLASSES = {
-        "footer--description",
-        "footer--key",
-        "footer--highlight",
-        "footer--highlight-key",
-    }
+    highlight_key: Reactive[str | None] = Reactive(None)
 
     def __init__(self) -> None:
         super().__init__()
         self._key_text: Text | None = None
-        self._bindings = None
         self.auto_links = False
-
-    highlight_key: Reactive[str | None] = Reactive(None)
 
     async def watch_highlight_key(self, value) -> None:
         """If highlight key changes we need to regenerate the text."""
         self._key_text = None
+        self.refresh()
 
     def on_mount(self) -> None:
-        watch(self.screen, "focused", self._focus_changed)
+        self.watch(self.screen, "focused", self._focus_changed)
 
     def _focus_changed(self, focused: Widget | None) -> None:
         self._key_text = None
@@ -81,7 +90,6 @@ class Footer(AbstractFooter, Widget, metaclass=FooterMeta):
 
     def make_key_text(self) -> Text:
         """Create text containing all the keys."""
-        bindings = self._bindings
         base_style = self.rich_style
         text = Text(
             style=self.rich_style,
@@ -94,12 +102,11 @@ class Footer(AbstractFooter, Widget, metaclass=FooterMeta):
         highlight_key_style = self.get_component_rich_style("footer--highlight-key")
         key_style = self.get_component_rich_style("footer--key")
 
-        if bindings is None:
-            bindings = [
-                binding
-                for (_namespace, binding) in self.app.namespace_bindings.values()
-                if binding.show
-            ]
+        bindings = [
+            binding
+            for (_namespace, binding) in self.app.namespace_bindings.values()
+            if binding.show
+        ]
 
         action_to_bindings = defaultdict(list)
         for binding in bindings:
@@ -107,11 +114,12 @@ class Footer(AbstractFooter, Widget, metaclass=FooterMeta):
 
         for action, bindings in action_to_bindings.items():
             binding = bindings[0]
-            key_display = (
-                binding.key.upper()
-                if binding.key_display is None
-                else binding.key_display
-            )
+            if binding.key_display is None:
+                key_display = self.app.get_key_display(binding.key)
+                if key_display is None:
+                    key_display = binding.key.upper()
+            else:
+                key_display = binding.key_display
             hovered = self.highlight_key == binding.key
             key_text = Text.assemble(
                 (f" {key_display} ", highlight_key_style if hovered else key_style),
@@ -120,14 +128,16 @@ class Footer(AbstractFooter, Widget, metaclass=FooterMeta):
                     highlight_style if hovered else base_style,
                 ),
                 meta={
-                    "@click": f"app.check_bindings('{binding.key}')"
-                    if self._bindings is None
-                    else binding.action,
+                    "@click": f"app.check_bindings('{binding.key}')",
                     "key": binding.key,
                 },
             )
             text.append_text(key_text)
         return text
+
+    def _on_styles_updated(self) -> None:
+        self._key_text = None
+        self.refresh()
 
     def post_render(self, renderable):
         return renderable

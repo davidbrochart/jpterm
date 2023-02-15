@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "txl_widgets"
-description = "TXL plugin for kernel widgets"
+name = "txl_markdown_viewer"
+description = "TXL plugin for a Markdown viewer"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
@@ -22,15 +22,14 @@ classifiers = [
 ]
 dependencies = [
   "txl",
-  "ypywidgets >=0.1.2",
 ]
 dynamic = ["version"]
 
 [project.urls]
-Source = "https://github.com/davidbrochart/jpterm/plugins/widgets"
+Source = "https://github.com/davidbrochart/jpterm/plugins/markdown_viewer"
 
 [project.entry-points.txl_component]
-txl_widgets = "txl_widgets.components"
+txl_markdown_viewer = "txl_markdown_viewer.components"
 
 [tool.hatch.version]
-path = "txl_widgets/__init__.py"
+path = "txl_markdown_viewer/__init__.py"
