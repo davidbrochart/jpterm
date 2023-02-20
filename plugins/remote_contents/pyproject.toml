@@ -25,6 +25,7 @@ dependencies = [
   "httpx>=0.23.1",
   "httpx-ws>=0.2.6",
   "jupyter_ydoc >=0.3.0a4",
+  "y-py >=0.6.0,<1",
   "ypy-websocket >=0.8.2,<1",
 ]
 dynamic = ["version"]
