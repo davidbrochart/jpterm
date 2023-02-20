@@ -1,3 +1,4 @@
+import json
 from functools import partial
 
 import pkg_resources
@@ -102,7 +103,7 @@ class _Cell(Cell, Container, metaclass=CellMeta):
         return renderable
 
     def update(self):
-        cell = self.ycell.to_json()
+        cell = json.loads(self.ycell.to_json())
         execution_count = (
             self.get_execution_count(cell["execution_count"])
             if "execution_count" in cell
