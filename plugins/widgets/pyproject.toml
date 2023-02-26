@@ -29,8 +29,8 @@ dynamic = ["version"]
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/widgets"
 
-[project.entry-points.txl_component]
-txl_widgets = "txl_widgets.components"
+[project.entry-points.txl]
+widgets = "txl_widgets.main"
 
 [tool.hatch.version]
 path = "txl_widgets/__init__.py"

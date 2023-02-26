@@ -1,9 +1,9 @@
 import json
 from functools import partial
 
+import in_n_out as ino
 import pkg_resources
 import y_py as Y
-from asphalt.core import Component, Context
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.syntax import Syntax
@@ -12,7 +12,6 @@ from textual.containers import Container
 from textual.widgets import Static
 
 from txl.base import Cell, CellFactory, Kernel, Widgets
-from txl.hooks import register_component
 
 YDOCS = {
     ep.name: ep.load() for ep in pkg_resources.iter_entry_points(group="ypywidgets")
@@ -161,14 +160,9 @@ class _Cell(Cell, Container, metaclass=CellMeta):
         return output_widget
 
 
-class CellComponent(Component):
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        widgets = await ctx.request_resource(Widgets, "widgets")
-        cell_factory = partial(_Cell, widgets=widgets)
-        ctx.add_resource(cell_factory, name="cell", types=CellFactory)
+@ino.inject
+def cell_factory(widgets: Widgets) -> CellFactory:
+    return partial(_Cell, widgets=widgets)
 
 
-c = register_component("cell", CellComponent)
+ino.register_provider(cell_factory)

@@ -1,8 +1,9 @@
 import asyncio
 from functools import partial
+from typing import Type
 
+import in_n_out as ino
 import pkg_resources
-from asphalt.core import Component, Context
 from ypywidgets.yutils import (
     YMessageType,
     YSyncMessageType,
@@ -13,7 +14,6 @@ from ypywidgets.yutils import (
 )
 
 from txl.base import Kernels, Widgets
-from txl.hooks import register_component
 
 
 class _Widgets:
@@ -59,16 +59,11 @@ class _Widgets:
                 pass
 
 
-class WidgetsComponent(Component):
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        kernels = await ctx.request_resource(Kernels, "kernels")
-        widgets = _Widgets()
-        kernels.comm_handlers.append(widgets)
-
-        ctx.add_resource(widgets, name="widgets", types=Widgets)
+@ino.inject
+def widgets(kernels: Type[Kernels]) -> Widgets:
+    widgets = _Widgets()
+    kernels.comm_handlers.append(widgets)
+    return widgets
 
 
-c = register_component("widgets", WidgetsComponent)
+ino.register_provider(widgets)

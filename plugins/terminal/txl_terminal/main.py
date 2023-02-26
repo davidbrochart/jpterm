@@ -1,14 +1,13 @@
 import asyncio
 
+import in_n_out as ino
 import pyte
-from asphalt.core import Component, Context
 from rich.console import RenderableType
 from rich.text import Text
 from textual import events
 from textual.widget import Widget
 
 from txl.base import Terminal, TerminalFactory
-from txl.hooks import register_component
 
 CTRL_KEYS = {
     "left": "\u001b[D",
@@ -83,12 +82,8 @@ class _Terminal(Terminal, Widget, metaclass=TerminalMeta, can_focus=True):
                 self.refresh()
 
 
-class TerminalComponent(Component):
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        ctx.add_resource(_Terminal, name="terminal", types=TerminalFactory)
+def terminal() -> TerminalFactory:
+    return _Terminal
 
 
-c = register_component("terminal", TerminalComponent)
+ino.register_provider(terminal)

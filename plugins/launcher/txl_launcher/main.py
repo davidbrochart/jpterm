@@ -1,9 +1,8 @@
-from asphalt.core import Component, Context
+import in_n_out as ino
 from textual.widget import Widget
 from textual.widgets import Button
 
 from txl.base import Launcher, MainArea
-from txl.hooks import register_component
 
 
 class LauncherMeta(type(Launcher), type(Widget)):
@@ -41,14 +40,10 @@ class _Launcher(Launcher, Widget, metaclass=LauncherMeta):
         await document.open()
 
 
-class LauncherComponent(Component):
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        main_area = await ctx.request_resource(MainArea, "main_area")
-        launcher = _Launcher(main_area)
-        ctx.add_resource(launcher, name="launcher", types=Launcher)
+@ino.inject
+@ino.inject_processors
+def launcher(main_area: MainArea) -> Launcher:
+    return _Launcher(main_area)
 
 
-c = register_component("launcher", LauncherComponent)
+ino.register_provider(launcher)

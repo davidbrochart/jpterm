@@ -3,12 +3,11 @@ from os import scandir
 from pathlib import Path
 from typing import List, Union
 
+import in_n_out as ino
 import y_py as Y
-from asphalt.core import Component, Context
 from jupyter_ydoc import ydocs
 
 from txl.base import Contents
-from txl.hooks import register_component
 
 
 class LocalContents(Contents):
@@ -35,16 +34,8 @@ class LocalContents(Contents):
         return jupyter_ydoc
 
 
-class ContentsComponent(Component):
-    def __init__(self, *args, **kwargs):
-        super().__init__()
-
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        contents = LocalContents()
-        ctx.add_resource(contents, name="contents", types=Contents)
+def contents() -> Contents:
+    return LocalContents()
 
 
-c = register_component("contents", ContentsComponent)
+ino.register_provider(contents)

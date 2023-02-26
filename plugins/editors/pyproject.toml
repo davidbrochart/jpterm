@@ -28,8 +28,8 @@ dynamic = ["version"]
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/editors"
 
-[project.entry-points.txl_component]
-txl_editors = "txl_editors.components"
+[project.entry-points.txl]
+editors = "txl_editors.main"
 
 [tool.hatch.version]
 path = "txl_editors/__init__.py"

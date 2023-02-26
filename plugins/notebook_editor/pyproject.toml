@@ -29,8 +29,8 @@ dynamic = ["version"]
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/notebook_editor"
 
-[project.entry-points.txl_component]
-txl_notebook_editor = "txl_notebook_editor.components"
+[project.entry-points.txl]
+notebook_editor = "txl_notebook_editor.main"
 
 [tool.hatch.version]
 path = "txl_notebook_editor/__init__.py"

@@ -1,10 +1,10 @@
 from functools import partial
+from typing import Type
 
-from asphalt.core import Component, Context
+import in_n_out as ino
 from textual.containers import Container
 
-from txl.base import CellFactory, Contents, Editor, Editors, FileOpenEvent, Kernels
-from txl.hooks import register_component
+from txl.base import CellFactory, Contents, Editor, Editors, Kernels
 
 
 class NotebookEditorMeta(type(Editor), type(Container)):
@@ -15,7 +15,7 @@ class NotebookEditor(Editor, Container, metaclass=NotebookEditorMeta):
     def __init__(
         self,
         contents: Contents,
-        kernels: Kernels,
+        kernels: Type[Kernels],
         cell_factory: CellFactory,
     ) -> None:
         super().__init__()
@@ -23,9 +23,6 @@ class NotebookEditor(Editor, Container, metaclass=NotebookEditorMeta):
         self.kernels = kernels
         self.cell_factory = cell_factory
         self.kernel = None
-
-    async def on_open(self, event: FileOpenEvent) -> None:
-        await self.open(event.path)
 
     async def open(self, path: str) -> None:
         self.ynb = await self.contents.get(path, type="notebook")
@@ -46,29 +43,15 @@ class NotebookEditor(Editor, Container, metaclass=NotebookEditorMeta):
             self.mount(cell)
 
 
-class NotebookEditorComponent(Component):
-    def __init__(self, register: bool = True):
-        super().__init__()
-        self.register = register
-
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        contents = await ctx.request_resource(Contents, "contents")
-        kernels = await ctx.request_resource(Kernels, "kernels")
-        cell_factory = await ctx.request_resource(CellFactory, "cell")
-
+def register_notebook_editor(editors: Editors):
+    @ino.inject
+    def inner(contents: Contents, kernels: Type[Kernels], cell_factory: CellFactory):
         notebook_editor_factory = partial(
             NotebookEditor, contents, kernels, cell_factory
         )
+        editors.register_editor_factory(notebook_editor_factory, [".ipynb"])
 
-        if self.register:
-            editors = await ctx.request_resource(Editors, "editors")
-            editors.register_editor_factory(notebook_editor_factory, [".ipynb"])
-        else:
-            notebook_editor = notebook_editor_factory()
-            ctx.add_resource(notebook_editor, name="notebook_editor", types=Editor)
+    inner()
 
 
-c = register_component("notebook_editor", NotebookEditorComponent)
+ino.register_processor(register_notebook_editor)

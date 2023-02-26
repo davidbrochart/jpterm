@@ -1,8 +1,9 @@
+from typing import Type
+
+import in_n_out as ino
 import y_py as Y
-from asphalt.core import Component, Context
 
 from txl.base import Kernels
-from txl.hooks import register_component
 
 from .driver import KernelDriver
 
@@ -18,12 +19,8 @@ class LocalKernels(Kernels):
         await self.kernel.execute(ydoc, ycell)
 
 
-class LocalKernelsComponent(Component):
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        ctx.add_resource(LocalKernels, name="kernels", types=Kernels)
+def local_kernels() -> Type[Kernels]:
+    return LocalKernels
 
 
-c = register_component("kernels", LocalKernelsComponent)
+ino.register_provider(local_kernels)

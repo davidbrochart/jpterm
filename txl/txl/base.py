@@ -2,18 +2,12 @@ from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, List, Union
 
 import y_py as Y
-from asphalt.core import Event, Signal
 from textual.binding import Binding
 
 
-class FileOpenEvent(Event):
-    def __init__(self, source, topic, path):
-        super().__init__(source, topic)
-        self.path = path
-
-
 class FileBrowser(ABC):
-    open_file_signal = Signal(FileOpenEvent)
+    def __init__(self):
+        self.open_file_callbacks = []
 
     @abstractmethod
     async def load_directory(self, node) -> None:
@@ -36,9 +30,9 @@ class Editors(ABC):
     ):
         ...
 
-    @abstractmethod
-    async def on_open(self, event: FileOpenEvent) -> None:
-        ...
+    # @abstractmethod
+    # async def on_open(self, event: FileOpenEvent) -> None:
+    #    ...
 
 
 class Contents(ABC):
@@ -59,7 +53,7 @@ class Cell(ABC):
         ...
 
 
-CellFactory = Callable[[], Cell]
+CellFactory = Callable[[...], Cell]
 
 
 class Kernel(ABC):

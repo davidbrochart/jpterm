@@ -4,7 +4,7 @@ import os.path
 from dataclasses import dataclass
 from typing import ClassVar
 
-from asphalt.core import Component, Context
+import in_n_out as ino
 from rich.style import Style
 from rich.text import Text, TextType
 from textual._types import MessageTarget
@@ -12,7 +12,6 @@ from textual.message import Message
 from textual.widgets._tree import TOGGLE_STYLE, Tree, TreeNode
 
 from txl.base import Contents, FileBrowser
-from txl.hooks import register_component
 
 
 @dataclass
@@ -73,8 +72,14 @@ class DirectoryTree(FileBrowser, Tree[DirEntry], metaclass=DirectoryTreeMeta):
         self.path = os.path.expanduser(path.rstrip("/"))
         name = os.path.basename(self.path)
         self.contents = contents
-        super().__init__(
-            self.path, data=DirEntry(self.path, True), name=name, id=id, classes=classes
+        FileBrowser.__init__(self)
+        Tree.__init__(
+            self,
+            self.path,
+            data=DirEntry(self.path, True),
+            name=name,
+            id=id,
+            classes=classes,
         )
 
     def process_label(self, label: TextType):
@@ -149,25 +154,22 @@ class DirectoryTree(FileBrowser, Tree[DirEntry], metaclass=DirectoryTreeMeta):
             if not dir_entry.loaded:
                 await self.load_directory(event.node)
         else:
-            self.open_file_signal.dispatch(dir_entry.path)
+            for cb in self.open_file_callbacks:
+                await cb(dir_entry.path)
 
-    def on_tree_node_selected(self, event: Tree.NodeSelected) -> None:
+    async def on_tree_node_selected(self, event: Tree.NodeSelected) -> None:
         event.stop()
         dir_entry = event.node.data
         if dir_entry is None:
             return
         if not dir_entry.is_dir:
-            self.open_file_signal.dispatch(dir_entry.path)
+            for cb in self.open_file_callbacks:
+                await cb(dir_entry.path)
 
 
-class FileBrowserComponent(Component):
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        contents = await ctx.request_resource(Contents, "contents")
-        file_browser = DirectoryTree(".", contents, id="browser-view")
-        ctx.add_resource(file_browser, name="file_browser", types=FileBrowser)
+@ino.inject
+def file_browser(contents: Contents) -> FileBrowser:
+    return DirectoryTree(".", contents, id="browser-view")
 
 
-c = register_component("file_browser", FileBrowserComponent)
+ino.register_provider(file_browser)

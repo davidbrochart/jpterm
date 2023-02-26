@@ -1,13 +1,13 @@
 import os
 import tempfile
+from functools import partial
 
-from asphalt.core import Component, Context
+import in_n_out as ino
 from PIL import Image
 from textual.widget import Widget
 from textual_imageview.viewer import ImageViewer
 
-from txl.base import Contents, Editor, Editors, FileOpenEvent
-from txl.hooks import register_component
+from txl.base import Contents, Editor, Editors
 
 
 class ImageViewerMeta(type(Editor), type(Widget)):
@@ -23,9 +23,6 @@ class _ImageViewer(Editor, Widget, metaclass=ImageViewerMeta):
         super().__init__()
         self.contents = contents
         self.image_viewer = None
-
-    async def on_open(self, event: FileOpenEvent) -> None:
-        await self.open(event.path)
 
     async def open(self, path: str) -> None:
         self.ydoc = await self.contents.get(path, type="blob")
@@ -53,28 +50,13 @@ class _ImageViewer(Editor, Widget, metaclass=ImageViewerMeta):
         self.update_viewer()
 
 
-class ImageViewerComponent(Component):
-    def __init__(self, register: bool = True):
-        super().__init__()
-        self.register = register
+def register_image_viewer(editors: Editors):
+    @ino.inject
+    def inner(contents: Contents):
+        image_viewer_factory = partial(_ImageViewer, contents)
+        editors.register_editor_factory(image_viewer_factory, [".png", ".jpg", ".jpeg"])
 
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        contents = await ctx.request_resource(Contents, "contents")
-
-        def image_viewer_factory():
-            return _ImageViewer(contents)
-
-        if self.register:
-            editors = await ctx.request_resource(Editors, "editors")
-            editors.register_editor_factory(
-                image_viewer_factory, [".png", ".jpg", ".jpeg"]
-            )
-        else:
-            image_viewer = image_viewer_factory()
-            ctx.add_resource(image_viewer, name="image_viewer", types=Editor)
+    inner()
 
 
-c = register_component("image_viewer", ImageViewerComponent)
+ino.register_processor(register_image_viewer)

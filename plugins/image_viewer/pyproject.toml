@@ -29,8 +29,8 @@ dynamic = ["version"]
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/image_viewer"
 
-[project.entry-points.txl_component]
-txl_image_viewer = "txl_image_viewer.components"
+[project.entry-points.txl]
+image_viewer = "txl_image_viewer.main"
 
 [tool.hatch.version]
 path = "txl_image_viewer/__init__.py"

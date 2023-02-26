@@ -30,8 +30,8 @@ dynamic = ["version"]
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/jpterm"
 
-[project.entry-points.txl_component]
-txl_jpterm = "txl_jpterm.components"
+[project.entry-points.txl]
+jpterm = "txl_jpterm.main"
 
 [tool.hatch.version]
 path = "txl_jpterm/__init__.py"

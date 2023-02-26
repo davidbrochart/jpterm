@@ -5,13 +5,13 @@ import pty
 import shlex
 import struct
 import termios
+from functools import partial
 
-from asphalt.core import Component, Context
+import in_n_out as ino
 from textual.widget import Widget
 from textual.widgets._header import HeaderTitle
 
 from txl.base import Header, Launcher, TerminalFactory, Terminals
-from txl.hooks import register_component
 
 
 class TerminalsMeta(type(Terminals), type(Widget)):
@@ -86,20 +86,14 @@ class LocalTerminals(Terminals, Widget, metaclass=TerminalsMeta):
                 await self._send_queue.put(["stdout", self._data_or_disconnect])
 
 
-class LocalTerminalsComponent(Component):
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        header = await ctx.request_resource(Header, "header")
-        terminal = await ctx.request_resource(TerminalFactory, "terminal")
-        launcher = await ctx.request_resource(Launcher, "launcher")
-
-        def terminals_factory():
-            return LocalTerminals(header, terminal)
-
+def local_terminals(launcher: Launcher):
+    @ino.inject
+    def inner(header: Header, terminal: TerminalFactory):
+        terminals_factory = partial(LocalTerminals, header, terminal)
         launcher.register("terminal", terminals_factory)
-        ctx.add_resource(terminals_factory, name="terminals", types=Terminals)
+        return terminals_factory
+
+    inner()
 
 
-c = register_component("terminals", LocalTerminalsComponent)
+ino.register_processor(local_terminals)

@@ -22,15 +22,16 @@ classifiers = [
 ]
 dependencies = [
   "txl",
-  "y-py >=0.6.0,<1"
+  "y-py >=0.6.0,<1",
+  "jupyter-ydoc >=0.3.4,<1",
 ]
 dynamic = ["version"]
 
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/local_contents"
 
-[project.entry-points.txl_component]
-txl_local_contents = "txl_local_contents.components"
+[project.entry-points.txl]
+local_contents = "txl_local_contents.main"
 
 [tool.hatch.version]
 path = "txl_local_contents/__init__.py"

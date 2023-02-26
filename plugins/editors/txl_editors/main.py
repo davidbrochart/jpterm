@@ -1,12 +1,11 @@
 from pathlib import Path
 from typing import Callable, Dict, List
 
-from asphalt.core import Component, Context
+import in_n_out as ino
 from textual.containers import Container
 from textual.widgets._header import HeaderTitle
 
-from txl.base import Editor, Editors, FileOpenEvent, Footer, Header, MainArea
-from txl.hooks import register_component
+from txl.base import Editor, Editors, Footer, Header, MainArea
 
 
 class EditorsMeta(type(Editors), type(Container)):
@@ -38,8 +37,8 @@ class _Editors(Editors, Container, metaclass=EditorsMeta):
                 self.ext_editor_factories[ext] = []
             self.ext_editor_factories[ext].append(editor_factory)
 
-    async def on_open(self, event: FileOpenEvent) -> None:
-        path = Path(event.path)
+    async def on_open(self, path: str) -> None:
+        path = Path(path)
         extension = path.suffix
         for ext, editor_factories in self.ext_editor_factories.items():
             if ext == extension:
@@ -61,16 +60,10 @@ class _Editors(Editors, Container, metaclass=EditorsMeta):
         preferred_editor.refresh(layout=True)
 
 
-class EditorsComponent(Component):
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        header = await ctx.request_resource(Header, "header")
-        footer = await ctx.request_resource(Footer, "footer")
-        main_area = await ctx.request_resource(MainArea, "main_area")
-        editors = _Editors(header, footer, main_area)
-        ctx.add_resource(editors, name="editors", types=Editors)
+@ino.inject
+@ino.inject_processors
+def editors(header: Header, footer: Footer, main_area: MainArea) -> Editors:
+    return _Editors(header, footer, main_area)
 
 
-c = register_component("editors", EditorsComponent)
+ino.register_provider(editors)

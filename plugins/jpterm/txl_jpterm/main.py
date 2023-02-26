@@ -1,10 +1,9 @@
-from asphalt.core import Component, Context
+import in_n_out as ino
 from textual.app import App, ComposeResult
 from textual.containers import Container
 from textual.reactive import var
 
 from txl.base import Editors, FileBrowser, Footer, Header, Launcher, MainArea
-from txl.hooks import register_component
 
 from .footer import Footer as _Footer
 from .header import Header as _Header
@@ -59,30 +58,48 @@ class Jpterm(App):
         self.main_area.show(self.launcher)
 
 
-class JptermComponent(Component):
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        header = _Header()
-        footer = _Footer()
-        main_area = _MainArea()
-        ctx.add_resource(header, name="header", types=Header)
-        ctx.add_resource(footer, name="footer", types=Footer)
-        ctx.add_resource(main_area, name="main_area", types=MainArea)
-        file_browser = await ctx.request_resource(FileBrowser, "file_browser")
-        editors = await ctx.request_resource(Editors, "editors")
-        file_browser.open_file_signal.connect(editors.on_open)
-        launcher = await ctx.request_resource(Launcher, "launcher")
-        jpterm = Jpterm(
-            header,
-            footer,
-            main_area,
-            file_browser,
-            editors,
-            launcher,
-        )
-        ctx.add_resource(jpterm, name="app", types=App)
+_header = _Header()
 
 
-c = register_component("app", JptermComponent)
+def header() -> Header:
+    return _header
+
+
+_footer = _Footer()
+
+
+def footer() -> Footer:
+    return _footer
+
+
+_main_area = _MainArea()
+
+
+def main_area() -> MainArea:
+    return _main_area
+
+
+@ino.inject
+def jpterm(
+    header: Header,
+    footer: Footer,
+    main_area: MainArea,
+    file_browser: FileBrowser,
+    launcher: Launcher,
+    editors: Editors,
+) -> App:
+    file_browser.open_file_callbacks.append(editors.on_open)
+    return Jpterm(
+        header,
+        footer,
+        main_area,
+        file_browser,
+        editors,
+        launcher,
+    )
+
+
+ino.register_provider(header)
+ino.register_provider(footer)
+ino.register_provider(main_area)
+ino.register_provider(jpterm)
