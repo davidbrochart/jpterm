@@ -22,7 +22,6 @@ classifiers = [
 ]
 dependencies = [
   "txl",
-  "textual >=0.10.1,<1",
 ]
 dynamic = ["version"]
 
