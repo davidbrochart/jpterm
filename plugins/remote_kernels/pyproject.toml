@@ -32,8 +32,8 @@ dynamic = ["version"]
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/remote_kernels"
 
-[project.entry-points.txl_component]
-txl_remote_kernels = "txl_remote_kernels.components"
+[project.entry-points."asphalt.components"]
+remote_kernels = "txl_remote_kernels.components:RemoteKernelsComponent"
 
 [tool.hatch.version]
 path = "txl_remote_kernels/__init__.py"

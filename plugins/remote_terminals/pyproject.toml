@@ -30,8 +30,8 @@ dynamic = ["version"]
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/remote_terminals"
 
-[project.entry-points.txl_component]
-txl_remote_terminals = "txl_remote_terminals.components"
+[project.entry-points."asphalt.components"]
+remote_terminals = "txl_remote_terminals.components:RemoteTerminalsComponent"
 
 [tool.hatch.version]
 path = "txl_remote_terminals/__init__.py"

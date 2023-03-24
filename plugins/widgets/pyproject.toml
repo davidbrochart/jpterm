@@ -23,14 +23,15 @@ classifiers = [
 dependencies = [
   "txl",
   "ypywidgets >=0.1.2",
+  "ypywidgets-textual >=0.1.0",
 ]
 dynamic = ["version"]
 
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/widgets"
 
-[project.entry-points.txl_component]
-txl_widgets = "txl_widgets.components"
+[project.entry-points."asphalt.components"]
+widgets = "txl_widgets.components:WidgetsComponent"
 
 [tool.hatch.version]
 path = "txl_widgets/__init__.py"

@@ -11,7 +11,6 @@ from textual.widget import Widget
 from textual.widgets._header import HeaderTitle
 
 from txl.base import Header, Launcher, TerminalFactory, Terminals
-from txl.hooks import register_component
 
 
 class TerminalsMeta(type(Terminals), type(Widget)):
@@ -91,15 +90,12 @@ class LocalTerminalsComponent(Component):
         self,
         ctx: Context,
     ) -> None:
-        header = await ctx.request_resource(Header, "header")
-        terminal = await ctx.request_resource(TerminalFactory, "terminal")
-        launcher = await ctx.request_resource(Launcher, "launcher")
+        header = await ctx.request_resource(Header)
+        terminal = await ctx.request_resource(TerminalFactory)
+        launcher = await ctx.request_resource(Launcher)
 
         def terminals_factory():
             return LocalTerminals(header, terminal)
 
         launcher.register("terminal", terminals_factory)
-        ctx.add_resource(terminals_factory, name="terminals", types=Terminals)
-
-
-c = register_component("terminals", LocalTerminalsComponent)
+        ctx.add_resource(terminals_factory, types=Terminals)

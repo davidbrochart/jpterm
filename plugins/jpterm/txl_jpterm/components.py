@@ -4,7 +4,6 @@ from textual.containers import Container
 from textual.reactive import var
 
 from txl.base import Editors, FileBrowser, Footer, Header, Launcher, MainArea
-from txl.hooks import register_component
 
 from .footer import Footer as _Footer
 from .header import Header as _Header
@@ -67,13 +66,13 @@ class JptermComponent(Component):
         header = _Header()
         footer = _Footer()
         main_area = _MainArea()
-        ctx.add_resource(header, name="header", types=Header)
-        ctx.add_resource(footer, name="footer", types=Footer)
-        ctx.add_resource(main_area, name="main_area", types=MainArea)
-        file_browser = await ctx.request_resource(FileBrowser, "file_browser")
-        editors = await ctx.request_resource(Editors, "editors")
+        ctx.add_resource(header, types=Header)
+        ctx.add_resource(footer, types=Footer)
+        ctx.add_resource(main_area, types=MainArea)
+        file_browser = await ctx.request_resource(FileBrowser)
+        editors = await ctx.request_resource(Editors)
         file_browser.open_file_signal.connect(editors.on_open)
-        launcher = await ctx.request_resource(Launcher, "launcher")
+        launcher = await ctx.request_resource(Launcher)
         jpterm = Jpterm(
             header,
             footer,
@@ -82,7 +81,4 @@ class JptermComponent(Component):
             editors,
             launcher,
         )
-        ctx.add_resource(jpterm, name="app", types=App)
-
-
-c = register_component("app", JptermComponent)
+        ctx.add_resource(jpterm, types=App)

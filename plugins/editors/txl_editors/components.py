@@ -6,7 +6,6 @@ from textual.containers import Container
 from textual.widgets._header import HeaderTitle
 
 from txl.base import Editor, Editors, FileOpenEvent, Footer, Header, MainArea
-from txl.hooks import register_component
 
 
 class EditorsMeta(type(Editors), type(Container)):
@@ -66,11 +65,8 @@ class EditorsComponent(Component):
         self,
         ctx: Context,
     ) -> None:
-        header = await ctx.request_resource(Header, "header")
-        footer = await ctx.request_resource(Footer, "footer")
-        main_area = await ctx.request_resource(MainArea, "main_area")
+        header = await ctx.request_resource(Header)
+        footer = await ctx.request_resource(Footer)
+        main_area = await ctx.request_resource(MainArea)
         editors = _Editors(header, footer, main_area)
-        ctx.add_resource(editors, name="editors", types=Editors)
-
-
-c = register_component("editors", EditorsComponent)
+        ctx.add_resource(editors, types=Editors)

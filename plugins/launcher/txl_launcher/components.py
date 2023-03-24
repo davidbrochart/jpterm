@@ -3,7 +3,6 @@ from textual.widget import Widget
 from textual.widgets import Button
 
 from txl.base import Launcher, MainArea
-from txl.hooks import register_component
 
 
 class LauncherMeta(type(Launcher), type(Widget)):
@@ -46,9 +45,6 @@ class LauncherComponent(Component):
         self,
         ctx: Context,
     ) -> None:
-        main_area = await ctx.request_resource(MainArea, "main_area")
+        main_area = await ctx.request_resource(MainArea)
         launcher = _Launcher(main_area)
-        ctx.add_resource(launcher, name="launcher", types=Launcher)
-
-
-c = register_component("launcher", LauncherComponent)
+        ctx.add_resource(launcher, types=Launcher)

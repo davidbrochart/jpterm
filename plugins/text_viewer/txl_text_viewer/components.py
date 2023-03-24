@@ -4,7 +4,6 @@ from rich.traceback import Traceback
 from textual.widgets import Static
 
 from txl.base import Contents, Editor, Editors, FileOpenEvent
-from txl.hooks import register_component
 
 
 class TextViewerMeta(type(Editor), type(Static)):
@@ -65,17 +64,14 @@ class TextViewerComponent(Component):
         self,
         ctx: Context,
     ) -> None:
-        contents = await ctx.request_resource(Contents, "contents")
+        contents = await ctx.request_resource(Contents)
 
         def text_viewer_factory():
             return TextViewer(contents)
 
         if self.register:
-            editors = await ctx.request_resource(Editors, "editors")
+            editors = await ctx.request_resource(Editors)
             editors.register_editor_factory(text_viewer_factory)
         else:
             text_viewer = text_viewer_factory()
-            ctx.add_resource(text_viewer, name="text_viewer", types=Editor)
-
-
-c = register_component("text_viewer", TextViewerComponent)
+            ctx.add_resource(text_viewer, types=Editor)

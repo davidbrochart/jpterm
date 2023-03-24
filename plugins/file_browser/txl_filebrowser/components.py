@@ -12,7 +12,6 @@ from textual.message import Message
 from textual.widgets._tree import TOGGLE_STYLE, Tree, TreeNode
 
 from txl.base import Contents, FileBrowser
-from txl.hooks import register_component
 
 
 @dataclass
@@ -165,9 +164,6 @@ class FileBrowserComponent(Component):
         self,
         ctx: Context,
     ) -> None:
-        contents = await ctx.request_resource(Contents, "contents")
+        contents = await ctx.request_resource(Contents)
         file_browser = DirectoryTree(".", contents, id="browser-view")
-        ctx.add_resource(file_browser, name="file_browser", types=FileBrowser)
-
-
-c = register_component("file_browser", FileBrowserComponent)
+        ctx.add_resource(file_browser, types=FileBrowser)

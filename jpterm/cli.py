@@ -1,5 +1,6 @@
 import rich_click as click
 
+from txl.app import disabled
 from txl.cli import set_main, txl_main
 
 
@@ -7,18 +8,16 @@ def jpterm_main(kwargs):
     server = kwargs.pop("server")
     collaborative = kwargs.pop("collaborative")
     set_ = list(kwargs["set_"])
-    locals = "[txl_local_contents,txl_local_terminals,txl_local_kernels]"
-    remotes = "[txl_remote_contents,txl_remote_terminals,txl_remote_kernels]"
     if server:
-        set_.append(f"component.disable={locals}")
-        set_.append(f"component.enable={remotes}")
-        set_.append(f"component.components.contents.url={server}")
-        set_.append(f"component.components.terminals.url={server}")
-        set_.append(f"component.components.kernels.url={server}")
-        set_.append(f"component.components.contents.collaborative={collaborative}")
+        set_.append(f"component.components.remote_contents.url={server}")
+        set_.append(f"component.components.remote_terminals.url={server}")
+        set_.append(f"component.components.remote_kernels.url={server}")
+        set_.append(
+            f"component.components.remote_contents.collaborative={collaborative}"
+        )
+        disabled.extend(["local_contents", "local_terminals", "local_kernels"])
     else:
-        set_.append(f"component.disable={remotes}")
-        set_.append(f"component.enable={locals}")
+        disabled.extend(["remote_contents", "remote_terminals", "remote_kernels"])
     kwargs["set_"] = set_
     return kwargs
 

@@ -12,7 +12,6 @@ from textual.containers import Container
 from textual.widgets import Static
 
 from txl.base import Cell, CellFactory, Kernel, Widgets
-from txl.hooks import register_component
 
 YDOCS = {
     ep.name: ep.load() for ep in pkg_resources.iter_entry_points(group="ypywidgets")
@@ -166,9 +165,6 @@ class CellComponent(Component):
         self,
         ctx: Context,
     ) -> None:
-        widgets = await ctx.request_resource(Widgets, "widgets")
+        widgets = await ctx.request_resource(Widgets)
         cell_factory = partial(_Cell, widgets=widgets)
-        ctx.add_resource(cell_factory, name="cell", types=CellFactory)
-
-
-c = register_component("cell", CellComponent)
+        ctx.add_resource(cell_factory, types=CellFactory)

@@ -9,7 +9,6 @@ from textual import events
 from textual.widgets import DataTable
 
 from txl.base import Contents, Editor, Editors, FileOpenEvent, Kernels, Widgets
-from txl.hooks import register_component
 
 
 def _line_range(
@@ -190,19 +189,16 @@ class NotebookViewerComponent(Component):
         self,
         ctx: Context,
     ) -> None:
-        contents = await ctx.request_resource(Contents, "contents")
-        kernels = await ctx.request_resource(Kernels, "kernels")
-        widgets = await ctx.request_resource(Widgets, "widgets")
+        contents = await ctx.request_resource(Contents)
+        kernels = await ctx.request_resource(Kernels)
+        widgets = await ctx.request_resource(Widgets)
 
         def notebook_viewer_factory():
             return NotebookViewer(contents, kernels, widgets)
 
         if self.register:
-            editors = await ctx.request_resource(Editors, "editors")
+            editors = await ctx.request_resource(Editors)
             editors.register_editor_factory(notebook_viewer_factory, [".ipynb"])
         else:
             notebook_viewer = notebook_viewer_factory()
-            ctx.add_resource(notebook_viewer, name="notebook_viewer", types=Editor)
-
-
-c = register_component("notebook_viewer", NotebookViewerComponent)
+            ctx.add_resource(notebook_viewer, types=Editor)

@@ -2,7 +2,6 @@ import y_py as Y
 from asphalt.core import Component, Context
 
 from txl.base import Kernels
-from txl.hooks import register_component
 
 from .driver import KernelDriver
 
@@ -23,7 +22,4 @@ class LocalKernelsComponent(Component):
         self,
         ctx: Context,
     ) -> None:
-        ctx.add_resource(LocalKernels, name="kernels", types=Kernels)
-
-
-c = register_component("kernels", LocalKernelsComponent)
+        ctx.add_resource(LocalKernels, types=Kernels)

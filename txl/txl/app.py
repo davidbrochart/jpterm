@@ -1,46 +1,28 @@
+import pkg_resources
 from asphalt.core import CLIApplicationComponent, Context
 from asphalt.core.cli import run as asphalt_run
-from pluggy import PluginManager
 from textual.app import App
 
-from txl import hooks
-from txl.hooks import HookType
+components = {
+    ep.name: ep.load()
+    for ep in pkg_resources.iter_entry_points(group="asphalt.components")
+}
 
-
-def get_pluggin_manager(hook_type: HookType) -> PluginManager:
-    pm = PluginManager(hook_type.value)
-    pm.add_hookspecs(hooks)
-    pm.load_setuptools_entrypoints(hook_type.value)
-    return pm
-
-
-def load_components():
-    pm = get_pluggin_manager(HookType.COMPONENT)
-    return pm.hook.component()
+disabled = []
 
 
 class AppComponent(CLIApplicationComponent):
-    def __init__(self, components=None, disable=[], enable=[]):
+    def __init__(self, components=None):
         super().__init__(components)
-        self.disable = disable
-        self.enable = enable
 
     async def start(self, ctx: Context) -> None:
-        for name, component, config in load_components():
-            add_component = config.pop("enable", True)
-            plugin = component.__module__.split(".", 1)[0]
-            if plugin in self.disable and plugin in self.enable:
-                raise RuntimeError(f"Plugin cannot be disabled and enabled: {plugin}")
-            if plugin in self.disable:
-                add_component = False
-            elif plugin in self.enable:
-                add_component = True
-            if add_component:
-                self.add_component(name, component, **config)
+        for name, component in components.items():
+            if name not in disabled:
+                self.add_component(name, component)
         await super().start(ctx)
 
     async def run(self, ctx: Context) -> None:
-        app = ctx.require_resource(App, "app")
+        app = ctx.require_resource(App)
         await app._process_messages()
 
 

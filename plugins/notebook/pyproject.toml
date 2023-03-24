@@ -29,8 +29,8 @@ dynamic = ["version"]
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/notebook"
 
-[project.entry-points.txl_component]
-txl_notebook = "txl_notebook.components"
+[project.entry-points."asphalt.components"]
+notebook = "txl_notebook.components:NotebookComponent"
 
 [tool.hatch.version]
 path = "txl_notebook/__init__.py"

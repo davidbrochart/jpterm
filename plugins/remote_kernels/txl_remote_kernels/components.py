@@ -2,7 +2,6 @@ import y_py as Y
 from asphalt.core import Component, Context
 
 from txl.base import Kernels
-from txl.hooks import register_component
 
 from .driver import KernelDriver
 
@@ -37,7 +36,4 @@ class RemoteKernelsComponent(Component):
             def __init__(self, *args, **kwargs):
                 super().__init__(url, *args, **kwargs)
 
-        ctx.add_resource(_RemoteKernels, name="kernels", types=Kernels)
-
-
-c = register_component("kernels", RemoteKernelsComponent)
+        ctx.add_resource(_RemoteKernels, types=Kernels)
