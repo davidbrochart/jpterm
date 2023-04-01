@@ -7,7 +7,6 @@ from textual.widget import Widget
 from textual_imageview.viewer import ImageViewer
 
 from txl.base import Contents, Editor, Editors, FileOpenEvent
-from txl.hooks import register_component
 
 
 class ImageViewerMeta(type(Editor), type(Widget)):
@@ -62,19 +61,16 @@ class ImageViewerComponent(Component):
         self,
         ctx: Context,
     ) -> None:
-        contents = await ctx.request_resource(Contents, "contents")
+        contents = await ctx.request_resource(Contents)
 
         def image_viewer_factory():
             return _ImageViewer(contents)
 
         if self.register:
-            editors = await ctx.request_resource(Editors, "editors")
+            editors = await ctx.request_resource(Editors)
             editors.register_editor_factory(
                 image_viewer_factory, [".png", ".jpg", ".jpeg"]
             )
         else:
             image_viewer = image_viewer_factory()
-            ctx.add_resource(image_viewer, name="image_viewer", types=Editor)
-
-
-c = register_component("image_viewer", ImageViewerComponent)
+            ctx.add_resource(image_viewer, types=Editor)

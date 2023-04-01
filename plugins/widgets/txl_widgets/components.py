@@ -1,6 +1,3 @@
-import asyncio
-from functools import partial
-
 import pkg_resources
 from asphalt.core import Component, Context
 from ypywidgets.yutils import (
@@ -8,12 +5,10 @@ from ypywidgets.yutils import (
     YSyncMessageType,
     create_update_message,
     process_sync_message,
-    put_updates,
     sync,
 )
 
 from txl.base import Kernels, Widgets
-from txl.hooks import register_component
 
 
 class _Widgets:
@@ -23,8 +18,6 @@ class _Widgets:
             for ep in pkg_resources.iter_entry_points(group="ypywidgets")
         }
         self.widgets = {}
-        self._update_queue = asyncio.Queue()  # FIXME: one per widget
-        self.synced = asyncio.Event()  # FIXME
 
     def comm_open(self, msg, comm) -> None:
         name = msg["content"]["target_name"]
@@ -33,30 +26,26 @@ class _Widgets:
         model = self.ydocs[name](open_comm=False)
         self.widgets[comm_id] = {"model": model, "comm": comm}
         sync(model.ydoc, comm)
-        asyncio.create_task(self._send(model.ydoc))
 
     def comm_msg(self, msg) -> None:
         comm_id = msg["content"]["comm_id"]
         message = bytes(msg["buffers"][0])
         if message[0] == YMessageType.SYNC:
+            ydoc = self.widgets[comm_id]["model"].ydoc
             process_sync_message(
                 message[1:],
-                self.widgets[comm_id]["model"].ydoc,
-                self.widgets[comm_id]["comm"],
+                ydoc,
+                self.widgets[comm_id]["comm"].send,
             )
             if message[1] == YSyncMessageType.SYNC_STEP2:
-                self.synced.set()
+                ydoc.observe_after_transaction(self._send)
 
-    async def _send(self, ydoc):
-        await self.synced.wait()
-        ydoc.observe_after_transaction(partial(put_updates, self._update_queue))
-        while True:
-            update = await self._update_queue.get()
-            message = create_update_message(update)
-            try:
-                self.comm.send(buffers=[message])
-            except BaseException:
-                pass
+    async def _send(self, update):
+        message = create_update_message(update)
+        try:
+            self.comm.send(buffers=[message])
+        except BaseException:
+            pass
 
 
 class WidgetsComponent(Component):
@@ -64,11 +53,8 @@ class WidgetsComponent(Component):
         self,
         ctx: Context,
     ) -> None:
-        kernels = await ctx.request_resource(Kernels, "kernels")
+        kernels = await ctx.request_resource(Kernels)
         widgets = _Widgets()
         kernels.comm_handlers.append(widgets)
 
-        ctx.add_resource(widgets, name="widgets", types=Widgets)
-
-
-c = register_component("widgets", WidgetsComponent)
+        ctx.add_resource(widgets, types=Widgets)

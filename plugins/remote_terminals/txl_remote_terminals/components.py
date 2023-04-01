@@ -10,7 +10,6 @@ from textual.widget import Widget
 from textual.widgets._header import HeaderTitle
 
 from txl.base import Header, Launcher, TerminalFactory, Terminals
-from txl.hooks import register_component
 
 
 class TerminalsMeta(type(Terminals), type(Widget)):
@@ -93,9 +92,9 @@ class RemoteTerminalsComponent(Component):
         self,
         ctx: Context,
     ) -> None:
-        header = await ctx.request_resource(Header, "header")
-        terminal = await ctx.request_resource(TerminalFactory, "terminal")
-        launcher = await ctx.request_resource(Launcher, "launcher")
+        header = await ctx.request_resource(Header)
+        terminal = await ctx.request_resource(TerminalFactory)
+        launcher = await ctx.request_resource(Launcher)
         parsed_url = parse.urlparse(self.url)
         base_url = parse.urljoin(self.url, parsed_url.path).rstrip("/")
         query_params = parse.parse_qs(parsed_url.query)
@@ -105,7 +104,4 @@ class RemoteTerminalsComponent(Component):
             return RemoteTerminals(base_url, query_params, cookies, header, terminal)
 
         launcher.register("terminal", terminals_factory)
-        ctx.add_resource(terminals_factory, name="terminals", types=Terminals)
-
-
-c = register_component("terminals", RemoteTerminalsComponent)
+        ctx.add_resource(terminals_factory, types=Terminals)

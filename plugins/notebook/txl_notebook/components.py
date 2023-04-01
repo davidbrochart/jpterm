@@ -2,7 +2,6 @@ from asphalt.core import Component, Context
 from jupyter_ydoc import YNotebook
 
 from txl.base import Notebook, NotebookFactory
-from txl.hooks import register_component
 
 
 class _Notebook(Notebook):
@@ -21,7 +20,4 @@ class NotebookComponent(Component):
         def notebook_factory(ynotebook: YNotebook) -> Notebook:
             return _Notebook(ynotebook)
 
-        ctx.add_resource(notebook_factory, name="notebook", types=NotebookFactory)
-
-
-c = register_component("notebook", NotebookComponent)
+        ctx.add_resource(notebook_factory, types=NotebookFactory)

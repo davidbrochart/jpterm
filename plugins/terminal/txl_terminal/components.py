@@ -8,7 +8,6 @@ from textual import events
 from textual.widget import Widget
 
 from txl.base import Terminal, TerminalFactory
-from txl.hooks import register_component
 
 CTRL_KEYS = {
     "left": "\u001b[D",
@@ -88,7 +87,4 @@ class TerminalComponent(Component):
         self,
         ctx: Context,
     ) -> None:
-        ctx.add_resource(_Terminal, name="terminal", types=TerminalFactory)
-
-
-c = register_component("terminal", TerminalComponent)
+        ctx.add_resource(_Terminal, types=TerminalFactory)

@@ -11,7 +11,6 @@ from jupyter_ydoc import ydocs
 from ypy_websocket import WebsocketProvider
 
 from txl.base import Contents
-from txl.hooks import register_component
 
 
 class Websocket:
@@ -132,7 +131,7 @@ class RemoteContents(Contents):
             await asyncio.Future()
 
 
-class ContentsComponent(Component):
+class RemoteContentsComponent(Component):
     def __init__(self, url: str = "http://127.0.0.1:8000", collaborative: bool = True):
         super().__init__()
         self.url = url
@@ -147,7 +146,4 @@ class ContentsComponent(Component):
         query_params = parse.parse_qs(parsed_url.query)
         cookies = httpx.Cookies()
         contents = RemoteContents(base_url, query_params, cookies, self.collaborative)
-        ctx.add_resource(contents, name="contents", types=Contents)
-
-
-c = register_component("contents", ContentsComponent, enable=False)
+        ctx.add_resource(contents, types=Contents)

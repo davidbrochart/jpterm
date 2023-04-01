@@ -28,8 +28,8 @@ dynamic = ["version"]
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/launcher"
 
-[project.entry-points.txl_component]
-txl_launcher = "txl_launcher.components"
+[project.entry-points."asphalt.components"]
+launcher = "txl_launcher.components:LauncherComponent"
 
 [tool.hatch.version]
 path = "txl_launcher/__init__.py"

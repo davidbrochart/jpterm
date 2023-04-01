@@ -29,8 +29,8 @@ dynamic = ["version"]
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/local_contents"
 
-[project.entry-points.txl_component]
-txl_local_contents = "txl_local_contents.components"
+[project.entry-points."asphalt.components"]
+local_contents = "txl_local_contents.components:LocalContentsComponent"
 
 [tool.hatch.version]
 path = "txl_local_contents/__init__.py"

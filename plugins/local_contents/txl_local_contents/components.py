@@ -8,7 +8,6 @@ from asphalt.core import Component, Context
 from jupyter_ydoc import ydocs
 
 from txl.base import Contents
-from txl.hooks import register_component
 
 
 class LocalContents(Contents):
@@ -35,16 +34,10 @@ class LocalContents(Contents):
         return jupyter_ydoc
 
 
-class ContentsComponent(Component):
-    def __init__(self, *args, **kwargs):
-        super().__init__()
-
+class LocalContentsComponent(Component):
     async def start(
         self,
         ctx: Context,
     ) -> None:
         contents = LocalContents()
-        ctx.add_resource(contents, name="contents", types=Contents)
-
-
-c = register_component("contents", ContentsComponent)
+        ctx.add_resource(contents, types=Contents)

@@ -28,8 +28,8 @@ dynamic = ["version"]
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/markdown_viewer"
 
-[project.entry-points.txl_component]
-txl_markdown_viewer = "txl_markdown_viewer.components"
+[project.entry-points."asphalt.components"]
+markdown_viewer = "txl_markdown_viewer.components:MarkdownViewerComponent"
 
 [tool.hatch.version]
 path = "txl_markdown_viewer/__init__.py"

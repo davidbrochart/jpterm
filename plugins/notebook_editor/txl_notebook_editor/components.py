@@ -4,7 +4,6 @@ from asphalt.core import Component, Context
 from textual.containers import Container
 
 from txl.base import CellFactory, Contents, Editor, Editors, FileOpenEvent, Kernels
-from txl.hooks import register_component
 
 
 class NotebookEditorMeta(type(Editor), type(Container)):
@@ -55,20 +54,17 @@ class NotebookEditorComponent(Component):
         self,
         ctx: Context,
     ) -> None:
-        contents = await ctx.request_resource(Contents, "contents")
-        kernels = await ctx.request_resource(Kernels, "kernels")
-        cell_factory = await ctx.request_resource(CellFactory, "cell")
+        contents = await ctx.request_resource(Contents)
+        kernels = await ctx.request_resource(Kernels)
+        cell_factory = await ctx.request_resource(CellFactory)
 
         notebook_editor_factory = partial(
             NotebookEditor, contents, kernels, cell_factory
         )
 
         if self.register:
-            editors = await ctx.request_resource(Editors, "editors")
+            editors = await ctx.request_resource(Editors)
             editors.register_editor_factory(notebook_editor_factory, [".ipynb"])
         else:
             notebook_editor = notebook_editor_factory()
-            ctx.add_resource(notebook_editor, name="notebook_editor", types=Editor)
-
-
-c = register_component("notebook_editor", NotebookEditorComponent)
+            ctx.add_resource(notebook_editor, types=Editor)

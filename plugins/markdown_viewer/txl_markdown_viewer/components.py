@@ -5,7 +5,6 @@ from textual.containers import Container
 from textual.widgets import MarkdownViewer as TextualMarkdownViewer
 
 from txl.base import Contents, Editor, Editors, FileOpenEvent
-from txl.hooks import register_component
 
 
 class MarkdownViewerMeta(type(Editor), type(Container)):
@@ -47,17 +46,14 @@ class MarkdownViewerComponent(Component):
         self,
         ctx: Context,
     ) -> None:
-        contents = await ctx.request_resource(Contents, "contents")
+        contents = await ctx.request_resource(Contents)
 
         def markdown_viewer_factory():
             return MarkdownViewer(contents)
 
         if self.register:
-            editors = await ctx.request_resource(Editors, "editors")
+            editors = await ctx.request_resource(Editors)
             editors.register_editor_factory(markdown_viewer_factory, [".md"])
         else:
             markdown_viewer = markdown_viewer_factory()
-            ctx.add_resource(markdown_viewer, name="markdown_viewer", types=Editor)
-
-
-c = register_component("markdown_viewer", MarkdownViewerComponent)
+            ctx.add_resource(markdown_viewer, types=Editor)

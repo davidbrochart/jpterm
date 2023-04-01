@@ -33,8 +33,8 @@ dynamic = ["version"]
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/remote_contents"
 
-[project.entry-points.txl_component]
-txl_remote_contents = "txl_remote_contents.components"
+[project.entry-points."asphalt.components"]
+remote_contents = "txl_remote_contents.components:RemoteContentsComponent"
 
 [tool.hatch.version]
 path = "txl_remote_contents/__init__.py"
