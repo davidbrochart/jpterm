@@ -3,7 +3,6 @@ from typing import Callable, Dict, List
 
 from asphalt.core import Component, Context
 from textual.containers import Container
-from textual.widgets._header import HeaderTitle
 
 from txl.base import Editor, Editors, FileOpenEvent, Footer, Header, MainArea
 
@@ -51,8 +50,7 @@ class _Editors(Editors, Container, metaclass=EditorsMeta):
                 )
             preferred_editor_factory = self.ext_editor_factories[None][0]
         preferred_editor = preferred_editor_factory()
-        self.main_area.show(preferred_editor)
-        self.header.query_one(HeaderTitle).text = path.name
+        self.main_area.show(preferred_editor, path.name)
         bindings = preferred_editor.get_bindings()
         if bindings:
             self.footer.update_bindings(bindings)

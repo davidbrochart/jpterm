@@ -56,7 +56,7 @@ class RemoteTerminals(Terminals, Widget, metaclass=TerminalsMeta):
             terminal = self.terminal(self._send_queue, self._recv_queue)
             terminal.focus()
             await self.mount(terminal)
-            terminal.set_size(self.size)
+            terminal.set_size()
             async with aconnect_ws(
                 f"{self.ws_url}/terminals/websocket/{name}", cookies=self.cookies
             ) as self.websocket:

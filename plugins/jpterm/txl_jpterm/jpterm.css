@@ -18,5 +18,4 @@ Jpterm.-show-browser #browser-view {
 
 #main-view {
     min-width: 100%;
-    overflow: auto auto;
 }
