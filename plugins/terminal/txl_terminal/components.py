@@ -31,6 +31,13 @@ class TerminalMeta(type(Terminal), type(Widget)):
 
 
 class _Terminal(Terminal, Widget, metaclass=TerminalMeta, can_focus=True):
+
+    DEFAULT_CSS = """
+    _Terminal {
+        height: 1fr;
+    }
+    """
+
     def __init__(self, send_queue, recv_queue):
         super().__init__()
         self._send_queue = send_queue
@@ -39,9 +46,9 @@ class _Terminal(Terminal, Widget, metaclass=TerminalMeta, can_focus=True):
         self._size_set = asyncio.Event()
         asyncio.create_task(self._recv())
 
-    def set_size(self, size):
-        self._ncol = size.width
-        self._nrow = size.height
+    def set_size(self):
+        self._ncol = self.size.width
+        self._nrow = self.size.height - 3  # FIXME
         self._screen = pyte.Screen(self._ncol, self._nrow)
         self._stream = pyte.Stream(self._screen)
         self._size_set.set()

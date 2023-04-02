@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import y_py as Y
 from asphalt.core import Event, Signal
@@ -99,7 +99,7 @@ class Footer(ABC):
 
 class MainArea(ABC):
     @abstractmethod
-    def show(self, widget):
+    def show(self, widget, title: Optional[str] = None):
         ...
 
 

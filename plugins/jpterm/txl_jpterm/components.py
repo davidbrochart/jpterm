@@ -44,7 +44,7 @@ class Jpterm(App):
 
     def compose(self) -> ComposeResult:
         yield self.header
-        self.main_area.show(self.launcher)
+        self.main_area.show(self.launcher, "Launcher")
         yield Container(
             self.file_browser,
             self.main_area,
@@ -55,7 +55,7 @@ class Jpterm(App):
         self.show_browser = not self.show_browser
 
     def action_open_launcher(self) -> None:
-        self.main_area.show(self.launcher)
+        self.main_area.show(self.launcher, "Launcher")
 
 
 class JptermComponent(Component):

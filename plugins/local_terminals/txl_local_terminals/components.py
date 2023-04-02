@@ -31,9 +31,9 @@ class LocalTerminals(Terminals, Widget, metaclass=TerminalsMeta):
         terminal = self.terminal(self._recv_queue, self._send_queue)
         terminal.focus()
         await self.mount(terminal)
-        terminal.set_size(self.size)
-        self._ncol = self.size.width
-        self._nrow = self.size.height
+        terminal.set_size()
+        self._ncol = terminal.size.width
+        self._nrow = terminal.size.height
         self._fd = self._open_terminal()
         self._p_out = os.fdopen(self._fd, "w+b", 0)
         asyncio.create_task(self._run())

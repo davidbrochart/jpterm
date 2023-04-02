@@ -1,6 +1,8 @@
 from asphalt.core import Component, Context
 from rich.syntax import Syntax
 from rich.traceback import Traceback
+from textual.app import ComposeResult
+from textual.containers import Container
 from textual.widgets import Static
 
 from txl.base import Contents, Editor, Editors, FileOpenEvent
@@ -10,31 +12,20 @@ class TextViewerMeta(type(Editor), type(Static)):
     pass
 
 
-class TextViewer(Editor, Static, metaclass=TextViewerMeta):
+class Viewer(Static):
 
-    text: str
-    contents: Contents
-    path: str
+    DEFAULT_CSS = """
+    Viewer {
+        width: auto;
+        height: auto;
+    }
+    """
 
-    def __init__(self, contents: Contents) -> None:
-        super().__init__(expand=True)
-        self.contents = contents
-
-    async def on_open(self, event: FileOpenEvent) -> None:
-        await self.open(event.path)
-
-    async def open(self, path: str) -> None:
-        self.path = path
-        self.ytext = await self.contents.get(path, type="unicode")
-        self.text = self.ytext.source
-        self.update_viewer()
-        self.ytext.observe(self.on_change)
-
-    def update_viewer(self):
+    def _update(self, path, text):
         try:
-            lexer = Syntax.guess_lexer(self.path, code=self.text)
+            lexer = Syntax.guess_lexer(path, code=text)
             syntax = Syntax(
-                self.text,
+                text,
                 lexer=lexer,
                 line_numbers=True,
                 word_wrap=False,
@@ -45,14 +36,36 @@ class TextViewer(Editor, Static, metaclass=TextViewerMeta):
             self.update(Traceback(theme="github-dark", width=None))
         else:
             self.update(syntax)
-            self.sub_title = self.path
+            self.sub_title = path
+
+
+class TextViewer(Editor, Container, metaclass=TextViewerMeta):
+
+    contents: Contents
+    path: str
+
+    def __init__(self, contents: Contents) -> None:
+        super().__init__()
+        self.contents = contents
+        self.viewer = Viewer(expand=True, shrink=False)
+
+    def compose(self) -> ComposeResult:
+        yield self.viewer
+
+    async def on_open(self, event: FileOpenEvent) -> None:
+        await self.open(event.path)
+
+    async def open(self, path: str) -> None:
+        self.path = path
+        self.ytext = await self.contents.get(path, type="unicode")
+        self.viewer._update(path, self.ytext.source)
+        self.ytext.observe(self.on_change)
 
     def on_mount(self):
         self.expand
 
     def on_change(self, target, event):
-        self.text = self.ytext.source
-        self.update_viewer()
+        self.viewer._update(self.path, self.ytext.source)
 
 
 class TextViewerComponent(Component):
