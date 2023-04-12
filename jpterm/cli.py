@@ -35,5 +35,5 @@ def main():
     _main = txl_main
     for decorator in decorators[::-1]:
         _main = decorator(_main)
-    command = click.command(_main)
+    command = click.command()(_main)
     command()
