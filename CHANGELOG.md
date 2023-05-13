@@ -2,6 +2,24 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 0.1.14
+
+([Full Changelog](https://github.com/davidbrochart/jpterm/compare/v0.1.13...bc79edb342244b5877ac1557b409760648cc3844))
+
+### Merged PRs
+
+- Update ypywidgets, textual [#41](https://github.com/davidbrochart/jpterm/pull/41) ([@davidbrochart](https://github.com/davidbrochart))
+- Fix click command [#40](https://github.com/davidbrochart/jpterm/pull/40) ([@davidbrochart](https://github.com/davidbrochart))
+- Add tabs [#39](https://github.com/davidbrochart/jpterm/pull/39) ([@davidbrochart](https://github.com/davidbrochart))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/davidbrochart/jpterm/graphs/contributors?from=2023-04-01&to=2023-05-13&type=c))
+
+[@davidbrochart](https://github.com/search?q=repo%3Adavidbrochart%2Fjpterm+involves%3Adavidbrochart+updated%3A2023-04-01..2023-05-13&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 0.1.13
 
 ([Full Changelog](https://github.com/davidbrochart/jpterm/compare/v0.1.12...b41673fc21e2066687d2f324d4ab10ea0460c287))
@@ -18,8 +36,6 @@
 ([GitHub contributors page for this release](https://github.com/davidbrochart/jpterm/graphs/contributors?from=2023-02-15&to=2023-04-01&type=c))
 
 [@davidbrochart](https://github.com/search?q=repo%3Adavidbrochart%2Fjpterm+involves%3Adavidbrochart+updated%3A2023-02-15..2023-04-01&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 0.1.12
 
