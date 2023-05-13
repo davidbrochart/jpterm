@@ -1,6 +1,7 @@
 import pkg_resources
+import y_py as Y
 from asphalt.core import Component, Context
-from ypywidgets.yutils import (
+from ypywidgets.utils import (
     YMessageType,
     YSyncMessageType,
     create_update_message,
@@ -20,27 +21,34 @@ class _Widgets:
         self.widgets = {}
 
     def comm_open(self, msg, comm) -> None:
-        name = msg["content"]["target_name"]
+        target_name = msg["content"]["target_name"]
+        if target_name != "ywidget":
+            return
+
+        name = msg["metadata"]["ymodel_name"]
         comm_id = msg["content"]["comm_id"]
         self.comm = comm
-        model = self.ydocs[name](open_comm=False)
+        model = self.ydocs[name](primary=False)
         self.widgets[comm_id] = {"model": model, "comm": comm}
-        sync(model.ydoc, comm)
+        msg = sync(model._ydoc)
+        comm.send(**msg)
 
     def comm_msg(self, msg) -> None:
         comm_id = msg["content"]["comm_id"]
         message = bytes(msg["buffers"][0])
         if message[0] == YMessageType.SYNC:
-            ydoc = self.widgets[comm_id]["model"].ydoc
-            process_sync_message(
+            ydoc = self.widgets[comm_id]["model"]._ydoc
+            reply = process_sync_message(
                 message[1:],
                 ydoc,
-                self.widgets[comm_id]["comm"].send,
             )
+            if reply:
+                self.widgets[comm_id]["comm"].send(buffers=[reply])
             if message[1] == YSyncMessageType.SYNC_STEP2:
                 ydoc.observe_after_transaction(self._send)
 
-    async def _send(self, update):
+    def _send(self, event: Y.AfterTransactionEvent):
+        update = event.get_update()
         message = create_update_message(update)
         try:
             self.comm.send(buffers=[message])

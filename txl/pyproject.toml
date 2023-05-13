@@ -22,7 +22,7 @@ classifiers = [
 ]
 dependencies = [
   "asphalt >=4.11.1,<5",
-  "textual >=0.17,<0.18",
+  "textual >=0.24.1,<0.25",
   "y-py >=0.6.0,<1",
 ]
 dynamic = ["version"]
