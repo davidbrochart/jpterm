@@ -22,8 +22,8 @@ classifiers = [
 ]
 dependencies = [
   "txl",
-  "ypywidgets >=0.1.2",
-  "ypywidgets-textual >=0.1.0",
+  "ypywidgets >=0.4.0",
+  "ypywidgets-textual >=0.1.2",
 ]
 dynamic = ["version"]
 

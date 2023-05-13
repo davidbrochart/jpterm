@@ -140,7 +140,7 @@ class _Cell(Cell, Container, metaclass=CellMeta):
                 ]
                 if model_id in self.widgets.widgets:
                     model = self.widgets.widgets[model_id]["model"]
-                    widget = YDOCS[f"txl_{model.name}"](model)
+                    widget = YDOCS[f"txl_{model.__class__.__name__}"](model)
             if not widget:
                 data = output["data"].get("text/plain", "")
                 renderable = Text()
