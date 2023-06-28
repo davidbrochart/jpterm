@@ -4,35 +4,60 @@ from functools import partial
 import pkg_resources
 import y_py as Y
 from asphalt.core import Component, Context
+from rich import box
+from rich.console import RenderableType
 from rich.markdown import Markdown
 from rich.panel import Panel
-from rich.syntax import Syntax
 from rich.text import Text
 from textual.containers import Container
 from textual.widgets import Static
 
 from txl.base import Cell, CellFactory, Kernel, Widgets
+from txl.text_input import TextInput
 
 YDOCS = {
     ep.name: ep.load() for ep in pkg_resources.iter_entry_points(group="ypywidgets")
 }
 
 
-class Source(Static):
-    def __init__(self, cell, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.cell = cell
+class Source(TextInput):
+    def __init__(self, ycell, *args, **kwargs):
+        super().__init__(ytext=ycell["source"], *args, **kwargs)
+        self.ycell = ycell
+        self._selected = False
 
-    async def on_click(self):
-        if self.cell.kernel:
-            await self.cell.kernel.execute(self.cell.ydoc, self.cell.ycell)
+    @property
+    def selected(self) -> bool:
+        return self._selected
+
+    @selected.setter
+    def selected(self, value: bool) -> None:
+        self._selected = value
+        self.update()
+
+    def render(self) -> RenderableType:
+        if self.ycell["cell_type"] == "code":
+            code = super().render()
+            border_style = "yellow"
+            box_style = box.DOUBLE if self.selected else box.ROUNDED
+            renderable = Panel(
+                code,
+                height=len(self.lines) + 2,
+                border_style=border_style,
+                box=box_style,
+            )
+        elif self.ycell["cell_type"] == "markdown":
+            renderable = Markdown(str(self.ycell["source"]), code_theme="ansi_dark")
+        else:
+            renderable = Text(str(self.ycell["source"]))
+        return renderable
 
 
 class CellMeta(type(Cell), type(Container)):
     pass
 
 
-class _Cell(Cell, Container, metaclass=CellMeta):
+class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
     def __init__(
         self,
         ycell: Y.YMap,
@@ -83,24 +108,6 @@ class _Cell(Cell, Container, metaclass=CellMeta):
         execution_count = str(value).removesuffix(".0")
         return f"[green]In [[#66ff00]{execution_count}[/#66ff00]]:[/green]"
 
-    def get_source(self, cell):
-        source = "".join(cell["source"])
-        theme = "ansi_dark"
-        if cell["cell_type"] == "code":
-            renderable = Panel(
-                Syntax(
-                    source,
-                    self.language,
-                    theme=theme,
-                ),
-                border_style="yellow",
-            )
-        elif cell["cell_type"] == "markdown":
-            renderable = Markdown(source, code_theme=theme)
-        else:
-            renderable = Text(source)
-        return renderable
-
     def update(self):
         cell = json.loads(self.ycell.to_json())
         execution_count = (
@@ -110,8 +117,9 @@ class _Cell(Cell, Container, metaclass=CellMeta):
         )
         self.execution_count = Static(execution_count)
         self.mount(self.execution_count)
-        source = self.get_source(cell)
-        self.source = Source(self, source)
+        self.source = Source(
+            ydoc=self.ydoc, ycell=self.ycell, parent_widget=self, lexer=self.language
+        )
         self.mount(self.source)
 
         for output in cell.get("outputs", []):
@@ -158,6 +166,24 @@ class _Cell(Cell, Container, metaclass=CellMeta):
         else:
             output_widget = widget
         return output_widget
+
+    def select(self) -> None:
+        self.source.selected = True
+
+    def unselect(self) -> None:
+        self.source.selected = False
+
+    @property
+    def selected(self) -> bool:
+        return self.source.selected
+
+    @property
+    def clicked(self) -> bool:
+        return self.source.clicked
+
+    @clicked.setter
+    def clicked(self, value: bool):
+        self.source.clicked = value
 
 
 class CellComponent(Component):

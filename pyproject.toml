@@ -39,7 +39,8 @@ dependencies = [
     "txl_remote_contents >=0.1.0",
     "txl_remote_terminals >=0.1.0",
     "txl_remote_kernels >=0.1.0",
-    "txl_text_viewer >=0.1.0",
+    "txl_text_editor >=0.1.0",
+    #"txl_text_viewer >=0.1.0",
     "txl_markdown_viewer >=0.1.0",
     "txl_terminal >=0.1.0",
     "txl_launcher>=0.1.0",
@@ -75,7 +76,8 @@ pre-install-commands = [
     "pip install -e ./plugins/remote_contents",
     "pip install -e ./plugins/remote_terminals",
     "pip install -e ./plugins/remote_kernels",
-    "pip install -e ./plugins/text_viewer",
+    "pip install -e ./plugins/text_editor",
+    #"pip install -e ./plugins/text_viewer",
     "pip install -e ./plugins/markdown_viewer",
     "pip install -e ./plugins/terminal",
     "pip install -e ./plugins/launcher",
@@ -103,11 +105,12 @@ python_packages = [
     "plugins/remote_terminals:txl_remote_terminals",
     "plugins/remote_kernels:txl_remote_kernels",
     "plugins/terminal:txl_terminal",
+    "plugins/text_editor:txl_text_editor",
     "plugins/text_viewer:txl_text_viewer",
     "plugins/markdown_viewer:txl_markdown_viewer",
     "plugins/launcher:txl_launcher",
     "plugins/widgets:txl_widgets",
-    ".:jpterm:txl,txl_cell,txl_editors,txl_file_browser,txl_image_viewer,txl_jpterm,txl_kernel,txl_local_contents,txl_local_terminals,txl_local_kernels,txl_notebook,txl_notebook_editor,txl_notebook_viewer,txl_remote_contents,txl_remote_terminals,txl_remote_kernels,txl_terminal,txl_text_viewer,txl_launcher,txl_widgets,txl_markdown"
+    ".:jpterm:txl,txl_cell,txl_editors,txl_file_browser,txl_image_viewer,txl_jpterm,txl_kernel,txl_local_contents,txl_local_terminals,txl_local_kernels,txl_notebook,txl_notebook_editor,txl_notebook_viewer,txl_remote_contents,txl_remote_terminals,txl_remote_kernels,txl_terminal,txl_text_editor,txl_text_viewer,txl_launcher,txl_widgets,txl_markdown"
 ]
 
 [tool.ruff]

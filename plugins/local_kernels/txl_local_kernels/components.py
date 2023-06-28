@@ -1,9 +1,9 @@
 import y_py as Y
-from asphalt.core import Component, Context
+from asphalt.core import Component, Context, context_teardown
 
 from txl.base import Kernels
 
-from .driver import KernelDriver
+from .driver import KernelDriver, kernel_drivers
 
 
 class LocalKernels(Kernels):
@@ -18,8 +18,14 @@ class LocalKernels(Kernels):
 
 
 class LocalKernelsComponent(Component):
+    @context_teardown
     async def start(
         self,
         ctx: Context,
     ) -> None:
         ctx.add_resource(LocalKernels, types=Kernels)
+
+        yield
+
+        for kernel_driver in kernel_drivers:
+            await kernel_driver.stop()

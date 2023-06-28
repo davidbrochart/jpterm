@@ -111,23 +111,27 @@ class RemoteContents(Contents):
             doc_format = {"blob": "base64"}.get(type, "text")
             doc_type = type  # if type == "notebook" else "file"
             async with httpx.AsyncClient() as client:
-                r = await client.put(
-                    f"{self.base_url}/api/yjs/roomid/{path}",
+                response = await client.put(
+                    f"{self.base_url}/api/collaboration/session/{path}",
                     json={"format": doc_format, "type": doc_type},
                     params={**self.query_params},
                     cookies=self.cookies,
                 )
-            self.cookies.update(r.cookies)
-            roomid = r.text
+            self.cookies.update(response.cookies)
+            r = response.json()
+            room_id = f"{r['format']}:{r['type']}:{r['fileId']}"
+            session_id = r["sessionId"]
             ydoc = Y.YDoc()
             jupyter_ydoc = ydocs[type](ydoc)
-            asyncio.create_task(self._websocket_provider(roomid, ydoc))
+            asyncio.create_task(self._websocket_provider(room_id, session_id, ydoc))
             return jupyter_ydoc
 
-    async def _websocket_provider(self, roomid, ydoc):
-        ws_url = f"{self.ws_url}/api/yjs/{roomid}"
-        async with aconnect_ws(ws_url, cookies=self.cookies) as websocket:
-            WebsocketProvider(ydoc, Websocket(websocket, roomid))
+    async def _websocket_provider(self, room_id, session_id, ydoc):
+        ws_url = f"{self.ws_url}/api/collaboration/room/{room_id}"
+        async with aconnect_ws(
+            ws_url, cookies=self.cookies, params={"sessionId": session_id}
+        ) as websocket:
+            WebsocketProvider(ydoc, Websocket(websocket, room_id))
             await asyncio.Future()
 
 

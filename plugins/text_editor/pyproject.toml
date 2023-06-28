@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "txl"
-description = ""
+name = "txl_text_editor"
+description = "TXL plugin for a text editor"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
@@ -21,14 +21,15 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "asphalt >=4.11.1,<5",
-  "textual >=0.28.1,<0.29",
-  "y-py >=0.6.0,<1",
+  "txl"
 ]
 dynamic = ["version"]
 
 [project.urls]
-Source = "https://github.com/davidbrochart/jpterm/txl"
+Source = "https://github.com/davidbrochart/jpterm/plugins/text_editor"
+
+[project.entry-points."asphalt.components"]
+text_editor = "txl_text_editor.components:TextEditorComponent"
 
 [tool.hatch.version]
-path = "txl/__init__.py"
+path = "txl_text_editor/__init__.py"

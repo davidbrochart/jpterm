@@ -10,6 +10,8 @@ from .connect import write_connection_file as _write_connection_file
 from .kernelspec import find_kernelspec
 from .message import deserialize, feed_identities, serialize
 
+kernel_drivers = []
+
 
 class KernelDriver(KernelMixin):
     def __init__(
@@ -42,6 +44,7 @@ class KernelDriver(KernelMixin):
         self.channel_tasks: List[asyncio.Task] = []
         self.comm_handlers = comm_handlers
         asyncio.create_task(self.start())
+        kernel_drivers.append(self)
 
     async def restart(self, startup_timeout: float = float("inf")) -> None:
         for task in self.channel_tasks:

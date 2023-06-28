@@ -44,6 +44,7 @@ class KernelDriver(KernelMixin):
         self.shell_channel = "shell"
         self.control_channel = "control"
         self.iopub_channel = "iopub"
+        self.send_lock = asyncio.Lock()
 
     async def start(self):
         i = str(uuid.uuid4())
@@ -103,18 +104,19 @@ class KernelDriver(KernelMixin):
         channel,
         change_date_to_str: bool = False,
     ):
-        _date_to_str = date_to_str if change_date_to_str else lambda x: x
-        msg["header"] = _date_to_str(msg["header"])
-        msg["parent_header"] = _date_to_str(msg["parent_header"])
-        msg["metadata"] = _date_to_str(msg["metadata"])
-        msg["content"] = _date_to_str(msg.get("content", {}))
-        msg["channel"] = channel
-        if self.websocket.subprotocol == "v1.kernel.websocket.jupyter.org":
-            bmsg = serialize_msg_to_ws_v1(msg)
-            await self.websocket.send_bytes(bmsg)
-        else:
-            bmsg = to_binary(msg)
-            if bmsg is None:
-                await self.websocket.send_json(msg)
-            else:
+        async with self.send_lock:
+            _date_to_str = date_to_str if change_date_to_str else lambda x: x
+            msg["header"] = _date_to_str(msg["header"])
+            msg["parent_header"] = _date_to_str(msg["parent_header"])
+            msg["metadata"] = _date_to_str(msg["metadata"])
+            msg["content"] = _date_to_str(msg.get("content", {}))
+            msg["channel"] = channel
+            if self.websocket.subprotocol == "v1.kernel.websocket.jupyter.org":
+                bmsg = serialize_msg_to_ws_v1(msg)
                 await self.websocket.send_bytes(bmsg)
+            else:
+                bmsg = to_binary(msg)
+                if bmsg is None:
+                    await self.websocket.send_json(msg)
+                else:
+                    await self.websocket.send_bytes(bmsg)

@@ -3,7 +3,6 @@ from typing import Dict, List
 from urllib import parse
 
 import httpx
-import httpx_ws
 from asphalt.core import Component, Context
 from httpx_ws import aconnect_ws
 from textual.widget import Widget
@@ -77,7 +76,7 @@ class RemoteTerminals(Terminals, Widget, metaclass=TerminalsMeta):
         while True:
             try:
                 message = await self.websocket.receive_json()
-            except httpx_ws._api.WebSocketNetworkError:
+            except Exception:
                 self.send_task.cancel()
                 return
             await self._recv_queue.put(message)
