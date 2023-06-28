@@ -35,6 +35,7 @@ class _ImageViewer(Editor, Widget, metaclass=ImageViewerMeta):
     def update_viewer(self):
         if not self.data:
             return
+
         f = tempfile.NamedTemporaryFile(delete=False)
         try:
             f.write(self.data)

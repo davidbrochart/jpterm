@@ -149,8 +149,6 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
                 else:
                     continue
 
-                with open("debug.txt", "at") as f:
-                    f.write(f"{widget=}\n")
                 if widget is None:
                     num_lines = len(text.splitlines())
                     self.add_row(execution_count, renderable, height=num_lines)
@@ -173,11 +171,7 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
     async def key_e(self) -> None:
         if self.kernel:
             ycell = self.ynb._ycells[self._selected_cell_idx]
-            with open("debug.txt", "at") as f:
-                f.write(f"executing {ycell=}\n")
             await self.kernel.execute(self.ynb.ydoc, ycell)
-            with open("debug.txt", "at") as f:
-                f.write("executing done\n")
 
 
 class NotebookViewerComponent(Component):

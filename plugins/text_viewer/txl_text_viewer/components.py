@@ -1,3 +1,5 @@
+from functools import partial
+
 from asphalt.core import Component, Context
 from rich.syntax import Syntax
 from rich.traceback import Traceback
@@ -79,12 +81,10 @@ class TextViewerComponent(Component):
     ) -> None:
         contents = await ctx.request_resource(Contents)
 
-        def text_viewer_factory():
-            return TextViewer(contents)
+        text_viewer_factory = partial(TextViewer, contents)
 
         if self.register:
             editors = await ctx.request_resource(Editors)
             editors.register_editor_factory(text_viewer_factory)
         else:
-            text_viewer = text_viewer_factory()
-            ctx.add_resource(text_viewer, types=Editor)
+            ctx.add_resource(text_viewer_factory(), types=Editor)
