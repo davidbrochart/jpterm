@@ -1,7 +1,6 @@
 from rich.console import RenderableType
 from rich.style import StyleType
 from rich.syntax import Syntax
-from rich.text import Text
 from textual.app import ComposeResult
 from textual.containers import VerticalScroll
 from textual.events import Event
@@ -26,74 +25,49 @@ class TextInput(Static, can_focus=True):
         super().__init__()
         self.ydoc = ydoc
         self.ytext = ytext
-        self.lines = str(ytext).splitlines()
-        self._row = 0
-        self._col = 0
-        self._pos = 0
+        text = str(ytext)
+        if text[-1] != "\n":
+            with self.ydoc.begin_transaction() as t:
+                self.ytext.extend(t, "\n")
+        self.row = 0
+        self.col = 0
+        self.pos = 0
         self.style = style
         self.syntax = Syntax("", lexer, theme=syntax_theme, word_wrap=True)
         self.show_cursor = show_cursor
         self.parent_widget = parent_widget
         self.scrollable_widget = scrollable_widget
         self.clicked = False
+        ytext.observe(self.on_change)
 
-    def set_pos(self):
+    def set_pos(self, row, col, lines):
         pos = 0
-        for row in range(self._row):
-            pos += len(self.lines[row]) + 1
-        pos += self._col
-        self._pos = pos
+        for i in range(row):
+            pos += len(lines[i]) + 1
+        pos += col
+        self.pos = pos
 
-    @property
-    def row(self) -> int:
-        return self._row
-
-    @row.setter
-    def row(self, value: int) -> None:
-        self._row = value
-
-    @property
-    def col(self) -> int:
-        return self._col
-
-    @col.setter
-    def col(self, value: int) -> None:
-        self._col = value
-
-    def highlight(self, code: str, start: str = "", end: str = "") -> Text:
-        text = self.syntax.highlight(code)
-        if not code.endswith("\n"):
-            text = text[:-1]
-        return Text(start) + text + Text(end)
+    def get_row_col_lines(self):
+        lines = str(self.ytext).splitlines()
+        row = 0
+        col = self.pos
+        while True:
+            line_len = len(lines[row])
+            if col <= line_len:
+                break
+            row += 1
+            col -= line_len + 1
+        return row, col, lines
 
     def render(self) -> RenderableType:
-        text = Text()
+        rendered = self.syntax.highlight(str(self.ytext))
 
-        if not self.show_cursor:
-            text += self.highlight("\n".join(self.lines), end="\n")
-            return text
+        if self.show_cursor:
+            if str(rendered[self.pos]) == "\n":
+                rendered = rendered[: self.pos] + " " + rendered[self.pos :]
+            rendered.stylize("reverse", self.pos, self.pos + 1)
 
-        if self.row > 0:
-            # text above prompt
-            text += self.highlight("\n".join(self.lines[: self.row]), end="\n")
-
-        # prompt
-        if self.col == len(self.lines[self.row]):
-            # cursor at EOL, add an extra space
-            end = " "
-        else:
-            end = ""
-        prompt = self.highlight(self.lines[self.row], end=end)
-        prompt.stylize("reverse", self.col, self.col + 1)
-        text += prompt
-
-        if self.row < len(self.lines) - 1:
-            # text below prompt
-            text += self.highlight(
-                "\n".join(self.lines[self.row + 1 :]), start="\n", end=""
-            )
-
-        return text
+        return rendered
 
     def on_focus(self):
         self.show_cursor = True
@@ -103,113 +77,102 @@ class TextInput(Static, can_focus=True):
         self.show_cursor = False
         self.update()
 
+    def on_change(self, event):
+        insert = None
+        delete = None
+        retain = None
+        for d in event.delta:
+            if "insert" in d:
+                insert = d["insert"]
+            elif "delete" in d:
+                delete = d["delete"]
+            elif "retain" in d:
+                retain = d["retain"]
+        i = 0 if retain is None else retain
+        if insert is not None:
+            if i <= self.pos:
+                self.pos += 1
+            self.update()
+        if delete is not None:
+            if i == len(self.ytext):
+                # FIXME: launch in a task
+                with self.ydoc.begin_transaction() as t:
+                    self.ytext.extend(t, "\n")
+            elif i < self.pos:
+                self.pos -= 1
+            self.update()
+
     async def on_key(self, event: Event) -> None:
         if event.key == Keys.Escape:
             self.blur()
             if self.parent_widget is not None:
                 self.parent_widget.focus()
+            event.stop()
         elif event.key == Keys.Up:
-            if self.row > 0:
-                self.row -= 1
-                self.col = min(len(self.lines[self.row]), self.col)
-                self.set_pos()
+            row, col, lines = self.get_row_col_lines()
+            if row > 0:
+                row -= 1
+                col = min(len(lines[row]), col)
+                self.set_pos(row, col, lines)
                 if self.scrollable_widget is not None:
                     self.scrollable_widget.scroll_to_region(
-                        Region(x=self.col, y=self.row, width=1, height=1)
+                        Region(x=col, y=row, width=1, height=1)
                     )
+                self.update()
+            event.stop()
         elif event.key == Keys.Down:
-            if self.row < len(self.lines) - 1:
-                self.row += 1
-                self.col = min(len(self.lines[self.row]), self.col)
-                self.set_pos()
+            row, col, lines = self.get_row_col_lines()
+            if row < len(lines) - 1:
+                row += 1
+                col = min(len(lines[row]), col)
+                self.set_pos(row, col, lines)
                 if self.scrollable_widget is not None:
                     self.scrollable_widget.scroll_to_region(
-                        Region(x=self.col, y=self.row, width=1, height=1)
+                        Region(x=col, y=row, width=1, height=1)
                     )
+                self.update()
+            event.stop()
         elif event.key == Keys.Return or event.key == Keys.Enter:
             with self.ydoc.begin_transaction() as t:
-                self.ytext.insert(t, self._pos, "\n")
-            self.lines.insert(self.row, self.lines[self.row][: self.col])
-            self.row += 1
-            self.lines[self.row] = self.lines[self.row][self.col :]
-            self.col = 0
-            self.set_pos()
+                self.ytext.insert(t, self.pos, "\n")
+            event.stop()
         elif event.key == Keys.Home:
-            self.col = 0
-            self.set_pos()
+            row, col, lines = self.get_row_col_lines()
+            col = 0
+            self.set_pos(row, col, lines)
+            self.update()
+            event.stop()
         elif event.key == Keys.End:
-            self.col = len(self.lines[self.row])
-            self.set_pos()
-        elif event.key in [Keys.Backspace, "ctrl+h"]:
-            if self.col == 0:
-                if self.row != 0:
-                    with self.ydoc.begin_transaction() as t:
-                        self.ytext.delete(t, self._pos - 1)
-                    self.row -= 1
-                    self.col = len(self.lines[self.row])
-                    self.lines[self.row] += self.lines[self.row + 1]
-                    del self.lines[self.row + 1]
-                    self.set_pos()
-            else:
+            row, col, lines = self.get_row_col_lines()
+            col = len(lines[row])
+            self.set_pos(row, col, lines)
+            self.update()
+            event.stop()
+        elif event.key in [Keys.Backspace, Keys.ControlH]:
+            if self.pos > 0:
                 with self.ydoc.begin_transaction() as t:
-                    self.ytext.delete(t, self._pos - 1)
-                self.lines[self.row] = (
-                    self.lines[self.row][: self.col - 1]
-                    + self.lines[self.row][self.col :]
-                )
-                self.col -= 1
-                self.set_pos()
+                    self.ytext.delete(t, self.pos - 1)
+            event.stop()
         elif event.key == Keys.Delete:
-            if self.col == len(self.lines[self.row]):
-                if self.row < len(self.lines) - 1:
-                    with self.ydoc.begin_transaction() as t:
-                        self.ytext.delete(t, self._pos)
-                    self.lines[self.row] += self.lines[self.row + 1]
-                    del self.lines[self.row + 1]
-                    self.set_pos()
-            else:
+            if self.pos < len(self.ytext) - 2:
                 with self.ydoc.begin_transaction() as t:
-                    self.ytext.delete(t, self._pos)
-                self.lines[self.row] = (
-                    self.lines[self.row][: self.col]
-                    + self.lines[self.row][self.col + 1 :]
-                )
-                self.set_pos()
+                    self.ytext.delete(t, self.pos)
+            event.stop()
         elif event.key == Keys.Left:
-            if self.col == 0:
-                if self.row != 0:
-                    self.row -= 1
-                    self.col = len(self.lines[self.row])
-                    self.set_pos()
-            else:
-                self.col -= 1
-                self.set_pos()
+            if self.pos > 0:
+                self.pos -= 1
+                self.update()
+            event.stop()
         elif event.key == Keys.Right:
-            if self.col == len(self.lines[self.row]):
-                if self.row < len(self.lines) - 1:
-                    self.row += 1
-                    self.col = 0
-                    self.set_pos()
-            else:
-                self.col += 1
-                self.set_pos()
-        elif event.is_printable or event.key == Keys.Space:
-            if event.key == Keys.Space:
-                key = " "
-            else:
-                key = event.character
+            if self.pos < len(self.ytext) - 1:
+                self.pos += 1
+                self.update()
+            event.stop()
+        elif event.is_printable:
+            key = event.character
             with self.ydoc.begin_transaction() as t:
-                self.ytext.insert(t, self._pos, key)
-            self.lines[self.row] = (
-                self.lines[self.row][: self.col]
-                + key
-                + self.lines[self.row][self.col :]
-            )
-            self.col += 1
-            self.set_pos()
-
-        event.stop()
-        self.update()
+                self.ytext.insert(t, self.pos, key)
+            event.stop()
 
     def on_click(self) -> None:
         self.clicked = True

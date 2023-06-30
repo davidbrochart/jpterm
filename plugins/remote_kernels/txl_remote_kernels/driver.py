@@ -61,15 +61,15 @@ class KernelDriver(KernelMixin):
                 params={**self.query_params},
                 cookies=self.cookies,
             )
-            response = r.json()
+            d = r.json()
             self.cookies.update(r.cookies)
-            self.session_id = response["id"]
-            kernel_id = response["kernel"]["id"]
-            response = await client.get(
+            self.session_id = d["id"]
+            kernel_id = d["kernel"]["id"]
+            r = await client.get(
                 f"{self.base_url}/api/kernels/{kernel_id}",
                 cookies=self.cookies,
             )
-        if response.status_code != 200 or kernel_id != response.json()["id"]:
+        if r.status_code != 200 or kernel_id != r.json()["id"]:
             return
         async with aconnect_ws(
             f"{self.ws_url}/api/kernels/{kernel_id}/channels",

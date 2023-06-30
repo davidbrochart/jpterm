@@ -8,6 +8,7 @@ def jpterm_main(kwargs):
     server = kwargs.pop("server")
     collaborative = kwargs.pop("collaborative")
     set_ = list(kwargs["set_"])
+    set_.append("logging.version=1")  # disable logging
     if server:
         set_.append(f"component.components.remote_contents.url={server}")
         set_.append(f"component.components.remote_terminals.url={server}")
