@@ -1,5 +1,6 @@
 from functools import partial
 
+import y_py as Y
 from asphalt.core import Component, Context
 from textual.containers import VerticalScroll
 from textual.events import Event
@@ -46,15 +47,31 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                 self.kernel = self.kernels(kernel_name)
         for i_cell in range(self.ynb.cell_number):
             cell = self.cell_factory(
-                self.ynb._ycells[i_cell], self.ynb.ydoc, self.language, self.kernel
+                self.ynb.ycells[i_cell], self.ynb.ydoc, self.language, self.kernel
             )
             self.mount(cell)
             self.cells.append(cell)
 
-    def on_change(self, target, event):
+    def on_change(self, target, events):
         if target == "cells":
-            for e in event:
-                e.path()[0]
+            for event in events:
+                if isinstance(event, Y.YArrayEvent):
+                    insert = None
+                    retain = None
+                    for d in event.delta:
+                        if "insert" in d:
+                            insert = d["insert"][0]
+                        elif "retain" in d:
+                            retain = d["retain"]
+                    i = 0 if retain is None else retain
+                    if insert is not None:
+                        cell = self.cell_factory(
+                            insert, self.ynb.ydoc, self.language, self.kernel
+                        )
+                        self.mount(cell, before=self.cells[i])
+                        self.cells.insert(i, cell)
+                        if i <= self.cell_i:
+                            self.cell_i += 1
 
     async def on_key(self, event: Event) -> None:
         if event.key == Keys.Up:
@@ -63,6 +80,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                 self.current_cell.unselect()
                 self.cell_i -= 1
                 self.current_cell.select()
+                self.current_cell.focus()
                 self.scroll_to_widget(self.current_cell)
         elif event.key == Keys.Down:
             event.stop()
@@ -70,14 +88,48 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                 self.current_cell.unselect()
                 self.cell_i += 1
                 self.current_cell.select()
+                self.current_cell.focus()
                 self.scroll_to_widget(self.current_cell)
         elif event.key == Keys.Return or event.key == Keys.Enter:
             event.stop()
             self.current_cell.source.focus()
-        elif event.key == Keys.Space:
+        elif event.character == "a":
+            event.stop()
+            with self.ynb.ydoc.begin_transaction() as t:
+                ycell = self.ynb.create_ycell(
+                    {
+                        "cell_type": "code",
+                        "execution_count": None,
+                        "source": "\n",
+                    }
+                )
+                self.ynb.ycells.insert(t, self.cell_i, ycell)
+        elif event.character == "b":
+            event.stop()
+            with self.ynb.ydoc.begin_transaction() as t:
+                ycell = self.ynb.create_ycell(
+                    {
+                        "cell_type": "code",
+                        "execution_count": None,
+                        "source": "\n",
+                    }
+                )
+                self.ynb.ycells.insert(t, self.cell_i + 1, ycell)
+                self.scroll_to_widget(self.current_cell)
+        elif event.key == Keys.ControlE:
             event.stop()
             if self.kernel:
-                await self.kernel.execute(self.ynb.ydoc, self.ynb._ycells[self.cell_i])
+                await self.kernel.execute(self.ynb.ydoc, self.current_cell.ycell)
+        elif event.key == Keys.ControlR:
+            event.stop()
+            if self.kernel:
+                await self.kernel.execute(self.ynb.ydoc, self.current_cell.ycell)
+            if self.cell_i < len(self.cells) - 1:
+                self.current_cell.unselect()
+                self.cell_i += 1
+                self.current_cell.select()
+                self.current_cell.focus()
+                self.scroll_to_widget(self.current_cell)
 
     def on_click(self) -> None:
         for cell_i, cell in enumerate(self.cells):

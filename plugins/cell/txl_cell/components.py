@@ -40,9 +40,10 @@ class Source(TextInput):
             code = super().render()
             border_style = "yellow"
             box_style = box.DOUBLE if self.selected else box.ROUNDED
+            row, col, lines = self.get_row_col_lines()
             renderable = Panel(
                 code,
-                height=len(self.lines) + 2,
+                height=len(lines) + 2,
                 border_style=border_style,
                 box=box_style,
             )
@@ -105,7 +106,7 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
                         self.outputs.append(output_widget)
 
     def get_execution_count(self, value):
-        execution_count = str(value).removesuffix(".0")
+        execution_count = " " if value is None else str(value).removesuffix(".0")
         return f"[green]In [[#66ff00]{execution_count}[/#66ff00]]:[/green]"
 
     def update(self):
