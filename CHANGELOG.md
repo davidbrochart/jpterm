@@ -2,6 +2,22 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 0.1.16
+
+([Full Changelog](https://github.com/davidbrochart/jpterm/compare/v0.1.15...79d746ee87d9df1e9a957ef237be469ea98e71f8))
+
+### Merged PRs
+
+- Render in reaction to Y documents [#43](https://github.com/davidbrochart/jpterm/pull/43) ([@davidbrochart](https://github.com/davidbrochart))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/davidbrochart/jpterm/graphs/contributors?from=2023-06-28&to=2023-06-30&type=c))
+
+[@davidbrochart](https://github.com/search?q=repo%3Adavidbrochart%2Fjpterm+involves%3Adavidbrochart+updated%3A2023-06-28..2023-06-30&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 0.1.15
 
 ([Full Changelog](https://github.com/davidbrochart/jpterm/compare/v0.1.14...4f1b123bbdbd71e6ca768ee4fa0219dddc7ca24f))
@@ -15,8 +31,6 @@
 ([GitHub contributors page for this release](https://github.com/davidbrochart/jpterm/graphs/contributors?from=2023-05-13&to=2023-06-28&type=c))
 
 [@davidbrochart](https://github.com/search?q=repo%3Adavidbrochart%2Fjpterm+involves%3Adavidbrochart+updated%3A2023-05-13..2023-06-28&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 0.1.14
 
