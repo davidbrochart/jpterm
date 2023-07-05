@@ -22,7 +22,8 @@ classifiers = [
 ]
 dependencies = [
   "txl",
-  "y-py >=0.6.0,<1"
+  "y-py >=0.6.0,<1",
+  "anyio >=3.7.0,<4",
 ]
 dynamic = ["version"]
 
