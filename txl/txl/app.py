@@ -23,7 +23,7 @@ class AppComponent(CLIApplicationComponent):
 
     async def run(self, ctx: Context) -> None:
         app = ctx.require_resource(App)
-        await app._process_messages()
+        await app.run_async()
 
 
 def run(kwargs) -> None:
