@@ -1,9 +1,9 @@
 import json
 from os import scandir
-from pathlib import Path
 from typing import List, Union
 
 import y_py as Y
+from anyio import Path
 from asphalt.core import Component, Context
 from jupyter_ydoc import ydocs
 
@@ -18,20 +18,34 @@ class LocalContents(Contents):
         type: str = "unicode",
     ) -> Union[List, Y.YDoc]:
         p = Path(path)
-        assert p.is_dir() == is_dir
-        if p.is_dir():
+        assert (await p.is_dir()) == is_dir
+        if await p.is_dir():
             return sorted(
                 list(scandir(path)), key=lambda entry: (not entry.is_dir(), entry.name)
             )
-        if p.is_file():
+        if await p.is_file():
             jupyter_ydoc = ydocs[type]()
             if type == "unicode":
-                jupyter_ydoc.source = p.read_text()
+                jupyter_ydoc.source = await p.read_text()
             elif type == "blob":
-                jupyter_ydoc.source = p.read_bytes()
+                jupyter_ydoc.source = await p.read_bytes()
             elif type == "notebook":
-                jupyter_ydoc.source = json.loads(p.read_text())
+                jupyter_ydoc.source = json.loads(await p.read_text())
         return jupyter_ydoc
+
+    async def save(
+        self,
+        path: str,
+        jupyter_ydoc: Y.YDoc,
+    ) -> None:
+        p = Path(path)
+        source = jupyter_ydoc.source
+        if isinstance(source, dict):
+            await p.write_text(json.dumps(source, indent=2))
+        elif isinstance(source, bytes):
+            await p.write_bytes(source)
+        else:
+            await p.write_text(source)
 
 
 class LocalContentsComponent(Component):
