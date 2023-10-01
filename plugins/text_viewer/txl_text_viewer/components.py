@@ -59,7 +59,7 @@ class TextViewer(Editor, Container, metaclass=TextViewerMeta):
 
     async def open(self, path: str) -> None:
         self.path = path
-        self.ytext = await self.contents.get(path, type="unicode")
+        self.ytext = await self.contents.get(path, type="file")
         self.viewer._update(path, self.ytext.source)
         self.ytext.observe(self.on_change)
 

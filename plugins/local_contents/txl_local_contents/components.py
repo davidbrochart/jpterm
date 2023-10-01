@@ -15,7 +15,7 @@ class LocalContents(Contents):
         self,
         path: str,
         is_dir: bool = False,
-        type: str = "unicode",
+        type: str = "file",
     ) -> Union[List, Y.YDoc]:
         p = Path(path)
         assert (await p.is_dir()) == is_dir
@@ -25,7 +25,7 @@ class LocalContents(Contents):
             )
         if await p.is_file():
             jupyter_ydoc = ydocs[type]()
-            if type == "unicode":
+            if type == "file":
                 jupyter_ydoc.source = await p.read_text()
             elif type == "blob":
                 jupyter_ydoc.source = await p.read_bytes()

@@ -43,18 +43,18 @@ class _Terminal(Terminal, Widget, metaclass=TerminalMeta, can_focus=True):
         self._send_queue = send_queue
         self._recv_queue = recv_queue
         self._display = PyteDisplay([Text()])
-        self._size_set = asyncio.Event()
+        self.size_set = asyncio.Event()
         asyncio.create_task(self._recv())
-
-    def set_size(self):
-        self._ncol = self.size.width
-        self._nrow = self.size.height - 3  # FIXME
-        self._screen = pyte.Screen(self._ncol, self._nrow)
-        self._stream = pyte.Stream(self._screen)
-        self._size_set.set()
 
     def render(self) -> RenderableType:
         return self._display
+
+    def on_resize(self, event: events.Resize):
+        self._ncol = event.size.width
+        self._nrow = event.size.height - 3  # FIXME
+        self._screen = pyte.Screen(self._ncol, self._nrow)
+        self._stream = pyte.Stream(self._screen)
+        self.size_set.set()
 
     async def on_key(self, event: events.Key) -> None:
         char = CTRL_KEYS.get(event.key) or event.character
@@ -62,7 +62,7 @@ class _Terminal(Terminal, Widget, metaclass=TerminalMeta, can_focus=True):
         event.stop()
 
     async def _recv(self):
-        await self._size_set.wait()
+        await self.size_set.wait()
         while True:
             message = await self._recv_queue.get()
             cmd = message[0]

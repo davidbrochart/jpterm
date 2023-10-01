@@ -1,17 +1,10 @@
 from functools import partial
 
 from asphalt.core import Component, Context
-from rich.syntax import Syntax
 from textual.containers import Container
 
 from txl.base import Contents, Editor, Editors, FileOpenEvent
-from txl.text_input import ScrollableTextInput
-
-
-class _Editor(ScrollableTextInput):
-    def __init__(self, path, ydoc, ytext):
-        lexer = Syntax.guess_lexer(path, code=str(ytext))
-        super().__init__(lexer=lexer, ydoc=ydoc, ytext=ytext)
+from txl.text_input import TextInput
 
 
 class TextEditorMeta(type(Editor), type(Container)):
@@ -32,8 +25,10 @@ class TextEditor(Editor, Container, metaclass=TextEditorMeta):
 
     async def open(self, path: str) -> None:
         self.path = path
-        self.ytext = await self.contents.get(path, type="unicode")
-        self.editor = _Editor(path, ydoc=self.ytext.ydoc, ytext=self.ytext._ysource)
+        self.ytext = await self.contents.get(path, type="file")
+        self.editor = TextInput(
+            ydoc=self.ytext.ydoc, ytext=self.ytext._ysource, path=path
+        )
         self.mount(self.editor)
 
 

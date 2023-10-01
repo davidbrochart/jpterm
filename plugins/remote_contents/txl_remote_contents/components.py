@@ -1,6 +1,7 @@
 import asyncio
 import json
-from typing import Any, Dict, List, Union
+from base64 import b64encode
+from typing import Any, Dict, List, Optional, Union
 from urllib import parse
 
 import httpx
@@ -82,6 +83,7 @@ class RemoteContents(Contents):
         path: str,
         is_dir: bool = False,
         type: str = "unicode",
+        format: Optional[str] = None,
     ) -> Union[List, Y.YDoc]:
         path = "" if path == "." else path
         if is_dir or not self.collaborative:
@@ -108,12 +110,17 @@ class RemoteContents(Contents):
             return jupyter_ydoc
 
         else:
-            doc_format = {"blob": "base64"}.get(type, "text")
+            if format is not None:
+                pass
+            elif type == "blob":
+                format = "base64"
+            else:
+                format = "text"
             doc_type = type  # if type == "notebook" else "file"
             async with httpx.AsyncClient() as client:
                 response = await client.put(
                     f"{self.base_url}/api/collaboration/session/{path}",
-                    json={"format": doc_format, "type": doc_type},
+                    json={"format": format, "type": doc_type},
                     params={**self.query_params},
                     cookies=self.cookies,
                 )
@@ -126,13 +133,46 @@ class RemoteContents(Contents):
             asyncio.create_task(self._websocket_provider(room_id, session_id, ydoc))
             return jupyter_ydoc
 
+    async def save(
+        self,
+        path: str,
+        jupyter_ydoc: Y.YDoc,
+    ) -> None:
+        if not self.collaborative:
+            source = jupyter_ydoc.source
+            if isinstance(source, dict):
+                cnt = source
+                fmt = "json"
+                typ = "notebook" if path.endswith(".ipynb") else "file"
+            elif isinstance(source, bytes):
+                cnt = b64encode(source)
+                fmt = "base64"
+            else:
+                cnt = source
+                fmt = "text"
+                typ = "file"
+            content = {
+                "content": cnt,
+                "format": fmt,
+                "path": path,
+                "type": typ,
+            }
+            async with httpx.AsyncClient() as client:
+                r = await client.put(
+                    f"{self.base_url}/api/contents/{path}",
+                    json=content,
+                    params={**self.query_params},
+                    cookies=self.cookies,
+                )
+            self.cookies.update(r.cookies)
+
     async def _websocket_provider(self, room_id, session_id, ydoc):
         ws_url = f"{self.ws_url}/api/collaboration/room/{room_id}"
         async with aconnect_ws(
             ws_url, cookies=self.cookies, params={"sessionId": session_id}
         ) as websocket:
-            WebsocketProvider(ydoc, Websocket(websocket, room_id))
-            await asyncio.Future()
+            async with WebsocketProvider(ydoc, Websocket(websocket, room_id)):
+                await asyncio.Future()
 
 
 class RemoteContentsComponent(Component):

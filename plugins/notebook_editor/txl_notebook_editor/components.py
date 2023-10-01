@@ -29,20 +29,21 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         self.cells = []
         self.cell_i = 0
         self.cell_copy = None
+        self.edit_mode = False
 
     async def on_open(self, event: FileOpenEvent) -> None:
         await self.open(event.path)
 
     async def open(self, path: str) -> None:
         self.path = path
-        self.ynb = await self.contents.get(path, type="notebook")
+        self.ynb = await self.contents.get(path, type="notebook", format="json")
         self.update()
         self.ynb.observe(self.on_change)
 
     def update(self):
         ipynb = self.ynb.source
         self.language = (
-            ipynb.get("metadata", {}).get("kernelspec", {}).get("language", "")
+            ipynb.get("metadata", {}).get("kernelspec", {}).get("language", None)
         )
         if self.kernel is None:
             kernel_name = ipynb.get("metadata", {}).get("kernelspec", {}).get("name")
@@ -54,9 +55,22 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
             )
             self.mount(cell)
             self.cells.append(cell)
+        if self.cells:
+            self.cells[self.cell_i].select()
 
     def on_change(self, target, events):
-        if target == "cells":
+        if target == "meta":
+            for event in events:
+                kernelspec = event.target.get("metadata", {}).get("kernelspec", {})
+                self.language = kernelspec.get("language", None)
+                for cell in self.cells:
+                    if cell.ycell["cell_type"] == "code":
+                        cell.language = self.language
+                if self.kernel is None:
+                    kernel_name = kernelspec.get("name")
+                    if kernel_name:
+                        self.kernel = self.kernels(kernel_name)
+        elif target == "cells":
             for event in events:
                 if isinstance(event, Y.YArrayEvent):
                     insert = None
@@ -64,46 +78,58 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                     delete = None
                     for d in event.delta:
                         if "insert" in d:
-                            insert = d["insert"][0]
+                            insert = d["insert"]
                         if "delete" in d:
                             delete = d["delete"]
                         elif "retain" in d:
                             retain = d["retain"]
                     i = 0 if retain is None else retain
                     if insert is not None:
-                        cell = self.cell_factory(
-                            insert, self.ynb.ydoc, self.language, self.kernel
-                        )
-                        if i < len(self.cells):
-                            self.mount(cell, before=self.cells[i])
-                        else:
-                            self.mount(cell, after=self.cells[i - 1])
-                        self.cells.insert(i, cell)
-                        if i <= self.cell_i:
-                            self.cell_i += 1
+                        for c in insert:
+                            cell = self.cell_factory(
+                                c, self.ynb.ydoc, self.language, self.kernel
+                            )
+                            if not self.cells:
+                                self.mount(cell)
+                            else:
+                                if i < len(self.cells):
+                                    self.mount(cell, before=self.cells[i])
+                                else:
+                                    self.mount(cell, after=self.cells[i - 1])
+                                if i <= self.cell_i:
+                                    self.cell_i += 1
+                            self.cells.insert(i, cell)
+                            i += 1
                     elif delete is not None:
                         self.cells[i].remove()
                         del self.cells[i]
                         if i < self.cell_i:
                             self.cell_i -= 1
+        if self.cells:
+            self.cells[self.cell_i].select()
 
     async def on_key(self, event: Event) -> None:
-        if event.key == Keys.Up:
-            event.stop()
-            if self.cell_i > 0:
-                self.current_cell.unselect()
-                self.cell_i -= 1
-                self.current_cell.select()
-                self.current_cell.focus()
-                self.scroll_to_widget(self.current_cell)
+        if event.key == Keys.Escape:
+            self.edit_mode = False
+            self.current_cell.focus()
+        elif event.key == Keys.Up:
+            if not self.edit_mode:
+                event.stop()
+                if self.cell_i > 0:
+                    self.current_cell.unselect()
+                    self.cell_i -= 1
+                    self.current_cell.select()
+                    self.current_cell.focus()
+                    self.scroll_to_widget(self.current_cell)
         elif event.key == Keys.Down:
-            event.stop()
-            if self.cell_i < len(self.cells) - 1:
-                self.current_cell.unselect()
-                self.cell_i += 1
-                self.current_cell.select()
-                self.current_cell.focus()
-                self.scroll_to_widget(self.current_cell)
+            if not self.edit_mode:
+                event.stop()
+                if self.cell_i < len(self.cells) - 1:
+                    self.current_cell.unselect()
+                    self.cell_i += 1
+                    self.current_cell.select()
+                    self.current_cell.focus()
+                    self.scroll_to_widget(self.current_cell)
         elif event.key == Keys.ControlUp:
             event.stop()
             if self.cell_i > 0:
@@ -143,6 +169,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         elif event.key == Keys.Return or event.key == Keys.Enter:
             event.stop()
             self.current_cell.source.focus()
+            self.edit_mode = True
         elif event.character == "a":
             event.stop()
             with self.ynb.ydoc.begin_transaction() as t:
@@ -150,7 +177,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                     {
                         "cell_type": "code",
                         "execution_count": None,
-                        "source": "\n",
+                        "source": "",
                     }
                 )
                 self.ynb.ycells.insert(t, self.cell_i, ycell)
@@ -161,7 +188,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                     {
                         "cell_type": "code",
                         "execution_count": None,
-                        "source": "\n",
+                        "source": "",
                     }
                 )
                 self.ynb.ycells.insert(t, self.cell_i + 1, ycell)
@@ -201,7 +228,8 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                 self.current_cell.unselect()
                 self.cell_i += 1
                 self.current_cell.select()
-                self.current_cell.focus()
+                self.current_cell.source.focus()
+                self.edit_mode = True
                 self.scroll_to_widget(self.current_cell)
 
     def on_click(self) -> None:
@@ -209,6 +237,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
             if cell.clicked:
                 cell.clicked = False
                 cell.select()
+                self.edit_mode = True
                 self.cell_i = cell_i
             elif cell.selected:
                 cell.unselect()
