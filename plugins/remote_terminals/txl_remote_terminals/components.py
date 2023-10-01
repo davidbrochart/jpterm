@@ -50,12 +50,13 @@ class RemoteTerminals(Terminals, Widget, metaclass=TerminalsMeta):
                 f"{self.base_url}/api/terminals",
                 cookies=self.cookies,
             )
+            self.cookies.update(response.cookies)
         if name in [terminal["name"] for terminal in response.json()]:
             self.header.query_one(HeaderTitle).text = "Terminal"
             terminal = self.terminal(self._send_queue, self._recv_queue)
             terminal.focus()
-            await self.mount(terminal)
-            terminal.set_size()
+            self.mount(terminal)
+            await terminal.size_set.wait()
             async with aconnect_ws(
                 f"{self.ws_url}/terminals/websocket/{name}", cookies=self.cookies
             ) as self.websocket:

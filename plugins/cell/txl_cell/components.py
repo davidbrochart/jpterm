@@ -4,10 +4,6 @@ from functools import partial
 import pkg_resources
 import y_py as Y
 from asphalt.core import Component, Context
-from rich import box
-from rich.console import RenderableType
-from rich.markdown import Markdown
-from rich.panel import Panel
 from rich.text import Text
 from textual.containers import Container
 from textual.widgets import Static
@@ -23,8 +19,12 @@ YDOCS = {
 class Source(TextInput):
     def __init__(self, ycell, *args, **kwargs):
         super().__init__(ytext=ycell["source"], *args, **kwargs)
-        self.ycell = ycell
+        self.clicked = False
         self._selected = False
+        self.set_styles(css="height: auto; max-height: 100%;")
+        self.is_code = ycell["cell_type"] == "code"
+        if self.is_code:
+            self.set_styles(css="border: round yellow;")
 
     @property
     def selected(self) -> bool:
@@ -33,25 +33,12 @@ class Source(TextInput):
     @selected.setter
     def selected(self, value: bool) -> None:
         self._selected = value
-        self.update()
-
-    def render(self) -> RenderableType:
-        if self.ycell["cell_type"] == "code":
-            code = super().render()
-            border_style = "yellow"
-            box_style = box.DOUBLE if self.selected else box.ROUNDED
-            row, col, lines = self.get_row_col_lines()
-            renderable = Panel(
-                code,
-                height=len(lines) + 2,
-                border_style=border_style,
-                box=box_style,
-            )
-        elif self.ycell["cell_type"] == "markdown":
-            renderable = Markdown(str(self.ycell["source"]), code_theme="ansi_dark")
+        if value:
+            if self.is_code:
+                self.set_styles(css="border: double yellow;")
         else:
-            renderable = Text(str(self.ycell["source"]))
-        return renderable
+            if self.is_code:
+                self.set_styles(css="border: round yellow;")
 
 
 class CellMeta(type(Cell), type(Container)):
@@ -68,15 +55,18 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
         widgets: Widgets | None,
     ) -> None:
         super().__init__()
-        self.styles.height = "auto"
         self.ycell = ycell
         self.ydoc = ydoc
-        self.language = language
+        self._language = language
         self.kernel = kernel
         self.widgets = widgets
         self.outputs = []
         self.update()
         self.ycell.observe(self.on_change)
+        self.styles.height = "auto"
+
+    def on_click(self):
+        self.clicked = True
 
     def on_change(self, event):
         if "execution_count" in event.keys:
@@ -118,8 +108,17 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
         )
         self.execution_count = Static(execution_count)
         self.mount(self.execution_count)
+        cell_type = cell["cell_type"]
+        if cell_type == "markdown":
+            language = "markdown"
+        elif cell_type == "code":
+            language = self.language
+        else:
+            language = None
         self.source = Source(
-            ydoc=self.ydoc, ycell=self.ycell, parent_widget=self, lexer=self.language
+            ydoc=self.ydoc,
+            ycell=self.ycell,
+            language=language,
         )
         self.mount(self.source)
 
@@ -185,6 +184,15 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
     @clicked.setter
     def clicked(self, value: bool):
         self.source.clicked = value
+
+    @property
+    def language(self):
+        return self._language
+
+    @language.setter
+    def language(self, value: str):
+        self._language = value
+        self.source.language = value
 
 
 class CellComponent(Component):

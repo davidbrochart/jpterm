@@ -23,7 +23,7 @@ classifiers = [
 dependencies = [
   "txl",
   "httpx>=0.23.1",
-  "httpx-ws>=0.2.6",
+  "httpx-ws>=0.4.2",
 ]
 dynamic = ["version"]
 

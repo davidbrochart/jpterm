@@ -51,6 +51,14 @@ class Contents(ABC):
     ) -> Union[List, str, bytes, Dict[str, Any]]:
         ...
 
+    @abstractmethod
+    async def save(
+        self,
+        path: str,
+        jupyter_ydoc: Y.YDoc,
+    ) -> None:
+        ...
+
 
 class Cell(ABC):
     @property

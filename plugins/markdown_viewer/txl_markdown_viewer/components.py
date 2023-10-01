@@ -21,7 +21,7 @@ class MarkdownViewer(Editor, Container, metaclass=MarkdownViewerMeta):
         await self.open(event.path)
 
     async def open(self, path: str) -> None:
-        self.ytext = await self.contents.get(path, type="unicode")
+        self.ytext = await self.contents.get(path, type="file")
         self.focus()
         await self.update_viewer()
         self.ytext.observe(self.on_change)

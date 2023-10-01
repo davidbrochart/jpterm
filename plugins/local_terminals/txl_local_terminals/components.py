@@ -30,8 +30,8 @@ class LocalTerminals(Terminals, Widget, metaclass=TerminalsMeta):
     async def open(self):
         terminal = self.terminal(self._recv_queue, self._send_queue)
         terminal.focus()
-        await self.mount(terminal)
-        terminal.set_size()
+        self.mount(terminal)
+        await terminal.size_set.wait()
         self._ncol = terminal.size.width
         self._nrow = terminal.size.height
         self._fd = self._open_terminal()
