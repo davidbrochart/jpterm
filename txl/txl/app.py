@@ -4,7 +4,7 @@ from asphalt.core.cli import run as asphalt_run
 from textual.app import App
 
 components = {
-    ep.name: ep.load() for ep in pkg_resources.iter_entry_points(group="asphalt.components")
+    ep.name: ep.load() for ep in pkg_resources.iter_entry_points(group="txl.components")
 }
 
 disabled = []

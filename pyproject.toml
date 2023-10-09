@@ -57,7 +57,8 @@ path = "jpterm/__init__.py"
 [tool.hatch.envs.dev]
 pre-install-commands = [
     "pip install pre-commit",
-    "pip install textual[dev]",
+    "pip install textual",
+    "pip install textual-dev",
     "pip install -e ./txl",
     "pip install -e ./plugins/cell",
     "pip install -e ./plugins/console",

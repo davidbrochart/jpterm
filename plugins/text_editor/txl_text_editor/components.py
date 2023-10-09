@@ -27,7 +27,7 @@ class TextEditor(Editor, Container, metaclass=TextEditorMeta):
     async def open(self, path: str) -> None:
         self.path = path
         self.ytext = await self.contents.get(path, type="file")
-        self.editor = TextInput(ydoc=self.ytext.ydoc, ytext=self.ytext._ysource, path=path)
+        self.editor = TextInput(ytext=self.ytext._ysource, path=path)
         self.mount(self.editor)
 
     async def on_key(self, event: Event) -> None:

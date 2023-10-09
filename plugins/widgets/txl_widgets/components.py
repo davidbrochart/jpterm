@@ -1,6 +1,6 @@
 import pkg_resources
-import y_py as Y
 from asphalt.core import Component, Context
+from pycrdt import TransactionEvent
 from ypywidgets.utils import (
     YMessageType,
     YSyncMessageType,
@@ -24,19 +24,19 @@ class _Widgets:
         if target_name != "ywidget":
             return
 
-        name = msg["metadata"]["ymodel_name"]
+        name = msg["metadata"]["ymodel_name"] + "Model"
         comm_id = msg["content"]["comm_id"]
         self.comm = comm
-        model = self.ydocs[name](primary=False)
+        model = self.ydocs[name]()
         self.widgets[comm_id] = {"model": model, "comm": comm}
-        msg = sync(model._ydoc)
+        msg = sync(model.ydoc)
         comm.send(**msg)
 
     def comm_msg(self, msg) -> None:
         comm_id = msg["content"]["comm_id"]
         message = bytes(msg["buffers"][0])
         if message[0] == YMessageType.SYNC:
-            ydoc = self.widgets[comm_id]["model"]._ydoc
+            ydoc = self.widgets[comm_id]["model"].ydoc
             reply = process_sync_message(
                 message[1:],
                 ydoc,
@@ -44,10 +44,10 @@ class _Widgets:
             if reply:
                 self.widgets[comm_id]["comm"].send(buffers=[reply])
             if message[1] == YSyncMessageType.SYNC_STEP2:
-                ydoc.observe_after_transaction(self._send)
+                ydoc.observe(self._send)
 
-    def _send(self, event: Y.AfterTransactionEvent):
-        update = event.get_update()
+    def _send(self, event: TransactionEvent):
+        update = event.update
         message = create_update_message(update)
         try:
             self.comm.send(buffers=[message])

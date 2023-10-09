@@ -48,6 +48,10 @@ class Jpterm(App):
 
 
 class JptermComponent(Component):
+    def __init__(self, driver_class=None):
+        super().__init__()
+        self.driver_class = driver_class
+
     async def start(
         self,
         ctx: Context,
@@ -69,5 +73,6 @@ class JptermComponent(Component):
             file_browser,
             editors,
             launcher,
+            driver_class=self.driver_class,
         )
         ctx.add_resource(jpterm, types=App)

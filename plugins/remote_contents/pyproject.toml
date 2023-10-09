@@ -17,6 +17,7 @@ classifiers = [
   "Programming Language :: Python",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
@@ -24,17 +25,17 @@ dependencies = [
   "txl",
   "httpx>=0.23.1",
   "httpx-ws>=0.4.2",
-  "jupyter_ydoc >=0.3.0a4",
-  "y-py >=0.6.0,<1",
-  "ypy-websocket >=0.12.1,<1",
+  "pycrdt >=0.7.2,<0.8.0",
+  "pycrdt-websocket >=0.12.5,<0.13.0",
 ]
 dynamic = ["version"]
 
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/remote_contents"
 
-[project.entry-points."asphalt.components"]
-remote_contents = "txl_remote_contents.components:RemoteContentsComponent"
+[project.entry-points]
+"asphalt.components" = {remote_contents = "txl_remote_contents.components:RemoteContentsComponent"}
+"txl.components"     = {remote_contents = "txl_remote_contents.components:RemoteContentsComponent"}
 
 [tool.hatch.version]
 path = "txl_remote_contents/__init__.py"

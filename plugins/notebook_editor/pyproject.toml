@@ -17,19 +17,22 @@ classifiers = [
   "Programming Language :: Python",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
   "txl",
+  "pycrdt >=0.7.2,<0.8.0",
 ]
 dynamic = ["version"]
 
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/notebook_editor"
 
-[project.entry-points."asphalt.components"]
-notebook_editor = "txl_notebook_editor.components:NotebookEditorComponent"
+[project.entry-points]
+"asphalt.components" = {notebook_editor = "txl_notebook_editor.components:NotebookEditorComponent"}
+"txl.components"     = {notebook_editor = "txl_notebook_editor.components:NotebookEditorComponent"}
 
 [tool.hatch.version]
 path = "txl_notebook_editor/__init__.py"

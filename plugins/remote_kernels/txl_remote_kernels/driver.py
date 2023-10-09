@@ -43,6 +43,7 @@ class KernelDriver(KernelMixin):
         self.control_channel = "control"
         self.iopub_channel = "iopub"
         self.send_lock = asyncio.Lock()
+        self.kernel_id = None
 
     async def start(self):
         i = str(uuid.uuid4())
@@ -62,15 +63,15 @@ class KernelDriver(KernelMixin):
             d = r.json()
             self.cookies.update(r.cookies)
             self.session_id = d["id"]
-            kernel_id = d["kernel"]["id"]
+            self.kernel_id = d["kernel"]["id"]
             r = await client.get(
-                f"{self.base_url}/api/kernels/{kernel_id}",
+                f"{self.base_url}/api/kernels/{self.kernel_id}",
                 cookies=self.cookies,
             )
-        if r.status_code != 200 or kernel_id != r.json()["id"]:
+        if r.status_code != 200 or self.kernel_id != r.json()["id"]:
             return
         async with aconnect_ws(
-            f"{self.ws_url}/api/kernels/{kernel_id}/channels",
+            f"{self.ws_url}/api/kernels/{self.kernel_id}/channels",
             params={"session_id": self.session_id},
             cookies=self.cookies,
             subprotocols=["v1.kernel.websocket.jupyter.org"],

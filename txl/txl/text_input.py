@@ -1,11 +1,14 @@
+import asyncio
+
+from pycrdt import Text
 from rich.syntax import Syntax
-from textual.document._document import Location
 from textual.widgets import TextArea
 
 
 class TextInput(TextArea):
-    def __init__(self, ydoc, ytext, path=None, language=None):
-        self.ydoc = ydoc
+    ytext: Text
+
+    def __init__(self, ytext: Text, path=None, language=None):
         self.ytext = ytext
         text = str(ytext)
         if language is None:
@@ -15,24 +18,8 @@ class TextInput(TextArea):
             language = None
         super().__init__(text, language=language)
         ytext.observe(self.on_change)
-
-    def get_index_from_location(self, location: Location) -> int:
-        row, col = location
-        index = row * len(self.document.newline) + col
-        for i in range(row):
-            index += len(self.document.get_line(i))
-        return index
-
-    def get_location_from_index(self, index: int) -> Location:
-        idx = 0
-        newline_len = len(self.document.newline)
-        for i in range(self.document.line_count):
-            next_idx = idx + len(self.document.get_line(i)) + newline_len
-            if index < next_idx:
-                return (i, index - idx)
-            elif index == next_idx:
-                return (i + 1, 0)
-            idx = next_idx
+        self.change_events = asyncio.Queue()
+        self.observe_changes_task = asyncio.create_task(self.observe_changes())
 
     def delete(
         self,
@@ -42,10 +29,9 @@ class TextInput(TextArea):
         **kwargs,
     ):
         top, bottom = sorted((start, end))
-        i0 = self.get_index_from_location(top)
-        i1 = self.get_index_from_location(bottom)
-        with self.ydoc.begin_transaction() as t:
-            self.ytext.delete_range(t, i0, i1 - i0)
+        i0 = self.document.get_index_from_location(top)
+        i1 = self.document.get_index_from_location(bottom)
+        del self.ytext[i0:i1]
 
     def replace(
         self,
@@ -55,26 +41,26 @@ class TextInput(TextArea):
         *args,
         **kwargs,
     ):
-        i = self.get_index_from_location(start)
-        with self.ydoc.begin_transaction() as t:
-            self.ytext.insert(t, i, insert)
+        i = self.document.get_index_from_location(start)
+        self.ytext[i:i] = insert
 
     def on_change(self, event):
-        insert = None
-        delete = None
-        retain = None
-        for d in event.delta:
-            if "insert" in d:
-                insert = d["insert"]
-            if "delete" in d:
-                delete = d["delete"]
-            if "retain" in d:
-                retain = d["retain"]
-        retain = 0 if retain is None else retain
-        if insert:
-            l0 = self.get_location_from_index(retain)
-            super().replace(insert, l0, l0, maintain_selection_offset=False)
-        elif delete:
-            l1 = self.get_location_from_index(retain)
-            l2 = self.get_location_from_index(retain + delete)
-            super().delete(l1, l2, maintain_selection_offset=False)
+        self.change_events.put_nowait(event)
+
+    async def observe_changes(self):
+        while True:
+            event = await self.change_events.get()
+            idx = 0
+            for d in event.delta:
+                retain = d.get("retain")
+                if retain is not None:
+                    idx += retain
+                delete = d.get("delete")
+                if delete is not None:
+                    l1 = self.document.get_location_from_index(idx)
+                    l2 = self.document.get_location_from_index(idx + delete)
+                    super().delete(l1, l2, maintain_selection_offset=False)
+                insert = d.get("insert")
+                if insert is not None:
+                    l0 = self.document.get_location_from_index(idx)
+                    super().replace(insert, l0, l0, maintain_selection_offset=False)

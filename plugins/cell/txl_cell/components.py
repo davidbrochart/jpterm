@@ -1,14 +1,15 @@
+import asyncio
 import json
 from functools import partial
 
 import pkg_resources
-import y_py as Y
 from asphalt.core import Component, Context
-from rich.text import Text
+from pycrdt import Doc, Map, MapEvent, Text
+from rich.text import Text as RichText
 from textual.containers import Container
 from textual.widgets import Static
 
-from txl.base import Cell, CellFactory, Kernel, Widgets
+from txl.base import Cell, CellFactory, Contents, Kernel, Widgets
 from txl.text_input import TextInput
 
 YDOCS = {ep.name: ep.load() for ep in pkg_resources.iter_entry_points(group="ypywidgets")}
@@ -48,70 +49,141 @@ class CellMeta(type(Cell), type(Container)):
 class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
     def __init__(
         self,
-        ycell: Y.YMap,
-        ydoc: Y.YDoc,
+        ycell: Map,
         language: str | None,
         kernel: Kernel | None,
+        contents: Contents | None,
         widgets: Widgets | None,
         show_execution_count: bool = True,
         show_border: bool = True,
     ) -> None:
         super().__init__()
         self.ycell = ycell
-        self.ydoc = ydoc
         self._language = language
         self.kernel = kernel
+        self.contents = contents
         self.widgets = widgets
         self.show_execution_count = show_execution_count
         self.show_border = show_border
         self.outputs = []
         self.update()
-        self.ycell.observe(self.on_change)
+        self.ycell.observe_deep(self.on_change)
         self.styles.height = "auto"
+        self.cell_change_events = asyncio.Queue()
+        self.widget_change_events = asyncio.Queue()
+        self.tasks = [
+            asyncio.create_task(self.observe_cell_changes()),
+            asyncio.create_task(self.observe_widget_changes()),
+        ]
 
     def on_click(self):
         self.clicked = True
 
-    def on_change(self, event):
-        if "execution_count" in event.keys:
-            if self.show_execution_count:
-                key = event.keys["execution_count"]
-                if key["action"] == "update" and key["oldValue"] != key["newValue"]:
-                    execution_count = self.get_execution_count(key["newValue"])
-                    self.execution_count.update(execution_count)
-        elif "source" in event.keys:
-            key = event.keys["source"]
-            if key["action"] == "update" and key["oldValue"] != key["newValue"]:
-                source = self.get_source(key["newValue"])
-                self.source.update(source)
-        elif "outputs" in event.keys:
-            key = event.keys["outputs"]
-            if key["action"] == "update" and key["oldValue"] != key["newValue"]:
-                outputs = key["newValue"]
-                if not outputs:
-                    # cell got re-executed
-                    for output in self.outputs:
-                        output.remove()
+    def on_change(self, events):
+        self.cell_change_events.put_nowait(events)
+
+    def on_widget_change(self, ydoc, event):
+        self.widget_change_events.put_nowait((ydoc, event))
+
+    async def observe_widget_changes(self):
+        while True:
+            ydoc, event = await self.widget_change_events.get()
+            model_name = event.delta[0]["insert"]
+            model = YDOCS[f"{model_name}Model"](ydoc=ydoc)
+            widget = YDOCS[f"txl_{model_name}"](model)
+            self.mount(widget)
+            self.outputs.append(widget)
+
+    async def observe_cell_changes(self):
+        while True:
+            events = await self.cell_change_events.get()
+            for event in events:
+                if isinstance(event, MapEvent):
+                    if "execution_state" in event.keys:
+                        if self.show_execution_count:
+                            key = event.keys["execution_state"]
+                            if key["newValue"] == "busy":
+                                execution_count = self.get_execution_count("*")
+                                self.execution_count.update(execution_count)
+                    if "execution_count" in event.keys:
+                        if self.show_execution_count:
+                            key = event.keys["execution_count"]
+                            if key["action"] == "update" and key["oldValue"] != key["newValue"]:
+                                execution_count = self.get_execution_count(key["newValue"])
+                                self.execution_count.update(execution_count)
+                    elif "source" in event.keys:
+                        key = event.keys["source"]
+                        if key["action"] == "update" and key["oldValue"] != key["newValue"]:
+                            source = self.get_source(key["newValue"])
+                            self.source.update(source)
+                    elif "outputs" in event.keys:
+                        key = event.keys["outputs"]
+                        if key["action"] == "update" and key["oldValue"] != key["newValue"]:
+                            outputs = key["newValue"]
+                            if not outputs:
+                                # cell got re-executed
+                                for output in self.outputs:
+                                    output.remove()
+                            else:
+                                # outputs can only append
+                                i = len(key["oldValue"])
+                                for output in key["newValue"][i:]:
+                                    output_widget = self.get_output_widget(output)
+                                    self.mount(output_widget)
+                                    self.outputs.append(output_widget)
                 else:
-                    # outputs can only append
-                    i = len(key["oldValue"])
-                    for output in key["newValue"][i:]:
-                        output_widget = self.get_output_widget(output)
-                        self.mount(output_widget)
-                        self.outputs.append(output_widget)
+                    if event.path:
+                        if event.path[0] == "outputs":
+                            for d in event.delta:
+                                if "delete" in d:
+                                    for output in self.outputs:
+                                        output.remove()
+                                elif "insert" in d:
+                                    is_widget = False
+                                    if len(event.path) == 1:
+                                        inserted = d["insert"][0]
+                                        if isinstance(inserted, Doc):
+                                            # this is a widget
+                                            is_widget = True
+                                            room_id = f"ywidget:{inserted.guid}"
+                                            asyncio.create_task(self.contents.websocket_provider(
+                                                room_id, inserted
+                                            ))
+                                            inserted["_model_name"] = model_name = Text()
+                                            model_name.observe(partial(
+                                                self.on_widget_change, inserted
+                                            ))
+                                        else:
+                                            #output = json.loads(str(inserted))
+                                            output = inserted
+                                    else:
+                                        _output = self.ycell["outputs"][event.path[1]]
+                                        key = event.path[2]
+                                        output = json.loads(str(_output))
+                                        output[key] = d["insert"][0]
+                                    if is_widget:
+                                        pass
+                                    else:
+                                        output_widget = self.get_output_widget(output)
+                                        self.mount(output_widget)
+                                        self.outputs.append(output_widget)
 
     def get_execution_count(self, value):
         execution_count = " " if value is None else str(value).removesuffix(".0")
         return f"[green]In [[#66ff00]{execution_count}[/#66ff00]]:[/green]"
 
     def update(self):
-        cell = json.loads(self.ycell.to_json())
+        cell = json.loads(str(self.ycell))
         if self.show_execution_count:
-            execution_count = (
-                self.get_execution_count(cell["execution_count"])
-                if "execution_count" in cell
-                else ""
-            )
+            execution_state = self.ycell.get("execution_state")
+            if execution_state != "busy":
+                execution_count = (
+                    self.get_execution_count(self.ycell.get("execution_count", ""))
+                )
+            else:
+                execution_count = (
+                    self.get_execution_count("*")
+                )
             self.execution_count = Static(execution_count)
             self.mount(self.execution_count)
         cell_type = cell["cell_type"]
@@ -122,7 +194,6 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
         else:
             language = None
         self.source = Source(
-            ydoc=self.ydoc,
             ycell=self.ycell,
             language=language,
             show_border=self.show_border,
@@ -131,38 +202,48 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
 
         for output in cell.get("outputs", []):
             output_widget = self.get_output_widget(output)
-            self.mount(output_widget)
-            self.outputs.append(output_widget)
+            if output_widget is not None:
+                self.mount(output_widget)
+                self.outputs.append(output_widget)
 
     def get_output_widget(self, output):
+        if "guid" in output:
+            guid = output["guid"]
+            ywidget_doc = Doc()
+            room_id = f"ywidget:{guid}"
+            asyncio.create_task(self.contents.websocket_provider(room_id, ywidget_doc))
+            ywidget_doc["_model_name"] = model_name = Text()
+            model_name.observe(partial(self.on_widget_change, ywidget_doc))
+            return
+
         output_type = output["output_type"]
         execution_count = ""
         widget = None
         if output_type == "stream":
             text = "".join(output["text"])
-            renderable = Text.from_ansi(text)
+            renderable = RichText.from_ansi(text)
         elif output_type == "error":
             text = "\n".join(output["traceback"]).rstrip()
-            renderable = Text.from_ansi(text)
+            renderable = RichText.from_ansi(text)
         elif output_type == "execute_result":
             execution_count = output.get("execution_count", " ") or " "
-            execution_count = Text.from_markup(
+            execution_count = RichText.from_markup(
                 f"[red]Out[[#ee4b2b]{execution_count}[/#ee4b2b]]:[/red]\n"
             )
             if "application/vnd.jupyter.ywidget-view+json" in output["data"]:
                 model_id = output["data"]["application/vnd.jupyter.ywidget-view+json"]["model_id"]
                 if model_id in self.widgets.widgets:
                     model = self.widgets.widgets[model_id]["model"]
-                    widget = YDOCS[f"txl_{model.__class__.__name__}"](model)
+                    widget = YDOCS[f"txl_{model.__class__.__name__[:-5]}"](model)
             if not widget:
                 data = output["data"].get("text/plain", "")
-                renderable = Text()
+                renderable = RichText()
                 if isinstance(data, list):
                     text = "".join(data)
-                    renderable += Text.from_ansi(text)
+                    renderable += RichText.from_ansi(text)
                 else:
                     text = data
-                    renderable += Text.from_ansi(text)
+                    renderable += RichText.from_ansi(text)
         else:
             output_widget = Static("Error: cannot render output")
 
@@ -210,9 +291,11 @@ class CellComponent(Component):
         self,
         ctx: Context,
     ) -> None:
+        contents = await ctx.request_resource(Contents)
         widgets = await ctx.request_resource(Widgets)
         cell_factory = partial(
             _Cell,
+            contents=contents,
             widgets=widgets,
             show_execution_count=self.show_execution_count,
             show_border=self.show_border,

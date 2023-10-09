@@ -2,8 +2,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-import y_py as Y
 from asphalt.core import Component, Context, context_teardown
+from pycrdt import Map
 
 from txl.base import Kernels, Kernelspecs
 
@@ -17,8 +17,8 @@ class LocalKernels(Kernels):
     def __init__(self, kernel_name: str | None = None):
         self.kernel = KernelDriver(kernel_name, comm_handlers=self.comm_handlers)
 
-    async def execute(self, ydoc: Y.YDoc, ycell: Y.YMap):
-        await self.kernel.execute(ydoc, ycell)
+    async def execute(self, ycell: Map):
+        await self.kernel.execute(ycell)
 
 
 class LocalKernelspecs(Kernelspecs):

@@ -17,6 +17,7 @@ classifiers = [
   "Programming Language :: Python",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
@@ -28,8 +29,9 @@ dynamic = ["version"]
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/markdown_viewer"
 
-[project.entry-points."asphalt.components"]
-markdown_viewer = "txl_markdown_viewer.components:MarkdownViewerComponent"
+[project.entry-points]
+"asphalt.components" = {markdown_viewer = "txl_markdown_viewer.components:MarkdownViewerComponent"}
+"txl.components"     = {markdown_viewer = "txl_markdown_viewer.components:MarkdownViewerComponent"}
 
 [tool.hatch.version]
 path = "txl_markdown_viewer/__init__.py"

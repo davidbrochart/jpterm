@@ -17,6 +17,7 @@ classifiers = [
   "Programming Language :: Python",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
@@ -29,8 +30,9 @@ dynamic = ["version"]
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/terminal"
 
-[project.entry-points."asphalt.components"]
-terminal = "txl_terminal.components:TerminalComponent"
+[project.entry-points]
+"asphalt.components" = {terminal = "txl_terminal.components:TerminalComponent"}
+"txl.components"     = {terminal = "txl_terminal.components:TerminalComponent"}
 
 [tool.hatch.version]
 path = "txl_terminal/__init__.py"
