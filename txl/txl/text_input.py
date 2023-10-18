@@ -11,6 +11,8 @@ class TextInput(TextArea):
         if language is None:
             if path is not None:
                 language = Syntax.guess_lexer(path, code=text)
+        if language == "default":
+            language = None
         super().__init__(text, language=language)
         ytext.observe(self.on_change)
 
