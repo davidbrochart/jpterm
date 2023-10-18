@@ -2,6 +2,24 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 0.1.17
+
+([Full Changelog](https://github.com/davidbrochart/jpterm/compare/v0.1.16...b4e2d60200879a839f13cab7dd58610dc75b3129))
+
+### Merged PRs
+
+- Minor fixes, add examples [#46](https://github.com/davidbrochart/jpterm/pull/46) ([@davidbrochart](https://github.com/davidbrochart))
+- Use Textual's TextArea for txl.TextInput [#45](https://github.com/davidbrochart/jpterm/pull/45) ([@davidbrochart](https://github.com/davidbrochart))
+- Implement more cell actions [#44](https://github.com/davidbrochart/jpterm/pull/44) ([@davidbrochart](https://github.com/davidbrochart))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/davidbrochart/jpterm/graphs/contributors?from=2023-06-30&to=2023-10-18&type=c))
+
+[@davidbrochart](https://github.com/search?q=repo%3Adavidbrochart%2Fjpterm+involves%3Adavidbrochart+updated%3A2023-06-30..2023-10-18&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 0.1.16
 
 ([Full Changelog](https://github.com/davidbrochart/jpterm/compare/v0.1.15...79d746ee87d9df1e9a957ef237be469ea98e71f8))
@@ -15,8 +33,6 @@
 ([GitHub contributors page for this release](https://github.com/davidbrochart/jpterm/graphs/contributors?from=2023-06-28&to=2023-06-30&type=c))
 
 [@davidbrochart](https://github.com/search?q=repo%3Adavidbrochart%2Fjpterm+involves%3Adavidbrochart+updated%3A2023-06-28..2023-06-30&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 0.1.15
 
