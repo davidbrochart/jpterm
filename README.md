@@ -27,7 +27,8 @@ jpterm
 To run jpterm as a client to a Jupyter server, you need, well, jupyter-server :) You can install it through JupyterLab:
 
 ```bash
-pip install --pre jupyterlab
+pip install "jupyterlab>=4"
+pip install jupyter-collaboration
 ```
 
 Then launch it with:
@@ -49,9 +50,9 @@ jpterm --server http://127.0.0.1:8000/?token=972cbd440db4b35581b25f90c0a88e3a109
 # jpterm --server http://127.0.0.1:8000
 ```
 
-If JupyterLab and jpterm are launched with `--collaborative`, you can open a document in
+If jpterm is launched with `--collaborative`, you can open a document in
 JupyterLab (go to http://127.0.0.1:8000 in your browser), modify it, and see the changes live
-in jpterm.
+in jpterm. This also works the other way around.
 
 ## Development install
 

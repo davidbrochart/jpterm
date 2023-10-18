@@ -16,6 +16,7 @@ class LocalContents(Contents):
         path: str,
         is_dir: bool = False,
         type: str = "file",
+        format: str | None = None,
     ) -> Union[List, Y.YDoc]:
         p = Path(path)
         assert (await p.is_dir()) == is_dir
