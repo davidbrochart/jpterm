@@ -1,13 +1,27 @@
 import json
 from functools import partial
+from typing import Any
 
+import anyio
 import y_py as Y
 from asphalt.core import Component, Context
+from jupyter_ydoc import ydocs
 from textual.containers import VerticalScroll
 from textual.events import Event
 from textual.keys import Keys
+from textual.widgets import Select
 
-from txl.base import CellFactory, Contents, Editor, Editors, FileOpenEvent, Kernels
+from txl.base import (
+    CellFactory,
+    Contents,
+    Editor,
+    Editors,
+    FileOpenEvent,
+    Kernels,
+    Kernelspecs,
+    Launcher,
+    MainArea,
+)
 
 
 class NotebookEditorMeta(type(Editor), type(VerticalScroll)):
@@ -19,12 +33,16 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         self,
         contents: Contents,
         kernels: Kernels,
+        kernelspecs: dict[str, Any],
         cell_factory: CellFactory,
+        main_area: MainArea,
     ) -> None:
         super().__init__()
         self.contents = contents
         self.kernels = kernels
+        self.kernelspecs = kernelspecs
         self.cell_factory = cell_factory
+        self.main_area = main_area
         self.kernel = None
         self.cells = []
         self.cell_i = 0
@@ -34,9 +52,61 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
     async def on_open(self, event: FileOpenEvent) -> None:
         await self.open(event.path)
 
-    async def open(self, path: str) -> None:
+    async def select_kernel(self) -> str:
+        select = Select((name, name) for name in self.kernelspecs["kernelspecs"])
+
+        def on_kernel_select(kernel_selected):
+            kernel_selected[0].set()
+
+        kernel_selected = [anyio.Event()]
+        select.watch_value = partial(on_kernel_select, kernel_selected)
+        self.mount(select)
+        while True:
+            await kernel_selected[0].wait()
+            if select.value is not None:
+                break
+            kernel_selected[0] = anyio.Event()
+        select.remove()
+        return select.value
+
+    async def get_untitled(self, path: str = ".") -> str:
+        dir_list = [
+            dir_entry.name for dir_entry in await self.contents.get(path, is_dir=True)
+        ]
+        i = 0
+        while True:
+            s = str(i) if i > 0 else ""
+            name = f"Untitled{s}.ipynb"
+            if name not in dir_list:
+                return name
+            i += 1
+
+    async def create_empty_notebook(self, kernel_name: str) -> str:
+        kernel = self.kernelspecs["kernelspecs"][kernel_name]
+        path = await self.get_untitled()
+        ynb = ydocs["notebook"]()
+        ynb.set(
+            {
+                "cells": [],
+                "metadata": {
+                    "kernelspec": {
+                        "display_name": kernel["spec"]["display_name"],
+                        "language": kernel["spec"]["language"],
+                        "name": kernel_name,
+                    }
+                },
+            }
+        )
+        await self.contents.save(path, ynb)
+        return path
+
+    async def open(self, path: str | None = None) -> None:
+        if path is None:
+            kernel_name = await self.select_kernel()
+            path = await self.create_empty_notebook(kernel_name)
+            self.main_area.set_label(path)
         self.path = path
-        self.ynb = await self.contents.get(path, type="notebook", format="json")
+        self.ynb = await self.contents.get(self.path, type="notebook", format="json")
         self.update()
         self.ynb.observe(self.on_change)
 
@@ -258,11 +328,18 @@ class NotebookEditorComponent(Component):
     ) -> None:
         contents = await ctx.request_resource(Contents)
         kernels = await ctx.request_resource(Kernels)
+        kernelspecs = await ctx.request_resource(Kernelspecs)
         cell_factory = await ctx.request_resource(CellFactory)
+        launcher = await ctx.request_resource(Launcher)
+        main_area = await ctx.request_resource(MainArea)
+
+        _kernelspecs = await kernelspecs.get()
 
         notebook_editor_factory = partial(
-            NotebookEditor, contents, kernels, cell_factory
+            NotebookEditor, contents, kernels, _kernelspecs, cell_factory, main_area
         )
+
+        launcher.register("notebook", notebook_editor_factory)
 
         if self.register:
             editors = await ctx.request_resource(Editors)

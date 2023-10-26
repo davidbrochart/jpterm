@@ -90,6 +90,12 @@ class Kernels(ABC):
         ...
 
 
+class Kernelspecs(ABC):
+    @abstractmethod
+    async def get(self) -> dict[str, Any]:
+        ...
+
+
 class Notebook(ABC):
     ...
 
@@ -138,3 +144,7 @@ class Widgets(ABC):
     @abstractmethod
     def comm_msg(self, msg) -> None:
         ...
+
+
+class Console(ABC):
+    ...

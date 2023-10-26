@@ -17,13 +17,14 @@ YDOCS = {
 
 
 class Source(TextInput):
-    def __init__(self, ycell, *args, **kwargs):
+    def __init__(self, ycell, show_border: bool = True, *args, **kwargs):
         super().__init__(ytext=ycell["source"], *args, **kwargs)
+        self.show_border = show_border
         self.clicked = False
         self._selected = False
         self.set_styles(css="height: auto; max-height: 100%;")
         self.is_code = ycell["cell_type"] == "code"
-        if self.is_code:
+        if self.is_code and show_border:
             self.set_styles(css="border: round yellow;")
 
     @property
@@ -33,12 +34,13 @@ class Source(TextInput):
     @selected.setter
     def selected(self, value: bool) -> None:
         self._selected = value
-        if value:
-            if self.is_code:
-                self.set_styles(css="border: double yellow;")
-        else:
-            if self.is_code:
-                self.set_styles(css="border: round yellow;")
+        if self.show_border:
+            if value:
+                if self.is_code:
+                    self.set_styles(css="border: double yellow;")
+            else:
+                if self.is_code:
+                    self.set_styles(css="border: round yellow;")
 
 
 class CellMeta(type(Cell), type(Container)):
@@ -53,6 +55,8 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
         language: str | None,
         kernel: Kernel | None,
         widgets: Widgets | None,
+        show_execution_count: bool = True,
+        show_border: bool = True,
     ) -> None:
         super().__init__()
         self.ycell = ycell
@@ -60,6 +64,8 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
         self._language = language
         self.kernel = kernel
         self.widgets = widgets
+        self.show_execution_count = show_execution_count
+        self.show_border = show_border
         self.outputs = []
         self.update()
         self.ycell.observe(self.on_change)
@@ -70,10 +76,11 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
 
     def on_change(self, event):
         if "execution_count" in event.keys:
-            key = event.keys["execution_count"]
-            if key["action"] == "update" and key["oldValue"] != key["newValue"]:
-                execution_count = self.get_execution_count(key["newValue"])
-                self.execution_count.update(execution_count)
+            if self.show_execution_count:
+                key = event.keys["execution_count"]
+                if key["action"] == "update" and key["oldValue"] != key["newValue"]:
+                    execution_count = self.get_execution_count(key["newValue"])
+                    self.execution_count.update(execution_count)
         elif "source" in event.keys:
             key = event.keys["source"]
             if key["action"] == "update" and key["oldValue"] != key["newValue"]:
@@ -101,13 +108,14 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
 
     def update(self):
         cell = json.loads(self.ycell.to_json())
-        execution_count = (
-            self.get_execution_count(cell["execution_count"])
-            if "execution_count" in cell
-            else ""
-        )
-        self.execution_count = Static(execution_count)
-        self.mount(self.execution_count)
+        if self.show_execution_count:
+            execution_count = (
+                self.get_execution_count(cell["execution_count"])
+                if "execution_count" in cell
+                else ""
+            )
+            self.execution_count = Static(execution_count)
+            self.mount(self.execution_count)
         cell_type = cell["cell_type"]
         if cell_type == "markdown":
             language = "markdown"
@@ -119,6 +127,7 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
             ydoc=self.ydoc,
             ycell=self.ycell,
             language=language,
+            show_border=self.show_border,
         )
         self.mount(self.source)
 
@@ -196,10 +205,20 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
 
 
 class CellComponent(Component):
+    def __init__(self, show_execution_count: bool = True, show_border: bool = True):
+        super().__init__()
+        self.show_execution_count = show_execution_count
+        self.show_border = show_border
+
     async def start(
         self,
         ctx: Context,
     ) -> None:
         widgets = await ctx.request_resource(Widgets)
-        cell_factory = partial(_Cell, widgets=widgets)
+        cell_factory = partial(
+            _Cell,
+            widgets=widgets,
+            show_execution_count=self.show_execution_count,
+            show_border=self.show_border,
+        )
         ctx.add_resource(cell_factory, types=CellFactory)
