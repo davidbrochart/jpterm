@@ -29,13 +29,9 @@ class KernelDriver(KernelMixin):
         self.kernelspec_path = kernelspec_path or find_kernelspec(kernel_name)
         self.kernel_cwd = kernel_cwd
         if not self.kernelspec_path:
-            raise RuntimeError(
-                "Could not find a kernel, maybe you forgot to install one?"
-            )
+            raise RuntimeError("Could not find a kernel, maybe you forgot to install one?")
         if write_connection_file:
-            self.connection_file_path, self.connection_cfg = _write_connection_file(
-                connection_file
-            )
+            self.connection_file_path, self.connection_cfg = _write_connection_file(connection_file)
         else:
             self.connection_file_path = connection_file
             self.connection_cfg = read_connection_file(connection_file)
@@ -54,9 +50,7 @@ class KernelDriver(KernelMixin):
         while True:
             msg = cast(
                 Dict[str, Any],
-                await self.receive_message(
-                    self.control_channel, change_str_to_date=True
-                ),
+                await self.receive_message(self.control_channel, change_str_to_date=True),
             )
             if msg["msg_type"] == "shutdown_reply" and msg["content"]["restart"]:
                 break
@@ -64,9 +58,7 @@ class KernelDriver(KernelMixin):
         self.channel_tasks = []
         self.listen_channels()
 
-    async def start(
-        self, startup_timeout: float = float("inf"), connect: bool = True
-    ) -> None:
+    async def start(self, startup_timeout: float = float("inf"), connect: bool = True) -> None:
         self.kernel_process = await launch_kernel(
             self.kernelspec_path,
             self.connection_file_path,
@@ -101,17 +93,13 @@ class KernelDriver(KernelMixin):
 
     async def _recv_iopub(self):
         while True:
-            msg = await self.receive_message(
-                self.iopub_channel, change_str_to_date=True
-            )
+            msg = await self.receive_message(self.iopub_channel, change_str_to_date=True)
             msg["channel"] = "iopub"
             self.recv_queue.put_nowait(msg)
 
     async def _recv_shell(self):
         while True:
-            msg = await self.receive_message(
-                self.shell_channel, change_str_to_date=True
-            )
+            msg = await self.receive_message(self.shell_channel, change_str_to_date=True)
             msg["channel"] = "shell"
             self.recv_queue.put_nowait(msg)
 

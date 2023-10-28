@@ -70,9 +70,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         return select.value
 
     async def get_untitled(self, path: str = ".") -> str:
-        dir_list = [
-            dir_entry.name for dir_entry in await self.contents.get(path, is_dir=True)
-        ]
+        dir_list = [dir_entry.name for dir_entry in await self.contents.get(path, is_dir=True)]
         i = 0
         while True:
             s = str(i) if i > 0 else ""
@@ -112,9 +110,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
 
     def update(self):
         ipynb = self.ynb.source
-        self.language = (
-            ipynb.get("metadata", {}).get("kernelspec", {}).get("language", None)
-        )
+        self.language = ipynb.get("metadata", {}).get("kernelspec", {}).get("language", None)
         if self.kernel is None:
             kernel_name = ipynb.get("metadata", {}).get("kernelspec", {}).get("name")
             if kernel_name:
@@ -156,9 +152,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                     i = 0 if retain is None else retain
                     if insert is not None:
                         for c in insert:
-                            cell = self.cell_factory(
-                                c, self.ynb.ydoc, self.language, self.kernel
-                            )
+                            cell = self.cell_factory(c, self.ynb.ydoc, self.language, self.kernel)
                             if not self.cells:
                                 self.mount(cell)
                             else:

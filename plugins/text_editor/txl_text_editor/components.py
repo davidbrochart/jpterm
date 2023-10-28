@@ -12,7 +12,6 @@ class TextEditorMeta(type(Editor), type(Container)):
 
 
 class TextEditor(Editor, Container, metaclass=TextEditorMeta):
-
     contents: Contents
     path: str
 
@@ -26,9 +25,7 @@ class TextEditor(Editor, Container, metaclass=TextEditorMeta):
     async def open(self, path: str) -> None:
         self.path = path
         self.ytext = await self.contents.get(path, type="file")
-        self.editor = TextInput(
-            ydoc=self.ytext.ydoc, ytext=self.ytext._ysource, path=path
-        )
+        self.editor = TextInput(ydoc=self.ytext.ydoc, ytext=self.ytext._ysource, path=path)
         self.mount(self.editor)
 
 

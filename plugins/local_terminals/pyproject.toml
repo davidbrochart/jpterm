@@ -22,6 +22,7 @@ classifiers = [
 ]
 dependencies = [
   "txl",
+  "pywinpty;platform_system=='Windows'",
 ]
 dynamic = ["version"]
 

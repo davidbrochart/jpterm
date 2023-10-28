@@ -29,9 +29,7 @@ def sign(msg_list: List[bytes], key: str) -> bytes:
     return h.hexdigest().encode()
 
 
-def serialize(
-    msg: Dict[str, Any], key: str, change_date_to_str: bool = False
-) -> List[bytes]:
+def serialize(msg: Dict[str, Any], key: str, change_date_to_str: bool = False) -> List[bytes]:
     _date_to_str = date_to_str if change_date_to_str else lambda x: x
     message = [
         pack(_date_to_str(msg["header"])),

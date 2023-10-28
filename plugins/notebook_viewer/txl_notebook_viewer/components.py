@@ -52,9 +52,7 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
     async def open(self, path: str) -> None:
         self.ynb = await self.contents.get(path, type="notebook")
         ipynb = self.ynb.source
-        self.language = (
-            ipynb.get("metadata", {}).get("kernelspec", {}).get("language", "")
-        )
+        self.language = ipynb.get("metadata", {}).get("kernelspec", {}).get("language", "")
         kernel_name = ipynb.get("metadata", {}).get("kernelspec", {}).get("name")
         if kernel_name:
             self.kernel = self.kernels(kernel_name)
@@ -78,8 +76,7 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
         for i_cell in range(self.ynb.cell_number):
             cell = self.ynb.get_cell(i_cell)
             execution_count = (
-                f"[green]In [[#66ff00]{cell['execution_count'] or ' '}"
-                "[/#66ff00]]:[/green]"
+                f"[green]In [[#66ff00]{cell['execution_count'] or ' '}" "[/#66ff00]]:[/green]"
                 if "execution_count" in cell
                 else ""
             )
@@ -127,12 +124,10 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
                         f"[red]Out[[#ee4b2b]{execution_count}[/#ee4b2b]]:[/red]\n"
                     )
                     if "application/vnd.jupyter.ywidget-view+json" in output["data"]:
-                        print(
-                            f'{output["data"]["application/vnd.jupyter.ywidget-view+json"]=}'
-                        )
-                        model_id = output["data"][
-                            "application/vnd.jupyter.ywidget-view+json"
-                        ]["model_id"]
+                        print(f'{output["data"]["application/vnd.jupyter.ywidget-view+json"]=}')
+                        model_id = output["data"]["application/vnd.jupyter.ywidget-view+json"][
+                            "model_id"
+                        ]
                         print(f"{model_id=}")
                         print(f"{self.widgets.widgets=}")
                         if model_id in self.widgets.widgets:

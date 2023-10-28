@@ -110,15 +110,11 @@ class DirectoryTree(FileBrowser, Tree[DirEntry], metaclass=DirectoryTreeMeta):
             )
             node_label.highlight_regex(
                 r"\..+$",
-                self.get_component_rich_style(
-                    "directory-tree--extension", partial=True
-                ),
+                self.get_component_rich_style("directory-tree--extension", partial=True),
             )
 
         if node_label.plain.startswith("."):
-            node_label.stylize_before(
-                self.get_component_rich_style("directory-tree--hidden")
-            )
+            node_label.stylize_before(self.get_component_rich_style("directory-tree--hidden"))
 
         text = Text.assemble(prefix, node_label)
         return text

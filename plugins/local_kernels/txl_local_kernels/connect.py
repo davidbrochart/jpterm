@@ -105,9 +105,7 @@ def create_socket(channel: str, cfg: cfg_t, identity: Optional[bytes] = None) ->
     return sock
 
 
-def connect_channel(
-    channel_name: str, cfg: cfg_t, identity: Optional[bytes] = None
-) -> Socket:
+def connect_channel(channel_name: str, cfg: cfg_t, identity: Optional[bytes] = None) -> Socket:
     sock = create_socket(channel_name, cfg, identity)
     if channel_name == "iopub":
         sock.setsockopt(zmq.SUBSCRIBE, b"")

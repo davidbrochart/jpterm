@@ -12,7 +12,7 @@ def utcnow() -> datetime:
 
 
 def date_to_str(obj: Dict[str, Any]):
-    if "date" in obj and type(obj["date"]) is not str:
+    if "date" in obj and not isinstance(obj["date"], str):
         obj["date"] = obj["date"].isoformat().replace("+00:00", "Z")
     return obj
 
@@ -23,9 +23,7 @@ def str_to_date(obj: Dict[str, Any]) -> Dict[str, Any]:
     return obj
 
 
-def create_message_header(
-    msg_type: str, session_id: str, msg_id: str
-) -> Dict[str, Any]:
+def create_message_header(msg_type: str, session_id: str, msg_id: str) -> Dict[str, Any]:
     if not session_id:
         session_id = msg_id = uuid4().hex
     else:

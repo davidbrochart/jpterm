@@ -14,7 +14,6 @@ class ImageViewerMeta(type(Editor), type(Widget)):
 
 
 class _ImageViewer(Editor, Widget, metaclass=ImageViewerMeta):
-
     contents: Contents
     path: str
 
@@ -69,9 +68,7 @@ class ImageViewerComponent(Component):
 
         if self.register:
             editors = await ctx.request_resource(Editors)
-            editors.register_editor_factory(
-                image_viewer_factory, [".png", ".jpg", ".jpeg"]
-            )
+            editors.register_editor_factory(image_viewer_factory, [".png", ".jpg", ".jpeg"])
         else:
             image_viewer = image_viewer_factory()
             ctx.add_resource(image_viewer, types=Editor)

@@ -138,9 +138,7 @@ class ConsoleComponent(Component):
 
         _kernelspecs = await kernelspecs.get()
 
-        console_factory = partial(
-            _Console, kernels, _kernelspecs, cell_factory, main_area
-        )
+        console_factory = partial(_Console, kernels, _kernelspecs, cell_factory, main_area)
 
         launcher.register("console", console_factory)
         ctx.add_resource_factory(console_factory, types=Console)

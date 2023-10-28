@@ -32,7 +32,6 @@ class TerminalMeta(type(Terminal), type(Widget)):
 
 
 class _Terminal(Terminal, Widget, metaclass=TerminalMeta, can_focus=True):
-
     DEFAULT_CSS = """
     _Terminal {
         height: 1fr;
@@ -69,9 +68,7 @@ class _Terminal(Terminal, Widget, metaclass=TerminalMeta, can_focus=True):
             message = await self._recv_queue.get()
             cmd = message[0]
             if cmd == "setup":
-                await self._send_queue.put(
-                    ["set_size", self._nrow, self._ncol, 567, 573]
-                )
+                await self._send_queue.put(["set_size", self._nrow, self._ncol, 567, 573])
             elif cmd == "stdout":
                 chars = message[1]
                 self._stream.feed(chars)

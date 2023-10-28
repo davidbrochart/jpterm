@@ -12,7 +12,6 @@ from .kernelspec import kernelspec_dirs
 
 
 class LocalKernels(Kernels):
-
     comm_handlers = []
 
     def __init__(self, kernel_name: str | None = None):

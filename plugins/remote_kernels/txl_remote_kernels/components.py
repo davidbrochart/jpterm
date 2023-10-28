@@ -11,7 +11,6 @@ from .driver import KernelDriver
 
 
 class RemoteKernels(Kernels):
-
     comm_handlers = []
 
     def __init__(
