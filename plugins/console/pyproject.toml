@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "txl_notebook"
-description = "TXL plugin for a notebook"
+name = "txl_console"
+description = "TXL plugin for a Jupyter console"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
@@ -17,20 +17,20 @@ classifiers = [
   "Programming Language :: Python",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
   "txl",
-  "jupyter_ydoc >=0.3.0a4"
 ]
 dynamic = ["version"]
 
 [project.urls]
-Source = "https://github.com/davidbrochart/jpterm/plugins/notebook"
+Source = "https://github.com/davidbrochart/jpterm/plugins/console"
 
 [project.entry-points."asphalt.components"]
-notebook = "txl_notebook.components:NotebookComponent"
+console = "txl_console.components:ConsoleComponent"
 
 [tool.hatch.version]
-path = "txl_notebook/__init__.py"
+path = "txl_console/__init__.py"

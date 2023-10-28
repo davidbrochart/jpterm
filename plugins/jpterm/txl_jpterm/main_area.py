@@ -20,20 +20,29 @@ class MainArea(Widget, AbstractMainArea, metaclass=MainAreaMeta):
         self.title = 0
 
     def show(self, widget: Widget, title: Optional[str] = None):
-        if title is None:
-            title = self.title
-            self.title += 1
-        tab = Tab(str(title))
-        if self.tabs is None:
-            self.tabs = Tabs(tab)
-            self.mount(self.tabs)
-        else:
-            self.tabs.add_tab(tab)
-            self.tabs.active = tab.id
         if widget not in self.mounted:
+            if title is None:
+                title = self.title
+                self.title += 1
+            tab = Tab(str(title))
+            if self.tabs is None:
+                self.tabs = Tabs(tab)
+                self.mount(self.tabs)
+            else:
+                self.tabs.add_tab(tab)
+                self.tabs.active = tab.id
             self.widgets[tab.id] = widget
             self.mounted.append(widget)
             self.mount(widget)
+        else:
+            tab_id = list(self.widgets.keys())[
+                list(self.widgets.values()).index(widget)
+            ]
+            self.tabs.active = tab_id
+
+    def set_label(self, title: str) -> None:
+        tab = self.tabs.active_tab
+        tab.update(title)
 
     def on_tabs_tab_activated(self, event: Tabs.TabActivated) -> None:
         widget = self.widgets[event.tab.id]

@@ -1,4 +1,5 @@
 import asyncio
+from functools import partial
 
 import pyte
 from asphalt.core import Component, Context
@@ -7,7 +8,7 @@ from rich.text import Text
 from textual import events
 from textual.widget import Widget
 
-from txl.base import Terminal, TerminalFactory
+from txl.base import MainArea, Terminal, TerminalFactory
 
 CTRL_KEYS = {
     "left": "\u001b[D",
@@ -38,13 +39,14 @@ class _Terminal(Terminal, Widget, metaclass=TerminalMeta, can_focus=True):
     }
     """
 
-    def __init__(self, send_queue, recv_queue):
+    def __init__(self, send_queue, recv_queue, main_area: MainArea):
         super().__init__()
         self._send_queue = send_queue
         self._recv_queue = recv_queue
         self._display = PyteDisplay([Text()])
         self.size_set = asyncio.Event()
         asyncio.create_task(self._recv())
+        main_area.set_label("Terminal")
 
     def render(self) -> RenderableType:
         return self._display
@@ -94,4 +96,5 @@ class TerminalComponent(Component):
         self,
         ctx: Context,
     ) -> None:
-        ctx.add_resource(_Terminal, types=TerminalFactory)
+        main_area = await ctx.request_resource(MainArea)
+        ctx.add_resource(partial(_Terminal, main_area=main_area), types=TerminalFactory)

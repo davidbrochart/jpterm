@@ -33,6 +33,7 @@ Source = "https://github.com/davidbrochart/jpterm/plugins/local_kernels"
 
 [project.entry-points."asphalt.components"]
 local_kernels = "txl_local_kernels.components:LocalKernelsComponent"
+local_kernelspecs = "txl_local_kernels.components:LocalKernelspecsComponent"
 
 [tool.hatch.version]
 path = "txl_local_kernels/__init__.py"
