@@ -2,6 +2,12 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 0.1.19
+
+No merged PRs
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 0.1.18
 
 ([Full Changelog](https://github.com/davidbrochart/jpterm/compare/v0.1.17...3d9f90b5fae99e322f119b3ba06edf35b75a4075))
@@ -15,8 +21,6 @@
 ([GitHub contributors page for this release](https://github.com/davidbrochart/jpterm/graphs/contributors?from=2023-10-18&to=2023-10-28&type=c))
 
 [@davidbrochart](https://github.com/search?q=repo%3Adavidbrochart%2Fjpterm+involves%3Adavidbrochart+updated%3A2023-10-18..2023-10-28&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 0.1.17
 
