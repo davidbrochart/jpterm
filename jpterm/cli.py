@@ -14,12 +14,8 @@ def jpterm_main(kwargs):
         set_.append(f"component.components.remote_terminals.url={server}")
         set_.append(f"component.components.remote_kernels.url={server}")
         set_.append(f"component.components.remote_kernelspecs.url={server}")
-        set_.append(
-            f"component.components.remote_contents.collaborative={collaborative}"
-        )
-        disabled.extend(
-            ["local_contents", "local_terminals", "local_kernels", "local_kernelspecs"]
-        )
+        set_.append(f"component.components.remote_contents.collaborative={collaborative}")
+        disabled.extend(["local_contents", "local_terminals", "local_kernels", "local_kernelspecs"])
     else:
         disabled.extend(
             [

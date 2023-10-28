@@ -36,9 +36,7 @@ class KernelDriver(KernelMixin):
         self.query_params = parse.parse_qs(parsed_url.query)
         self.cookies = httpx.Cookies()
         i = self.base_url.find(":")
-        self.ws_url = ("wss" if self.base_url[i - 1] == "s" else "ws") + self.base_url[
-            i:
-        ]
+        self.ws_url = ("wss" if self.base_url[i - 1] == "s" else "ws") + self.base_url[i:]
         self.start_task = asyncio.create_task(self.start())
         self.comm_handlers = comm_handlers
         self.shell_channel = "shell"

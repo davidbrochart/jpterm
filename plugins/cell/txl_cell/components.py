@@ -11,9 +11,7 @@ from textual.widgets import Static
 from txl.base import Cell, CellFactory, Kernel, Widgets
 from txl.text_input import TextInput
 
-YDOCS = {
-    ep.name: ep.load() for ep in pkg_resources.iter_entry_points(group="ypywidgets")
-}
+YDOCS = {ep.name: ep.load() for ep in pkg_resources.iter_entry_points(group="ypywidgets")}
 
 
 class Source(TextInput):
@@ -152,9 +150,7 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
                 f"[red]Out[[#ee4b2b]{execution_count}[/#ee4b2b]]:[/red]\n"
             )
             if "application/vnd.jupyter.ywidget-view+json" in output["data"]:
-                model_id = output["data"]["application/vnd.jupyter.ywidget-view+json"][
-                    "model_id"
-                ]
+                model_id = output["data"]["application/vnd.jupyter.ywidget-view+json"]["model_id"]
                 if model_id in self.widgets.widgets:
                     model = self.widgets.widgets[model_id]["model"]
                     widget = YDOCS[f"txl_{model.__class__.__name__}"](model)

@@ -59,7 +59,6 @@ class Entry:
 
 
 class RemoteContents(Contents):
-
     base_url: str
     query_params: Dict[str, List[str]]
     cookies: httpx.Cookies
@@ -97,9 +96,7 @@ class RemoteContents(Contents):
             model = r.json()
             if model["type"] == "directory":
                 dir_list = [Entry(entry) for entry in model["content"]]
-                return sorted(
-                    dir_list, key=lambda entry: (not entry.is_dir(), entry.name)
-                )
+                return sorted(dir_list, key=lambda entry: (not entry.is_dir(), entry.name))
             document = model["content"]
             if type == "notebook":
                 if isinstance(model["content"], (str, bytes)):

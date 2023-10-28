@@ -22,9 +22,7 @@ def jupyter_path(*subdirs):
     paths = []
     # highest priority is env
     if os.environ.get("JUPYTER_PATH"):
-        paths.extend(
-            p.rstrip(os.sep) for p in os.environ["JUPYTER_PATH"].split(os.pathsep)
-        )
+        paths.extend(p.rstrip(os.sep) for p in os.environ["JUPYTER_PATH"].split(os.pathsep))
     # then user dir
     paths.append(jupyter_data_dir())
     # then sys.prefix

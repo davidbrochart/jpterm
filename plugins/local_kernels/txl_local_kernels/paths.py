@@ -30,9 +30,7 @@ def _filefind(filename, path_dirs=()):
         if os.path.isfile(testname):
             return os.path.abspath(testname)
 
-    raise IOError(
-        f"File {filename} does not exist in any of the search paths: {path_dirs}"
-    )
+    raise IOError(f"File {filename} does not exist in any of the search paths: {path_dirs}")
 
 
 def get_home_dir():

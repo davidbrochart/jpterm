@@ -35,9 +35,7 @@ class MainArea(Widget, AbstractMainArea, metaclass=MainAreaMeta):
             self.mounted.append(widget)
             self.mount(widget)
         else:
-            tab_id = list(self.widgets.keys())[
-                list(self.widgets.values()).index(widget)
-            ]
+            tab_id = list(self.widgets.keys())[list(self.widgets.values()).index(widget)]
             self.tabs.active = tab_id
 
     def set_label(self, title: str) -> None:

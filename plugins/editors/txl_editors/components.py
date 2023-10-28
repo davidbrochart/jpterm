@@ -45,9 +45,7 @@ class _Editors(Editors, Container, metaclass=EditorsMeta):
                 break
         else:
             if None not in self.ext_editor_factories:
-                raise RuntimeError(
-                    f"Could not find an editor for file extension {extension}"
-                )
+                raise RuntimeError(f"Could not find an editor for file extension {extension}")
             preferred_editor_factory = self.ext_editor_factories[None][0]
         preferred_editor = preferred_editor_factory()
         self.main_area.show(preferred_editor, path.name)

@@ -31,9 +31,7 @@ class Editor(ABC):
 
 class Editors(ABC):
     @abstractmethod
-    def register_editor_factory(
-        self, editor_factory: Callable, extensions: List[str] = [None]
-    ):
+    def register_editor_factory(self, editor_factory: Callable, extensions: List[str] = [None]):
         ...
 
     @abstractmethod

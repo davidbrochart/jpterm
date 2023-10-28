@@ -21,9 +21,7 @@ class LocalContents(Contents):
         p = Path(path)
         assert (await p.is_dir()) == is_dir
         if await p.is_dir():
-            return sorted(
-                list(scandir(path)), key=lambda entry: (not entry.is_dir(), entry.name)
-            )
+            return sorted(list(scandir(path)), key=lambda entry: (not entry.is_dir(), entry.name))
         if await p.is_file():
             jupyter_ydoc = ydocs[type]()
             if type == "file":

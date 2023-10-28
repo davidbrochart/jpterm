@@ -15,8 +15,7 @@ from txl.base import Kernels, Widgets
 class _Widgets:
     def __init__(self):
         self.ydocs = {
-            ep.name: ep.load()
-            for ep in pkg_resources.iter_entry_points(group="ypywidgets")
+            ep.name: ep.load() for ep in pkg_resources.iter_entry_points(group="ypywidgets")
         }
         self.widgets = {}
 

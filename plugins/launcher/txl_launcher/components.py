@@ -10,7 +10,6 @@ class LauncherMeta(type(Launcher), type(Widget)):
 
 
 class _Launcher(Launcher, Widget, metaclass=LauncherMeta):
-
     DEFAULT_CSS = """
     _Launcher {
         padding: 1;

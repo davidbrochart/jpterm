@@ -15,7 +15,6 @@ class TextViewerMeta(type(Editor), type(Static)):
 
 
 class Viewer(Static):
-
     DEFAULT_CSS = """
     Viewer {
         width: auto;
@@ -42,7 +41,6 @@ class Viewer(Static):
 
 
 class TextViewer(Editor, Container, metaclass=TextViewerMeta):
-
     contents: Contents
     path: str
 
