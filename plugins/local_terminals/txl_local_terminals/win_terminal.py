@@ -1,6 +1,8 @@
 import asyncio
 import os
+from functools import partial
 
+from anyio import to_thread
 from textual.widget import Widget
 from textual.widgets._header import HeaderTitle
 from winpty import PTY
@@ -51,12 +53,10 @@ class LocalTerminals(Terminals, Widget, metaclass=TerminalsMeta):
     async def _send(self):
         while True:
             try:
-                data = self._process.read(blocking=False)
+                data = await to_thread.run_sync(partial(self._process.read, blocking=True))
             except Exception:
                 await self._send_queue.put(["disconnect", 1])
                 return
-            if not data:
-                await asyncio.sleep(0.1)
             else:
                 await self._send_queue.put(["stdout", data])
 
