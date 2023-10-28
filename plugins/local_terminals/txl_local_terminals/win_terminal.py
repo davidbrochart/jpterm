@@ -36,7 +36,7 @@ class LocalTerminals(Terminals, Widget, metaclass=TerminalsMeta):
     def _open_terminal(self):
         command = "C:\\Windows\\System32\\cmd.exe"
         env = "\0".join([f"{k}={v}" for k, v in os.environ.items()]) + "\0"
-        process = PTY(self.n_col, self._nrow)
+        process = PTY(self._ncol, self._nrow)
         process.spawn(command, env=env)
         return process
 
