@@ -109,8 +109,21 @@ python_packages = [
     ".:jpterm:txl,txl_cell,txl_console,txl_editors,txl_file_browser,txl_image_viewer,txl_jpterm,txl_kernel,txl_local_contents,txl_local_terminals,txl_local_kernels,txl_notebook_editor,txl_remote_contents,txl_remote_terminals,txl_remote_kernels,txl_terminal,txl_text_editor,txl_text_viewer,txl_launcher,txl_widgets,txl_markdown"
 ]
 
+[tool.ruff.lint]
+select = [
+  # pycodestyle
+  "E",
+  # Pyflakes
+  "F",
+  # pyupgrade
+  # "UP",
+  # flake8-bugbear
+  # "B",
+  # flake8-simplify
+  # "SIM",
+  # isort
+  "I",
+]
+
 [tool.ruff]
 line-length = 100
-
-[tool.isort]
-profile = "black"
