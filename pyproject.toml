@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "Jupyter in the terminal"
 readme = "README.md"
 license = { text = "MIT" }
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.12"
 authors = [ { name = "David Brochart", email = "david.brochart@gmail.com" }, ]
 classifiers = [
   "Development Status :: 4 - Beta",
