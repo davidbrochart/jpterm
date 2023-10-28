@@ -2,11 +2,25 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 0.1.20
+
+([Full Changelog](https://github.com/davidbrochart/jpterm/compare/v0.1.19...4fe9ccaa1934b7f9e7b0d5a33cc043e81ba79486))
+
+### Merged PRs
+
+- Add CI test [#50](https://github.com/davidbrochart/jpterm/pull/50) ([@davidbrochart](https://github.com/davidbrochart))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/davidbrochart/jpterm/graphs/contributors?from=2023-10-28&to=2023-10-28&type=c))
+
+[@davidbrochart](https://github.com/search?q=repo%3Adavidbrochart%2Fjpterm+involves%3Adavidbrochart+updated%3A2023-10-28..2023-10-28&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 0.1.19
 
 No merged PRs
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 0.1.18
 
