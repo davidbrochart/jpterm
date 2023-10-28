@@ -8,12 +8,12 @@
 
 It can work either locally, or remotely through a Jupyter server.
 
-**WARNING**: jpterm is a work in progress, and it is not usable yet.
-
 ## Installation
 
 ```bash
-pip install jpterm --no-cache-dir
+pip install jpterm
+# you probably want a (Python) Jupyter kernel too:
+pip install ipykernel
 ```
 
 ## Usage
