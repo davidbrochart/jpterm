@@ -23,6 +23,7 @@ classifiers = [
 dependencies = [
   "txl",
   "pywinpty;platform_system=='Windows'",
+  "anyio >=4,<5",
 ]
 dynamic = ["version"]
 
