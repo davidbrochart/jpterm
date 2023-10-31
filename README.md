@@ -1,3 +1,13 @@
+<h1>
+  <a href="https://github.com/davidbrochart/jpterm/">
+    <picture>
+      <source srcset="https://github.com/davidbrochart/jpterm/blob/11dab9fb8cce86559e67d6f1411b2e59d531cdd0/jpterm_logo.webp" type="image/webp">
+      <source srcset="https://github.com/davidbrochart/jpterm/blob/11dab9fb8cce86559e67d6f1411b2e59d531cdd0/jpterm_logo.png" type="image/png">
+      <img src="https://github.com/davidbrochart/jpterm/blob/11dab9fb8cce86559e67d6f1411b2e59d531cdd0/jpterm_logo.png" alt="banner">
+    </picture>
+  </a>
+</h1>
+
 [![Build Status](https://github.com/davidbrochart/jpterm/workflows/CI/badge.svg)](https://github.com/davidbrochart/jpterm/actions)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg)](https://github.com/pypa/hatch)
