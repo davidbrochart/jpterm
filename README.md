@@ -1,9 +1,8 @@
 <h1>
   <a href="https://github.com/davidbrochart/jpterm/">
     <picture>
-      <source srcset="https://github.com/davidbrochart/jpterm/blob/assets/jpterm_logo.webp" type="image/webp">
-      <source srcset="https://github.com/davidbrochart/jpterm/blob/assets/jpterm_logo.png" type="image/png">
-      <img src="https://github.com/davidbrochart/jpterm/blob/assets/jpterm_logo.png" alt="banner">
+      <source srcset="https://github.com/davidbrochart/jpterm/blob/assets/jpterm_logo.gif" type="image/gif">
+      <img src="https://github.com/davidbrochart/jpterm/blob/assets/jpterm_logo.gif" alt="banner">
     </picture>
   </a>
 </h1>
