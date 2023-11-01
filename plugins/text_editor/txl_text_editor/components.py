@@ -2,6 +2,8 @@ from functools import partial
 
 from asphalt.core import Component, Context
 from textual.containers import Container
+from textual.events import Event
+from textual.keys import Keys
 
 from txl.base import Contents, Editor, Editors, FileOpenEvent
 from txl.text_input import TextInput
@@ -27,6 +29,11 @@ class TextEditor(Editor, Container, metaclass=TextEditorMeta):
         self.ytext = await self.contents.get(path, type="file")
         self.editor = TextInput(ydoc=self.ytext.ydoc, ytext=self.ytext._ysource, path=path)
         self.mount(self.editor)
+
+    async def on_key(self, event: Event) -> None:
+        if event.key == Keys.ControlS:
+            await self.contents.save(self.path, self.ytext)
+            event.stop()
 
 
 class TextEditorComponent(Component):
