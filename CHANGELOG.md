@@ -2,6 +2,24 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 0.1.22
+
+([Full Changelog](https://github.com/davidbrochart/jpterm/compare/v0.1.21...bd2905100dde9f4e3482c451151f5522747dab0e))
+
+### Merged PRs
+
+- Allow saving in text editor (ctrl-s) [#56](https://github.com/davidbrochart/jpterm/pull/56) ([@davidbrochart](https://github.com/davidbrochart))
+- Add logo [#55](https://github.com/davidbrochart/jpterm/pull/55) ([@davidbrochart](https://github.com/davidbrochart))
+- Improve data read [#52](https://github.com/davidbrochart/jpterm/pull/52) ([@davidbrochart](https://github.com/davidbrochart))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/davidbrochart/jpterm/graphs/contributors?from=2023-10-28&to=2023-11-01&type=c))
+
+[@davidbrochart](https://github.com/search?q=repo%3Adavidbrochart%2Fjpterm+involves%3Adavidbrochart+updated%3A2023-10-28..2023-11-01&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 0.1.21
 
 ([Full Changelog](https://github.com/davidbrochart/jpterm/compare/v0.1.20...d04fd5dcfce25fec79db3a6a6a0fc0ee9c97a911))
@@ -15,8 +33,6 @@
 ([GitHub contributors page for this release](https://github.com/davidbrochart/jpterm/graphs/contributors?from=2023-10-28&to=2023-10-28&type=c))
 
 [@davidbrochart](https://github.com/search?q=repo%3Adavidbrochart%2Fjpterm+involves%3Adavidbrochart+updated%3A2023-10-28..2023-10-28&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 0.1.20
 
