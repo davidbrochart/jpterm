@@ -1,6 +1,6 @@
 import asyncio
 import time
-from typing import Dict, List
+from typing import Dict
 
 import y_py as Y
 
@@ -34,7 +34,7 @@ class Comm:
 class KernelMixin:
     def __init__(self):
         self.msg_cnt = 0
-        self.execute_requests: Dict[str, Dict[str, List[asyncio.Future]]] = {}
+        self.execute_requests: Dict[str, Dict[str, asyncio.Queue]] = {}
         self.recv_queue = asyncio.Queue()
         self.started = asyncio.Event()
         asyncio.create_task(self.recv())
@@ -55,18 +55,20 @@ class KernelMixin:
             await self.send_message(msg, self.shell_channel, change_date_to_str=True)
             msg_id = msg["header"]["msg_id"]
             self.execute_requests[msg_id] = {
-                "iopub": [asyncio.Future()],
-                "shell": [asyncio.Future()],
+                "iopub": asyncio.Queue(),
+                "shell": asyncio.Queue(),
             }
             try:
-                msg = await asyncio.wait_for(self.execute_requests[msg_id]["shell"][0], new_timeout)
+                msg = await asyncio.wait_for(
+                    self.execute_requests[msg_id]["shell"].get(), new_timeout
+                )
             except asyncio.TimeoutError:
                 del self.execute_requests[msg_id]
                 error_message = f"Kernel didn't respond in {timeout} seconds"
                 raise RuntimeError(error_message)
             if msg["header"]["msg_type"] == "kernel_info_reply":
                 try:
-                    msg = await asyncio.wait_for(self.execute_requests[msg_id]["iopub"][0], 0.2)
+                    msg = await asyncio.wait_for(self.execute_requests[msg_id]["iopub"].get(), 0.2)
                 except asyncio.TimeoutError:
                     pass
                 else:
@@ -91,16 +93,7 @@ class KernelMixin:
             if msg_id in self.execute_requests:
                 # msg["header"] = str_to_date(msg["header"])
                 # msg["parent_header"] = str_to_date(msg["parent_header"])
-                future_msgs = self.execute_requests[msg_id][channel]
-                if future_msgs:
-                    fut = future_msgs[-1]
-                    if fut.done():
-                        fut = asyncio.Future()
-                        future_msgs.append(fut)
-                else:
-                    fut = asyncio.Future()
-                    future_msgs.append(fut)
-                fut.set_result(msg)
+                self.execute_requests[msg_id][channel].put_nowait(msg)
 
     async def execute(
         self,
@@ -127,50 +120,42 @@ class KernelMixin:
             msg_id = msg["header"]["msg_id"]
         self.msg_cnt += 1
         self.execute_requests[msg_id] = {
-            "iopub": [asyncio.Future()],
-            "shell": [asyncio.Future()],
+            "iopub": asyncio.Queue(),
+            "shell": asyncio.Queue(),
         }
         await self.send_message(msg, self.shell_channel, change_date_to_str=True)
         if wait_for_executed:
             deadline = time.monotonic() + timeout
             try:
-                await asyncio.wait_for(
-                    self.execute_requests[msg_id]["iopub"][0],
+                msg = await asyncio.wait_for(
+                    self.execute_requests[msg_id]["iopub"].get(),
                     deadline_to_timeout(deadline),
                 )
             except asyncio.TimeoutError:
                 del self.execute_requests[msg_id]
                 error_message = f"Kernel didn't respond in {timeout} seconds"
                 raise RuntimeError(error_message)
-            await self._handle_outputs(ydoc, ycell, self.execute_requests[msg_id]["iopub"])
+            await self._handle_outputs(ydoc, ycell, msg)
             try:
-                await asyncio.wait_for(
-                    self.execute_requests[msg_id]["shell"][0],
+                msg = await asyncio.wait_for(
+                    self.execute_requests[msg_id]["shell"].get(),
                     deadline_to_timeout(deadline),
                 )
             except asyncio.TimeoutError:
                 del self.execute_requests[msg_id]
                 error_message = f"Kernel didn't respond in {timeout} seconds"
                 raise RuntimeError(error_message)
-            msg = self.execute_requests[msg_id]["shell"][0].result()
             with ydoc.begin_transaction() as txn:
                 ycell.set(txn, "execution_count", msg["content"]["execution_count"])
         del self.execute_requests[msg_id]
 
     async def _handle_outputs(
-        self, ydoc: Y.YDoc, ycell: Y.YMap, future_messages: List[asyncio.Future]
+        self, ydoc: Y.YDoc, ycell: Y.YMap, msg
     ):
         with ydoc.begin_transaction() as txn:
             ycell.set(txn, "outputs", [])
 
         while True:
-            if not future_messages:
-                future_messages.append(asyncio.Future())
-            fut = future_messages[0]
-            if not fut.done():
-                await fut
-            future_messages.pop(0)
-            msg = fut.result()
             msg_type = msg["header"]["msg_type"]
             content = msg["content"]
             outputs = list(ycell["outputs"])
