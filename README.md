@@ -1,11 +1,6 @@
-<h1>
-  <a href="https://github.com/davidbrochart/jpterm/">
-    <picture>
-      <source srcset="https://github.com/davidbrochart/jpterm/blob/assets/jpterm_logo.gif" type="image/gif">
-      <img src="https://github.com/davidbrochart/jpterm/blob/assets/jpterm_logo.gif" alt="banner">
-    </picture>
-  </a>
-</h1>
+<div align="center">
+  <img src="https://github.com/davidbrochart/jpterm/blob/assets/jpterm_logo.gif" alt="jpterm Logo" width="35%">
+</div>
 
 [![Build Status](https://github.com/davidbrochart/jpterm/workflows/CI/badge.svg)](https://github.com/davidbrochart/jpterm/actions)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
