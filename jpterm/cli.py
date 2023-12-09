@@ -1,10 +1,20 @@
+import sys
+
 import rich_click as click
+from rich import print as rich_print
 
 from txl.app import disabled
 from txl.cli import set_main, txl_main
 
 
 def jpterm_main(kwargs):
+    logo = kwargs.pop("logo")
+    if logo:
+        rich_print("[orange1 on black]\u256d\u2500\u2500\u2500\u2500\u2500\u256e")
+        rich_print("[white on black]jpterm\u2588")
+        rich_print("[orange1 on black]\u2570\u2500\u2500\u2500\u2500\u2500\u256f")
+        rich_print("[bright_black on black]  \u25cf \u25cf  ")
+        sys.exit(1)
     server = kwargs.pop("server")
     collaborative = kwargs.pop("collaborative")
     set_ = list(kwargs["set_"])
@@ -32,6 +42,7 @@ def jpterm_main(kwargs):
 def main():
     set_main(jpterm_main)
     decorators = [
+        click.option("--logo", is_flag=True, default=False, help="Show the jpterm logo."),
         click.option("--server", default="", help="The URL to the Jupyter server."),
         click.option(
             "--collaborative/--no-collaborative",
