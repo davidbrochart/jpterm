@@ -183,7 +183,7 @@ class KernelMixin:
         elif msg_type in ("display_data", "execute_result"):
             outputs.append(
                 {
-                    "data": {"text/plain": [content["data"].get("text/plain", "")]},
+                    "data": content["data"],
                     "execution_count": content["execution_count"],
                     "metadata": {},
                     "output_type": msg_type,
