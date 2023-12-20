@@ -2,6 +2,22 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 0.2.1
+
+([Full Changelog](https://github.com/davidbrochart/jpterm/compare/v0.2.0...b54b3b60006897ba67fe6c03b38a6f03e9a3d023))
+
+### Merged PRs
+
+- Rename txl_filebrowser -> txl_file_browser [#67](https://github.com/davidbrochart/jpterm/pull/67) ([@davidbrochart](https://github.com/davidbrochart))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/davidbrochart/jpterm/graphs/contributors?from=2023-12-20&to=2023-12-20&type=c))
+
+[@davidbrochart](https://github.com/search?q=repo%3Adavidbrochart%2Fjpterm+involves%3Adavidbrochart+updated%3A2023-12-20..2023-12-20&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 0.2.0
 
 ([Full Changelog](https://github.com/davidbrochart/jpterm/compare/v0.1.24...ad02105b38d40f104343f914a247e373a37d9911))
@@ -17,8 +33,6 @@
 ([GitHub contributors page for this release](https://github.com/davidbrochart/jpterm/graphs/contributors?from=2023-12-04&to=2023-12-20&type=c))
 
 [@davidbrochart](https://github.com/search?q=repo%3Adavidbrochart%2Fjpterm+involves%3Adavidbrochart+updated%3A2023-12-04..2023-12-20&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 0.1.24
 
