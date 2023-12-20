@@ -2,6 +2,24 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 0.2.0
+
+([Full Changelog](https://github.com/davidbrochart/jpterm/compare/v0.1.24...ad02105b38d40f104343f914a247e373a37d9911))
+
+### Merged PRs
+
+- Center logo in README [#66](https://github.com/davidbrochart/jpterm/pull/66) ([@davidbrochart](https://github.com/davidbrochart))
+- Use pycrdt instead of y-py [#60](https://github.com/davidbrochart/jpterm/pull/60) ([@davidbrochart](https://github.com/davidbrochart))
+- Add --logo [#59](https://github.com/davidbrochart/jpterm/pull/59) ([@davidbrochart](https://github.com/davidbrochart))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/davidbrochart/jpterm/graphs/contributors?from=2023-12-04&to=2023-12-20&type=c))
+
+[@davidbrochart](https://github.com/search?q=repo%3Adavidbrochart%2Fjpterm+involves%3Adavidbrochart+updated%3A2023-12-04..2023-12-20&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 0.1.24
 
 ([Full Changelog](https://github.com/davidbrochart/jpterm/compare/v0.1.23...ea44c1ed62e36d998c0fad6a92ff8109c87db463))
@@ -15,8 +33,6 @@
 ([GitHub contributors page for this release](https://github.com/davidbrochart/jpterm/graphs/contributors?from=2023-12-04&to=2023-12-04&type=c))
 
 [@davidbrochart](https://github.com/search?q=repo%3Adavidbrochart%2Fjpterm+involves%3Adavidbrochart+updated%3A2023-12-04..2023-12-04&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 0.1.23
 
