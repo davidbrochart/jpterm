@@ -29,8 +29,9 @@ dynamic = ["version"]
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/console"
 
-[project.entry-points."asphalt.components"]
-console = "txl_console.components:ConsoleComponent"
+[project.entry-points]
+"asphalt.components" = {console = "txl_console.components:ConsoleComponent"}
+"txl.components"     = {console = "txl_console.components:ConsoleComponent"}
 
 [tool.hatch.version]
 path = "txl_console/__init__.py"

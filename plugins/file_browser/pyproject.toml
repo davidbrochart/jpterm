@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "txl_file_browser"
+name = "txl_filebrowser"
 description = "TXL plugin for a file browser"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -17,6 +17,7 @@ classifiers = [
   "Programming Language :: Python",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
@@ -28,8 +29,9 @@ dynamic = ["version"]
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/file_browser"
 
-[project.entry-points."asphalt.components"]
-filebrowser = "txl_filebrowser.components:FileBrowserComponent"
+[project.entry-points]
+"asphalt.components" = {filebrowser = "txl_filebrowser.components:FileBrowserComponent"}
+"txl.components"     = {filebrowser = "txl_filebrowser.components:FileBrowserComponent"}
 
 [tool.hatch.version]
 path = "txl_filebrowser/__init__.py"

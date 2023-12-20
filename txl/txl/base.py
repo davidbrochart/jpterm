@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, List, Optional, Union
 
-import y_py as Y
 from asphalt.core import Event, Signal
+from pycrdt import Doc, Map
 from textual.binding import Binding
 
 
@@ -53,7 +53,7 @@ class Contents(ABC):
     async def save(
         self,
         path: str,
-        jupyter_ydoc: Y.YDoc,
+        jupyter_ydoc: Doc,
     ) -> None:
         ...
 
@@ -74,7 +74,7 @@ class Kernel(ABC):
         ...
 
     @abstractmethod
-    async def execute(self, ydoc: Y.YDoc, ycell: Y.YMap):
+    async def execute(self, ydoc: Doc, ycell: Map):
         ...
 
 
@@ -84,7 +84,7 @@ class Kernels(ABC):
         ...
 
     @abstractmethod
-    async def execute(self, ydoc: Y.YDoc, ycell: Y.YMap):
+    async def execute(self, ydoc: Doc, ycell: Map):
         ...
 
 

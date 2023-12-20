@@ -5,13 +5,15 @@ from typing import Any, Dict, List, Optional, Union
 from urllib import parse
 
 import httpx
-import y_py as Y
+import pkg_resources
 from asphalt.core import Component, Context
 from httpx_ws import aconnect_ws
-from jupyter_ydoc import ydocs
-from ypy_websocket import WebsocketProvider
+from pycrdt import Doc
+from pycrdt_websocket import WebsocketProvider
 
 from txl.base import Contents
+
+ydocs = {ep.name: ep.load() for ep in pkg_resources.iter_entry_points(group="jupyter_ydoc")}
 
 
 class Websocket:
@@ -37,7 +39,8 @@ class Websocket:
         await self.websocket.send_bytes(message)
 
     async def recv(self) -> bytes:
-        return await self.websocket.receive_bytes()
+        b = await self.websocket.receive_bytes()
+        return bytes(b)
 
 
 class Entry:
@@ -76,6 +79,7 @@ class RemoteContents(Contents):
         self.collaborative = collaborative
         i = base_url.find(":")
         self.ws_url = ("wss" if base_url[i - 1] == "s" else "ws") + base_url[i:]
+        self.document_id = {}
 
     async def get(
         self,
@@ -83,7 +87,7 @@ class RemoteContents(Contents):
         is_dir: bool = False,
         type: str = "unicode",
         format: Optional[str] = None,
-    ) -> Union[List, Y.YDoc]:
+    ) -> Union[List, Doc]:
         path = "" if path == "." else path
         if is_dir or not self.collaborative:
             async with httpx.AsyncClient() as client:
@@ -125,48 +129,49 @@ class RemoteContents(Contents):
             r = response.json()
             room_id = f"{r['format']}:{r['type']}:{r['fileId']}"
             session_id = r["sessionId"]
-            ydoc = Y.YDoc()
+            ydoc = Doc()
             jupyter_ydoc = ydocs[type](ydoc)
-            asyncio.create_task(self._websocket_provider(room_id, session_id, ydoc))
+            asyncio.create_task(self.websocket_provider(room_id, ydoc, session_id))
+            self.document_id[jupyter_ydoc] = room_id
             return jupyter_ydoc
 
     async def save(
         self,
         path: str,
-        jupyter_ydoc: Y.YDoc,
+        jupyter_ydoc: Doc,
     ) -> None:
-        if not self.collaborative:
-            source = jupyter_ydoc.source
-            if isinstance(source, dict):
-                cnt = source
-                fmt = "json"
-                typ = "notebook" if path.endswith(".ipynb") else "file"
-            elif isinstance(source, bytes):
-                cnt = b64encode(source)
-                fmt = "base64"
-            else:
-                cnt = source
-                fmt = "text"
-                typ = "file"
-            content = {
-                "content": cnt,
-                "format": fmt,
-                "path": path,
-                "type": typ,
-            }
-            async with httpx.AsyncClient() as client:
-                r = await client.put(
-                    f"{self.base_url}/api/contents/{path}",
-                    json=content,
-                    params={**self.query_params},
-                    cookies=self.cookies,
-                )
-            self.cookies.update(r.cookies)
+        source = jupyter_ydoc.source
+        if isinstance(source, dict):
+            cnt = source
+            fmt = "json"
+            typ = "notebook" if path.endswith(".ipynb") else "file"
+        elif isinstance(source, bytes):
+            cnt = b64encode(source)
+            fmt = "base64"
+        else:
+            cnt = source
+            fmt = "text"
+            typ = "file"
+        content = {
+            "content": cnt,
+            "format": fmt,
+            "path": path,
+            "type": typ,
+        }
+        async with httpx.AsyncClient() as client:
+            r = await client.put(
+                f"{self.base_url}/api/contents/{path}",
+                json=content,
+                params={**self.query_params},
+                cookies=self.cookies,
+            )
+        self.cookies.update(r.cookies)
 
-    async def _websocket_provider(self, room_id, session_id, ydoc):
+    async def websocket_provider(self, room_id, ydoc, session_id=None):
         ws_url = f"{self.ws_url}/api/collaboration/room/{room_id}"
+        params = None if session_id is None else {"sessionId": session_id}
         async with aconnect_ws(
-            ws_url, cookies=self.cookies, params={"sessionId": session_id}
+            ws_url, cookies=self.cookies, params=params
         ) as websocket:
             async with WebsocketProvider(ydoc, Websocket(websocket, room_id)):
                 await asyncio.Future()

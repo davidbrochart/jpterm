@@ -17,12 +17,13 @@ classifiers = [
   "Programming Language :: Python",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
   "asphalt >=4.11.1,<5",
-  "textual[syntax] >=0.41.0",
+  "textual[syntax] >=0.46.0,<0.47.0",
   "y-py >=0.6.0,<1",
 ]
 dynamic = ["version"]

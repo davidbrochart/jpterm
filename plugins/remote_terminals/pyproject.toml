@@ -17,6 +17,7 @@ classifiers = [
   "Programming Language :: Python",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
@@ -30,8 +31,9 @@ dynamic = ["version"]
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/remote_terminals"
 
-[project.entry-points."asphalt.components"]
-remote_terminals = "txl_remote_terminals.components:RemoteTerminalsComponent"
+[project.entry-points]
+"asphalt.components" = {remote_terminals = "txl_remote_terminals.components:RemoteTerminalsComponent"}
+"txl.components"     = {remote_terminals = "txl_remote_terminals.components:RemoteTerminalsComponent"}
 
 [tool.hatch.version]
 path = "txl_remote_terminals/__init__.py"

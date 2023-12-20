@@ -17,6 +17,7 @@ def jpterm_main(kwargs):
         sys.exit(1)
     server = kwargs.pop("server")
     collaborative = kwargs.pop("collaborative")
+    experimental = kwargs.pop("experimental")
     set_ = list(kwargs["set_"])
     set_.append("logging.version=1")  # disable logging
     if server:
@@ -25,6 +26,7 @@ def jpterm_main(kwargs):
         set_.append(f"component.components.remote_kernels.url={server}")
         set_.append(f"component.components.remote_kernelspecs.url={server}")
         set_.append(f"component.components.remote_contents.collaborative={collaborative}")
+        set_.append(f"component.components.notebook_editor.experimental={experimental}")
         disabled.extend(["local_contents", "local_terminals", "local_kernels", "local_kernelspecs"])
     else:
         disabled.extend(
@@ -48,6 +50,11 @@ def main():
             "--collaborative/--no-collaborative",
             default=False,
             help="Collaborative mode (with a server).",
+        ),
+        click.option(
+            "--experimental/--no-experimental",
+            default=False,
+            help="Experimental mode (with Jupyverse).",
         ),
     ]
     _main = txl_main

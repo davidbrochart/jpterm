@@ -17,6 +17,7 @@ classifiers = [
   "Programming Language :: Python",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
@@ -28,8 +29,9 @@ dynamic = ["version"]
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/launcher"
 
-[project.entry-points."asphalt.components"]
-launcher = "txl_launcher.components:LauncherComponent"
+[project.entry-points]
+"asphalt.components" = {launcher = "txl_launcher.components:LauncherComponent"}
+"txl.components"     = {launcher = "txl_launcher.components:LauncherComponent"}
 
 [tool.hatch.version]
 path = "txl_launcher/__init__.py"

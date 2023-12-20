@@ -2,12 +2,14 @@ import json
 from os import scandir
 from typing import List, Union
 
-import y_py as Y
+import pkg_resources
 from anyio import Path
 from asphalt.core import Component, Context
-from jupyter_ydoc import ydocs
+from pycrdt import Doc
 
 from txl.base import Contents
+
+ydocs = {ep.name: ep.load() for ep in pkg_resources.iter_entry_points(group="jupyter_ydoc")}
 
 
 class LocalContents(Contents):
@@ -17,7 +19,7 @@ class LocalContents(Contents):
         is_dir: bool = False,
         type: str = "file",
         format: str | None = None,
-    ) -> Union[List, Y.YDoc]:
+    ) -> Union[List, Doc]:
         p = Path(path)
         assert (await p.is_dir()) == is_dir
         if await p.is_dir():
@@ -35,7 +37,7 @@ class LocalContents(Contents):
     async def save(
         self,
         path: str,
-        jupyter_ydoc: Y.YDoc,
+        jupyter_ydoc: Doc,
     ) -> None:
         p = Path(path)
         source = jupyter_ydoc.source

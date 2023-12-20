@@ -1,22 +1,24 @@
 from functools import partial
 from typing import Any
 
-import y_py as Y
+import pkg_resources
 from asphalt.core import Component, Context
-from jupyter_ydoc import ydocs
+from pycrdt import ArrayEvent, Doc
+from textual.containers import VerticalScroll
 from textual.events import Event
 from textual.keys import Keys
-from textual.widget import Widget
 from textual.widgets import Select
 
 from txl.base import CellFactory, Console, Kernels, Kernelspecs, Launcher, MainArea
 
+ydocs = {ep.name: ep.load() for ep in pkg_resources.iter_entry_points(group="jupyter_ydoc")}
 
-class ConsoleMeta(type(Console), type(Widget)):
+
+class ConsoleMeta(type(Console), type(VerticalScroll)):
     pass
 
 
-class _Console(Console, Widget, metaclass=ConsoleMeta):
+class _Console(Console, VerticalScroll, metaclass=ConsoleMeta):
     def __init__(
         self,
         kernels: Kernels,
@@ -38,22 +40,21 @@ class _Console(Console, Widget, metaclass=ConsoleMeta):
         self.mount(self.select)
 
     def on_select_kernel(self):
-        if self.select.value is None:
+        if self.select.value == Select.BLANK:
             return
         self.main_area.set_label("Console")
         self.select.remove()
         kernel = self.kernelspecs["kernelspecs"][self.select.value]
         self.kernel = self.kernels(kernel["name"])
         self.language = kernel["spec"]["language"]
-        self.ydoc = Y.YDoc()
+        self.ydoc = Doc()
         self.ynb = ydocs["notebook"](self.ydoc)
         self.ynb.set({"cells": []})
         self.ynb.observe(self.on_change)
         cell = self.cell_factory(
-            self.ynb.ycells[self.cell_i],
-            self.ydoc,
-            self.language,
-            self.kernel,
+            ycell=self.ynb.ycells[self.cell_i],
+            language=self.language,
+            kernel=self.kernel,
             show_execution_count=False,
             show_border=False,
         )
@@ -65,7 +66,7 @@ class _Console(Console, Widget, metaclass=ConsoleMeta):
     def on_change(self, target, events):
         if target == "cells":
             for event in events:
-                if isinstance(event, Y.YArrayEvent):
+                if isinstance(event, ArrayEvent):
                     insert = None
                     retain = None
                     for d in event.delta:
@@ -77,10 +78,9 @@ class _Console(Console, Widget, metaclass=ConsoleMeta):
                     if insert is not None:
                         for c in insert:
                             cell = self.cell_factory(
-                                c,
-                                self.ynb.ydoc,
-                                self.language,
-                                self.kernel,
+                                ycell=c,
+                                language=self.language,
+                                kernel=self.kernel,
                                 show_execution_count=False,
                                 show_border=False,
                             )
@@ -102,16 +102,15 @@ class _Console(Console, Widget, metaclass=ConsoleMeta):
         if event.key == Keys.ControlR:
             event.stop()
             if self.kernel:
-                await self.kernel.execute(self.ynb.ydoc, self.current_cell.ycell)
-            with self.ynb.ydoc.begin_transaction() as t:
-                ycell = self.ynb.create_ycell(
-                    {
-                        "cell_type": "code",
-                        "execution_count": None,
-                        "source": "",
-                    }
-                )
-                self.ynb.ycells.insert(t, self.cell_i + 1, ycell)
+                await self.kernel.execute(self.current_cell.ycell)
+            ycell = self.ynb.create_ycell(
+                {
+                    "cell_type": "code",
+                    "execution_count": None,
+                    "source": "",
+                }
+            )
+            self.ynb.ycells.append(ycell)
             self.current_cell.unselect()
             self.current_cell.source.can_focus = False
             self.current_cell.source.cursor_blink = False

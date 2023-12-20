@@ -17,6 +17,7 @@ classifiers = [
   "Programming Language :: Python",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
@@ -30,8 +31,9 @@ dynamic = ["version"]
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/local_contents"
 
-[project.entry-points."asphalt.components"]
-local_contents = "txl_local_contents.components:LocalContentsComponent"
+[project.entry-points]
+"asphalt.components" = {local_contents = "txl_local_contents.components:LocalContentsComponent"}
+"txl.components"     = {local_contents = "txl_local_contents.components:LocalContentsComponent"}
 
 [tool.hatch.version]
 path = "txl_local_contents/__init__.py"

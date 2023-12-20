@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 from typing import Any
 from urllib import parse
 
 import httpx
-import y_py as Y
 from asphalt.core import Component, Context
+from pycrdt import Map
 
 from txl.base import Kernels, Kernelspecs
 
@@ -20,8 +22,8 @@ class RemoteKernels(Kernels):
     ):
         self.kernel = KernelDriver(url, kernel_name, comm_handlers=self.comm_handlers)
 
-    async def execute(self, ydoc: Y.YDoc, ycell: Y.YMap):
-        await self.kernel.execute(ydoc, ycell)
+    async def execute(self, ycell: Map):
+        await self.kernel.execute(ycell)
 
 
 class RemoteKernelspecs(Kernelspecs):
@@ -35,15 +37,19 @@ class RemoteKernelspecs(Kernelspecs):
         self.cookies = httpx.Cookies()
 
     async def get(self) -> dict[str, Any]:
-        async with httpx.AsyncClient() as client:
-            r = await client.get(
-                f"{self.base_url}/api/kernelspecs",
-                params={**self.query_params},
-                cookies=self.cookies,
-            )
-            d = r.json()
-            self.cookies.update(r.cookies)
-            return d
+        url = f"{self.base_url}/api/kernelspecs"
+        try:
+            async with httpx.AsyncClient() as client:
+                r = await client.get(
+                    url,
+                    params={**self.query_params},
+                    cookies=self.cookies,
+                )
+                d = r.json()
+                self.cookies.update(r.cookies)
+                return d
+        except httpx.ConnectError:
+            raise RuntimeError(f"Could not connect to a Jupyter server at {url}")
 
 
 class RemoteKernelsComponent(Component):

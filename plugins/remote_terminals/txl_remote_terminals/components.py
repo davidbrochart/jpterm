@@ -45,7 +45,8 @@ class RemoteTerminals(Terminals, Widget, metaclass=TerminalsMeta):
                 cookies=self.cookies,
             )
             self.cookies.update(response.cookies)
-            name = response.json()["name"]
+            r = response.json()
+            name = r["name"]
             response = await client.get(
                 f"{self.base_url}/api/terminals",
                 cookies=self.cookies,

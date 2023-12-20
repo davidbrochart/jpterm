@@ -1,8 +1,8 @@
 import asyncio
 import time
-from typing import Dict, List
+from typing import Dict
 
-import y_py as Y
+from pycrdt import Array, Map
 
 from .message import create_message
 
@@ -34,7 +34,7 @@ class Comm:
 class KernelMixin:
     def __init__(self):
         self.msg_cnt = 0
-        self.execute_requests: Dict[str, Dict[str, List[asyncio.Future]]] = {}
+        self.execute_requests: Dict[str, Dict[str, asyncio.Queue]] = {}
         self.recv_queue = asyncio.Queue()
         self.started = asyncio.Event()
         asyncio.create_task(self.recv())
@@ -55,18 +55,20 @@ class KernelMixin:
             await self.send_message(msg, self.shell_channel, change_date_to_str=True)
             msg_id = msg["header"]["msg_id"]
             self.execute_requests[msg_id] = {
-                "iopub": [asyncio.Future()],
-                "shell": [asyncio.Future()],
+                "iopub": asyncio.Queue(),
+                "shell": asyncio.Queue(),
             }
             try:
-                msg = await asyncio.wait_for(self.execute_requests[msg_id]["shell"][0], new_timeout)
+                msg = await asyncio.wait_for(
+                    self.execute_requests[msg_id]["shell"].get(), new_timeout
+                )
             except asyncio.TimeoutError:
                 del self.execute_requests[msg_id]
                 error_message = f"Kernel didn't respond in {timeout} seconds"
                 raise RuntimeError(error_message)
             if msg["header"]["msg_type"] == "kernel_info_reply":
                 try:
-                    msg = await asyncio.wait_for(self.execute_requests[msg_id]["iopub"][0], 0.2)
+                    msg = await asyncio.wait_for(self.execute_requests[msg_id]["iopub"].get(), 0.2)
                 except asyncio.TimeoutError:
                     pass
                 else:
@@ -91,21 +93,11 @@ class KernelMixin:
             if msg_id in self.execute_requests:
                 # msg["header"] = str_to_date(msg["header"])
                 # msg["parent_header"] = str_to_date(msg["parent_header"])
-                future_msgs = self.execute_requests[msg_id][channel]
-                if future_msgs:
-                    fut = future_msgs[-1]
-                    if fut.done():
-                        fut = asyncio.Future()
-                        future_msgs.append(fut)
-                else:
-                    fut = asyncio.Future()
-                    future_msgs.append(fut)
-                fut.set_result(msg)
+                self.execute_requests[msg_id][channel].put_nowait(msg)
 
     async def execute(
         self,
-        ydoc: Y.YDoc,
-        ycell: Y.YMap,
+        ycell: Map,
         timeout: float = float("inf"),
         msg_id: str = "",
         wait_for_executed: bool = True,
@@ -113,6 +105,7 @@ class KernelMixin:
         await self.started.wait()
         if ycell["cell_type"] != "code":
             return
+        ycell["outputs"].clear()
         code = str(ycell["source"])
         content = {"code": code, "silent": False}
         msg = create_message(
@@ -127,77 +120,81 @@ class KernelMixin:
             msg_id = msg["header"]["msg_id"]
         self.msg_cnt += 1
         self.execute_requests[msg_id] = {
-            "iopub": [asyncio.Future()],
-            "shell": [asyncio.Future()],
+            "iopub": asyncio.Queue(),
+            "shell": asyncio.Queue(),
         }
         await self.send_message(msg, self.shell_channel, change_date_to_str=True)
         if wait_for_executed:
             deadline = time.monotonic() + timeout
+            while True:
+                try:
+                    msg = await asyncio.wait_for(
+                        self.execute_requests[msg_id]["iopub"].get(),
+                        deadline_to_timeout(deadline),
+                    )
+                except asyncio.TimeoutError:
+                    del self.execute_requests[msg_id]
+                    error_message = f"Kernel didn't respond in {timeout} seconds"
+                    raise RuntimeError(error_message)
+                await self._handle_outputs(ycell["outputs"], msg)
+                if (
+                    (msg["header"]["msg_type"] == "status"
+                    and msg["content"]["execution_state"] == "idle")
+                ):
+                    break
             try:
-                await asyncio.wait_for(
-                    self.execute_requests[msg_id]["iopub"][0],
+                msg = await asyncio.wait_for(
+                    self.execute_requests[msg_id]["shell"].get(),
                     deadline_to_timeout(deadline),
                 )
             except asyncio.TimeoutError:
                 del self.execute_requests[msg_id]
                 error_message = f"Kernel didn't respond in {timeout} seconds"
                 raise RuntimeError(error_message)
-            await self._handle_outputs(ydoc, ycell, self.execute_requests[msg_id]["iopub"])
-            try:
-                await asyncio.wait_for(
-                    self.execute_requests[msg_id]["shell"][0],
-                    deadline_to_timeout(deadline),
-                )
-            except asyncio.TimeoutError:
-                del self.execute_requests[msg_id]
-                error_message = f"Kernel didn't respond in {timeout} seconds"
-                raise RuntimeError(error_message)
-            msg = self.execute_requests[msg_id]["shell"][0].result()
-            with ydoc.begin_transaction() as txn:
-                ycell.set(txn, "execution_count", msg["content"]["execution_count"])
+            ycell["execution_count"] = msg["content"]["execution_count"]
         del self.execute_requests[msg_id]
 
-    async def _handle_outputs(
-        self, ydoc: Y.YDoc, ycell: Y.YMap, future_messages: List[asyncio.Future]
-    ):
-        with ydoc.begin_transaction() as txn:
-            ycell.set(txn, "outputs", [])
-
-        while True:
-            if not future_messages:
-                future_messages.append(asyncio.Future())
-            fut = future_messages[0]
-            if not fut.done():
-                await fut
-            future_messages.pop(0)
-            msg = fut.result()
-            msg_type = msg["header"]["msg_type"]
-            content = msg["content"]
-            outputs = list(ycell["outputs"])
-            if msg_type == "stream":
-                if (not outputs) or (outputs[-1]["name"] != content["name"]):
-                    outputs.append({"name": content["name"], "output_type": msg_type, "text": []})
-                outputs[-1]["text"].append(content["text"])
-            elif msg_type in ("display_data", "execute_result"):
-                outputs.append(
-                    {
-                        "data": content["data"],
-                        "execution_count": content["execution_count"],
-                        "metadata": {},
-                        "output_type": msg_type,
-                    }
-                )
-            elif msg_type == "error":
-                outputs.append(
-                    {
-                        "ename": content["ename"],
-                        "evalue": content["evalue"],
-                        "output_type": "error",
-                        "traceback": content["traceback"],
-                    }
-                )
-            elif msg_type == "status" and msg["content"]["execution_state"] == "idle":
-                break
-
-            with ydoc.begin_transaction() as txn:
-                ycell.set(txn, "outputs", outputs)
+    async def _handle_outputs(self, outputs: Array, msg):
+        msg_type = msg["header"]["msg_type"]
+        content = msg["content"]
+        if msg_type == "stream":
+            with outputs.doc.transaction():
+                # TODO: uncomment when changes are made in jupyter-ydoc
+                if (not outputs) or (outputs[-1]["name"] != content["name"]):  # type: ignore
+                    outputs.append(
+                        #Map(
+                        #    {
+                        #        "name": content["name"],
+                        #        "output_type": msg_type,
+                        #        "text": Array([content["text"]]),
+                        #    }
+                        #)
+                        {
+                            "name": content["name"],
+                            "output_type": msg_type,
+                            "text": [content["text"]],
+                        }
+                    )
+                else:
+                    #outputs[-1]["text"].append(content["text"])  # type: ignore
+                    last_output = outputs[-1]
+                    last_output["text"].append(content["text"])  # type: ignore
+                    outputs[-1] = last_output
+        elif msg_type in ("display_data", "execute_result"):
+            outputs.append(
+                {
+                    "data": {"text/plain": [content["data"].get("text/plain", "")]},
+                    "execution_count": content["execution_count"],
+                    "metadata": {},
+                    "output_type": msg_type,
+                }
+            )
+        elif msg_type == "error":
+            outputs.append(
+                {
+                    "ename": content["ename"],
+                    "evalue": content["evalue"],
+                    "output_type": "error",
+                    "traceback": content["traceback"],
+                }
+            )
