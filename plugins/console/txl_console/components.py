@@ -67,34 +67,35 @@ class _Console(Console, VerticalScroll, metaclass=ConsoleMeta):
         if target == "cells":
             for event in events:
                 if isinstance(event, ArrayEvent):
-                    insert = None
-                    retain = None
-                    for d in event.delta:
-                        if "insert" in d:
-                            insert = d["insert"]
-                        elif "retain" in d:
-                            retain = d["retain"]
-                    i = 0 if retain is None else retain
-                    if insert is not None:
-                        for c in insert:
-                            cell = self.cell_factory(
-                                ycell=c,
-                                language=self.language,
-                                kernel=self.kernel,
-                                show_execution_count=False,
-                                show_border=False,
-                            )
-                            if not self.cells:
-                                self.mount(cell)
-                            else:
-                                if i < len(self.cells):
-                                    self.mount(cell, before=self.cells[i])
+                    if len(event.path) < 2:
+                        insert = None
+                        retain = None
+                        for d in event.delta:
+                            if "insert" in d:
+                                insert = d["insert"]
+                            elif "retain" in d:
+                                retain = d["retain"]
+                        i = 0 if retain is None else retain
+                        if insert is not None:
+                            for c in insert:
+                                cell = self.cell_factory(
+                                    ycell=c,
+                                    language=self.language,
+                                    kernel=self.kernel,
+                                    show_execution_count=False,
+                                    show_border=False,
+                                )
+                                if not self.cells:
+                                    self.mount(cell)
                                 else:
-                                    self.mount(cell, after=self.cells[i - 1])
-                                if i <= self.cell_i:
-                                    self.cell_i += 1
-                            self.cells.insert(i, cell)
-                            i += 1
+                                    if i < len(self.cells):
+                                        self.mount(cell, before=self.cells[i])
+                                    else:
+                                        self.mount(cell, after=self.cells[i - 1])
+                                    if i <= self.cell_i:
+                                        self.cell_i += 1
+                                self.cells.insert(i, cell)
+                                i += 1
         if self.cells:
             self.cells[self.cell_i].select()
 

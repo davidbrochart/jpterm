@@ -25,7 +25,7 @@ dependencies = [
   "txl",
   "txl_kernel",
   "pyzmq >=24.0.1",
-  "y-py >=0.6.0,<1",
+  "ipykernel",
 ]
 dynamic = ["version"]
 
