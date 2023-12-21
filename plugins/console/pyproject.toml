@@ -23,6 +23,7 @@ classifiers = [
 ]
 dependencies = [
   "txl",
+  "jupyter-ydoc >=2.0.0,<3.0.0",
 ]
 dynamic = ["version"]
 

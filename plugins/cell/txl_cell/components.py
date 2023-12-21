@@ -227,6 +227,8 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
             renderable = RichText.from_ansi(text)
         elif output_type == "execute_result":
             execution_count = output.get("execution_count", " ") or " "
+            if execution_count != " ":
+                execution_count = int(execution_count)
             execution_count = RichText.from_markup(
                 f"[red]Out[[#ee4b2b]{execution_count}[/#ee4b2b]]:[/red]\n"
             )
@@ -237,7 +239,7 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
                     widget = YDOCS[f"txl_{model.__class__.__name__[:-5]}"](model)
             if not widget:
                 data = output["data"].get("text/plain", "")
-                renderable = RichText()
+                renderable = execution_count
                 if isinstance(data, list):
                     text = "".join(data)
                     renderable += RichText.from_ansi(text)
