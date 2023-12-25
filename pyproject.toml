@@ -24,25 +24,26 @@ keywords = [
 ]
 dependencies = [
     "rich-click >=1.6.0",
-    "txl_cell >=0.1.0",
-    "txl_console >=0.1.0",
-    "txl_editors >=0.1.0",
-    "txl_file_browser >=0.1.0",
-    "txl_image_viewer >=0.1.0",
-    "txl_jpterm >=0.1.0",
-    "txl_kernel >=0.1.0",
-    "txl_local_contents >=0.1.0",
-    "txl_local_terminals >=0.1.0",
-    "txl_local_kernels >=0.1.0",
-    "txl_notebook_editor >=0.1.0",
-    "txl_remote_contents >=0.1.0",
-    "txl_remote_terminals >=0.1.0",
-    "txl_remote_kernels >=0.1.0",
-    "txl_text_editor >=0.1.0",
-    "txl_markdown_viewer >=0.1.0",
-    "txl_terminal >=0.1.0",
-    "txl_launcher>=0.1.0",
-    "txl_widgets>=0.1.0",
+    "txl ==0.2.4",
+    "txl_cell ==0.2.4",
+    "txl_console ==0.2.4",
+    "txl_editors ==0.2.4",
+    "txl_file_browser ==0.2.4",
+    "txl_image_viewer ==0.2.4",
+    "txl_jpterm ==0.2.4",
+    "txl_kernel ==0.2.4",
+    "txl_local_contents ==0.2.4",
+    "txl_local_terminals ==0.2.4",
+    "txl_local_kernels ==0.2.4",
+    "txl_notebook_editor ==0.2.4",
+    "txl_remote_contents ==0.2.4",
+    "txl_remote_terminals ==0.2.4",
+    "txl_remote_kernels ==0.2.4",
+    "txl_text_editor ==0.2.4",
+    "txl_markdown_viewer ==0.2.4",
+    "txl_terminal ==0.2.4",
+    "txl_launcher ==0.2.4",
+    "txl_widgets ==0.2.4",
 ]
 
 [project.scripts]
@@ -81,33 +82,7 @@ pre-install-commands = [
     "pip install -e ./plugins/widgets",
 
     'pip install "jupyterlab>=4"',
-    "pip install jupyter-collaboration",
-]
-
-[tool.jupyter-releaser.options]
-python_packages = [
-    "txl:txl",
-    "plugins/cell:txl_cell",
-    "plugins/console:txl_console",
-    "plugins/editors:txl_editors",
-    "plugins/file_browser:txl_file_browser",
-    "plugins/image_viewer:txl_image_viewer",
-    "plugins/jpterm:txl_jpterm",
-    "plugins/kernel:txl_kernel",
-    "plugins/local_contents:txl_local_contents",
-    "plugins/local_terminals:txl_local_terminals",
-    "plugins/local_kernels:txl_local_kernels",
-    "plugins/notebook_editor:txl_notebook_editor",
-    "plugins/remote_contents:txl_remote_contents",
-    "plugins/remote_terminals:txl_remote_terminals",
-    "plugins/remote_kernels:txl_remote_kernels",
-    "plugins/terminal:txl_terminal",
-    "plugins/text_editor:txl_text_editor",
-    "plugins/text_viewer:txl_text_viewer",
-    "plugins/markdown_viewer:txl_markdown_viewer",
-    "plugins/launcher:txl_launcher",
-    "plugins/widgets:txl_widgets",
-    ".:jpterm:txl,txl_cell,txl_console,txl_editors,txl_file_browser,txl_image_viewer,txl_jpterm,txl_kernel,txl_local_contents,txl_local_terminals,txl_local_kernels,txl_notebook_editor,txl_remote_contents,txl_remote_terminals,txl_remote_kernels,txl_terminal,txl_text_editor,txl_text_viewer,txl_launcher,txl_widgets,txl_markdown"
+    'pip install jupyter-collaboration >=2',
 ]
 
 [tool.ruff.lint]
