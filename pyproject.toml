@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling>=1.9.0"]
+requires = ["hatchling>=1.21.1"]
 build-backend = "hatchling.build"
 
 [project]
@@ -8,13 +8,14 @@ dynamic = ["version"]
 description = "Jupyter in the terminal"
 readme = "README.md"
 license = { text = "MIT" }
-requires-python = ">=3.10,<3.12"
+requires-python = ">=3.10"
 authors = [ { name = "David Brochart", email = "david.brochart@gmail.com" }, ]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
@@ -46,6 +47,13 @@ dependencies = [
     "txl_widgets ==0.2.4",
 ]
 
+[project.optional-dependencies]
+docs = [
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocstrings-python",
+]
+
 [project.scripts]
 jpterm = "jpterm.cli:main"
 
@@ -54,6 +62,13 @@ Homepage = "https://github.com/davidbrochart/jpterm"
 
 [tool.hatch.version]
 path = "jpterm/__init__.py"
+
+[tool.hatch.envs.docs]
+features = ["docs"]
+
+[tool.hatch.envs.docs.scripts]
+build = "mkdocs build --clean --strict"
+serve = "mkdocs serve --dev-addr localhost:8000"
 
 [tool.hatch.envs.dev]
 pre-install-commands = [

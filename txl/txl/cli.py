@@ -16,14 +16,14 @@ def set_main(main):
     "--configfile",
     type=str,
     multiple=True,
-    help="Read YAML configuration file",
+    help="Read YAML configuration file.",
 )
 @click.option(
     "--set",
     "set_",
     multiple=True,
     type=str,
-    help="Set configuration",
+    help="Set configuration.",
 )
 def txl_main(
     # txl_main can be decorated with other Click options through MAIN
