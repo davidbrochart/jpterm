@@ -92,8 +92,7 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="." title="jpterm" class="md-header__button md-logo" aria-label="jpterm" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+  <img src="assets/logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -188,8 +187,7 @@
   <label class="md-nav__title" for="__drawer">
     <a href="." title="jpterm" class="md-nav__button md-logo" aria-label="jpterm" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+  <img src="assets/logo.png" alt="logo">
 
     </a>
     jpterm
@@ -225,17 +223,6 @@
         
       
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Overview
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
       <a href="." class="md-nav__link md-nav__link--active">
         
   
@@ -245,52 +232,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      Installation
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      Usage
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#development-install" class="md-nav__link">
-    <span class="md-ellipsis">
-      Development install
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
       
     </li>
   
@@ -892,41 +833,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      Installation
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      Usage
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#development-install" class="md-nav__link">
-    <span class="md-ellipsis">
-      Development install
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -943,50 +849,13 @@
   
 
 
-<div align="center">
-  <img src="https://github.com/davidbrochart/jpterm/blob/assets/jpterm_logo.gif" alt="jpterm Logo" width="35%">
-</div>
-
 <p><a href="https://github.com/davidbrochart/jpterm/actions"><img alt="Build Status" src="https://github.com/davidbrochart/jpterm/workflows/CI/badge.svg" /></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg" /></a>
 <a href="https://github.com/pypa/hatch"><img alt="Hatch project" src="https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg" /></a></p>
 <h1 id="jpterm">jpterm</h1>
-<p><code>jpterm</code> aims to be the equivalent of JupyterLab in the terminal.</p>
-<p>It can work either locally, or remotely through a Jupyter server.</p>
-<h2 id="installation">Installation</h2>
-<pre><code class="language-bash">pip install jpterm
-# you probably want a (Python) Jupyter kernel too:
-pip install ipykernel
-</code></pre>
-<h2 id="usage">Usage</h2>
-<p>To run jpterm without a server:</p>
-<pre><code class="language-bash">jpterm
-</code></pre>
-<p>To run jpterm as a client to a Jupyter server, you need, well, jupyter-server :) You can install it through JupyterLab:</p>
-<pre><code class="language-bash">pip install &quot;jupyterlab&gt;=4&quot;
-pip install jupyter-collaboration
-</code></pre>
-<p>Then launch it with:</p>
-<pre><code class="language-bash">jupyter lab --port=8000 --no-browser
-
-# it will print a URL like: http://127.0.0.1:8000/lab?token=972cbd440db4b35581b25f90c0a88e3a1095534e18251ca8
-# you will need the token when launching jpterm, but if you don't want to bother with authentication:
-# jupyter lab --port=8000 --no-browser --ServerApp.token='' --ServerApp.password=''
-</code></pre>
-<p>Then launch jpterm in another terminal:</p>
-<pre><code class="language-bash">jpterm --server http://127.0.0.1:8000/?token=972cbd440db4b35581b25f90c0a88e3a1095534e18251ca8
-
-# if you launched JupyterLab without authentication:
-# jpterm --server http://127.0.0.1:8000
-</code></pre>
-<p>If jpterm is launched with <code>--collaborative</code>, you can open a document in
-JupyterLab (go to http://127.0.0.1:8000 in your browser), modify it, and see the changes live
-in jpterm. This also works the other way around.</p>
-<h2 id="development-install">Development install</h2>
-<p>jpterm uses <a href="https://hatch.pypa.io">hatch</a>:</p>
-<pre><code class="language-bash">pip install hatch
-</code></pre>
-<p>To run a command, you need to point <code>hatch</code> to the <code>dev</code> environment, e.g. <code>hatch run dev:jpterm</code>.</p>
+<p>Jpterm is the successor of <a href="https://github.com/davidbrochart/nbterm">nbterm</a>.</p>
+<p>It aims to be the equivalent of <a href="https://jupyterlab.readthedocs.io">JupyterLab</a> in the terminal, using the <a href="https://textual.textualize.io">Textual</a> framework.</p>
+<p>For more details, see the <a href="https://davidbrochart.github.io/jpterm">documentation</a>.</p>
 
 
 

@@ -87,8 +87,7 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="jpterm" class="md-header__button md-logo" aria-label="jpterm" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+  <img src="../../assets/logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -183,8 +182,7 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="jpterm" class="md-nav__button md-logo" aria-label="jpterm" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+  <img src="../../assets/logo.png" alt="logo">
 
     </a>
     jpterm
@@ -861,7 +859,22 @@
 │ --help                                    Show this message and exit.         │
 ╰───────────────────────────────────────────────────────────────────────────────╯
 </code></pre>
-<p>The easiest way to launch jpterm is simply by entering <code>jpterm</code> and hitting <em>Enter</em>.</p>
+<p>The easiest way to launch jpterm is simply by entering <code>jpterm</code> and hitting <em>Enter</em>. Jpterm will run locally on your machine, without needing a Jupyter server.</p>
+<p>Jpterm can also be a client to a Jupyter server, just like when you use JupyterLab. While JupyterLab is a Web client that runs in the browser, jpterm runs in the terminal. The two main Jupyter servers are <a href="https://github.com/jupyter-server/jupyter_server">jupyter-server</a> and <a href="https://github.com/jupyter-server/jupyverse">jupyverse</a>. You can install and launch them like so:</p>
+<pre><code class="language-bash"># Install jupyter-server:
+pip install &quot;jupyterlab&gt;=4&quot;
+pip install jupyter-collaboration
+# Launch it:
+jupyter lab --ServerApp.token='' --ServerApp.password='' --no-browser --port=8000
+
+# Or install jupyverse:
+pip install &quot;jupyverse[jupyterlab, noauth]&quot;
+# Launch it:
+jupyverse
+</code></pre>
+<p>Then pass the URL of the Jupyter server to jpterm through the <code>--server</code> option:</p>
+<pre><code class="language-bash">jpterm --server http://127.0.0.1:8000
+</code></pre>
 
 
 
