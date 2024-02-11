@@ -22,8 +22,8 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "asphalt >=4.11.1,<5",
-  "textual[syntax] >=0.47.1,<0.48.0",
+  "asphalt >=4.12.0,<5",
+  "textual[syntax] >=0.50.1,<0.51.0",
 ]
 dynamic = ["version"]
 

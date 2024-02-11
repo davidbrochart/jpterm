@@ -16,7 +16,7 @@ class TextInput(TextArea):
                 language = Syntax.guess_lexer(path, code=text)
         if language == "default":
             language = None
-        super().__init__(text, language=language)
+        super().__init__(text, language=language, theme="monokai")
         ytext.observe(self.on_change)
         self.change_events = asyncio.Queue()
         self.observe_changes_task = asyncio.create_task(self.observe_changes())
