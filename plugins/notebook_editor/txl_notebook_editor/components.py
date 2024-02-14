@@ -5,7 +5,7 @@ from importlib.metadata import entry_points
 from typing import Any
 
 import anyio
-from asphalt.core import Component, Context
+from asphalt.core import Component, add_resource, request_resource
 from httpx import AsyncClient
 from textual.containers import VerticalScroll
 from textual.events import Event
@@ -365,16 +365,13 @@ class NotebookEditorComponent(Component):
         self.register = register
         self.experimental = experimental
 
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        contents = await ctx.request_resource(Contents)
-        kernels = await ctx.request_resource(Kernels)
-        kernelspecs = await ctx.request_resource(Kernelspecs)
-        cell_factory = await ctx.request_resource(CellFactory)
-        launcher = await ctx.request_resource(Launcher)
-        main_area = await ctx.request_resource(MainArea)
+    async def start(self) -> None:
+        contents = await request_resource(Contents)
+        kernels = await request_resource(Kernels)
+        kernelspecs = await request_resource(Kernelspecs)
+        cell_factory = await request_resource(CellFactory)
+        launcher = await request_resource(Launcher)
+        main_area = await request_resource(MainArea)
 
         _kernelspecs = await kernelspecs.get()
 
@@ -391,8 +388,8 @@ class NotebookEditorComponent(Component):
         launcher.register("notebook", notebook_editor_factory)
 
         if self.register:
-            editors = await ctx.request_resource(Editors)
+            editors = await request_resource(Editors)
             editors.register_editor_factory(notebook_editor_factory, [".ipynb"])
         else:
             notebook_editor = notebook_editor_factory()
-            ctx.add_resource(notebook_editor, types=Editor)
+            await add_resource(notebook_editor, types=Editor)

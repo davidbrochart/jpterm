@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Callable, Dict, List
 
-from asphalt.core import Component, Context
+from asphalt.core import Component, add_resource, request_resource
 from textual.containers import Container
 
 from txl.base import Editor, Editors, FileOpenEvent, Footer, Header, MainArea
@@ -57,12 +57,9 @@ class _Editors(Editors, Container, metaclass=EditorsMeta):
 
 
 class EditorsComponent(Component):
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        header = await ctx.request_resource(Header)
-        footer = await ctx.request_resource(Footer)
-        main_area = await ctx.request_resource(MainArea)
+    async def start(self) -> None:
+        header = await request_resource(Header)
+        footer = await request_resource(Footer)
+        main_area = await request_resource(MainArea)
         editors = _Editors(header, footer, main_area)
-        ctx.add_resource(editors, types=Editors)
+        await add_resource(editors, types=Editors)

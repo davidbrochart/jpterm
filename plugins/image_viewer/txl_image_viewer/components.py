@@ -1,7 +1,7 @@
 import os
 import tempfile
 
-from asphalt.core import Component, Context
+from asphalt.core import Component, add_resource, request_resource
 from PIL import Image
 from textual.widget import Widget
 from textual_imageview.viewer import ImageViewer
@@ -57,18 +57,15 @@ class ImageViewerComponent(Component):
         super().__init__()
         self.register = register
 
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        contents = await ctx.request_resource(Contents)
+    async def start( self) -> None:
+        contents = await request_resource(Contents)
 
         def image_viewer_factory():
             return _ImageViewer(contents)
 
         if self.register:
-            editors = await ctx.request_resource(Editors)
+            editors = await request_resource(Editors)
             editors.register_editor_factory(image_viewer_factory, [".png", ".jpg", ".jpeg"])
         else:
             image_viewer = image_viewer_factory()
-            ctx.add_resource(image_viewer, types=Editor)
+            await add_resource(image_viewer, types=Editor)

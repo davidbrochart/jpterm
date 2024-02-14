@@ -1,6 +1,6 @@
 import asyncio
 
-from asphalt.core import Component, Context
+from asphalt.core import Component, add_resource, request_resource
 from textual.containers import Container
 from textual.widgets import MarkdownViewer as TextualMarkdownViewer
 
@@ -42,18 +42,15 @@ class MarkdownViewerComponent(Component):
         super().__init__()
         self.register = register
 
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        contents = await ctx.request_resource(Contents)
+    async def start(self) -> None:
+        contents = await request_resource(Contents)
 
         def markdown_viewer_factory():
             return MarkdownViewer(contents)
 
         if self.register:
-            editors = await ctx.request_resource(Editors)
+            editors = await request_resource(Editors)
             editors.register_editor_factory(markdown_viewer_factory, [".md"])
         else:
             markdown_viewer = markdown_viewer_factory()
-            ctx.add_resource(markdown_viewer, types=Editor)
+            await add_resource(markdown_viewer, types=Editor)

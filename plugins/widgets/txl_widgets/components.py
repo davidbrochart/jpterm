@@ -1,6 +1,5 @@
 from importlib.metadata import entry_points
-
-from asphalt.core import Component, Context
+from asphalt.core import Component, add_resource, request_resource
 from pycrdt import TransactionEvent
 from ypywidgets.utils import (
     YMessageType,
@@ -57,12 +56,9 @@ class _Widgets:
 
 
 class WidgetsComponent(Component):
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        kernels = await ctx.request_resource(Kernels)
+    async def start(self) -> None:
+        kernels = await request_resource(Kernels)
         widgets = _Widgets()
         kernels.comm_handlers.append(widgets)
 
-        ctx.add_resource(widgets, types=Widgets)
+        await add_resource(widgets, types=Widgets)

@@ -2,7 +2,7 @@ import asyncio
 from functools import partial
 
 import pyte
-from asphalt.core import Component, Context
+from asphalt.core import Component, add_resource, request_resource
 from rich.console import RenderableType
 from rich.text import Text
 from textual import events
@@ -89,9 +89,6 @@ class _Terminal(Terminal, Widget, metaclass=TerminalMeta, can_focus=True):
 
 
 class TerminalComponent(Component):
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        main_area = await ctx.request_resource(MainArea)
-        ctx.add_resource(partial(_Terminal, main_area=main_area), types=TerminalFactory)
+    async def start(self) -> None:
+        main_area = await request_resource(MainArea)
+        await add_resource(partial(_Terminal, main_area=main_area), types=TerminalFactory)

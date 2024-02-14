@@ -3,7 +3,7 @@ import json
 from functools import partial
 from importlib.metadata import entry_points
 
-from asphalt.core import Component, Context
+from asphalt.core import Component, add_resource, request_resource
 from pycrdt import Doc, Map, MapEvent, Text
 from rich.text import Text as RichText
 from textual.containers import Container
@@ -291,12 +291,9 @@ class CellComponent(Component):
         self.show_execution_count = show_execution_count
         self.show_border = show_border
 
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        contents = await ctx.request_resource(Contents)
-        widgets = await ctx.request_resource(Widgets)
+    async def start(self) -> None:
+        contents = await request_resource(Contents)
+        widgets = await request_resource(Widgets)
         cell_factory = partial(
             _Cell,
             contents=contents,
@@ -304,4 +301,4 @@ class CellComponent(Component):
             show_execution_count=self.show_execution_count,
             show_border=self.show_border,
         )
-        ctx.add_resource(cell_factory, types=CellFactory)
+        await add_resource(cell_factory, types=CellFactory)

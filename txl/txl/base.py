@@ -7,8 +7,8 @@ from textual.binding import Binding
 
 
 class FileOpenEvent(Event):
-    def __init__(self, source, topic, path):
-        super().__init__(source, topic)
+    def __init__(self, path, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.path = path
 
 
