@@ -23,7 +23,6 @@ classifiers = [
 ]
 dependencies = [
   "txl",
-  #"txl_notebook"
 ]
 dynamic = ["version"]
 

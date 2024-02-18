@@ -23,8 +23,6 @@ classifiers = [
 ]
 dependencies = [
   "txl",
-  "txl_file_browser",
-  "txl_editors",
 ]
 dynamic = ["version"]
 

@@ -23,7 +23,7 @@ classifiers = [
 ]
 dependencies = [
   "asphalt >=4.12.0,<5",
-  "textual[syntax] >=0.50.1,<0.51.0",
+  "textual[syntax] >=0.51.0,<0.52.0",
 ]
 dynamic = ["version"]
 
