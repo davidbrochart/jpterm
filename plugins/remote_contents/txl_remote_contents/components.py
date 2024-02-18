@@ -1,11 +1,11 @@
 import asyncio
 import json
 from base64 import b64encode
+from importlib.metadata import entry_points
 from typing import Any, Dict, List, Optional, Union
 from urllib import parse
 
 import httpx
-import pkg_resources
 from asphalt.core import Component, Context
 from httpx_ws import aconnect_ws
 from pycrdt import Doc
@@ -13,7 +13,7 @@ from pycrdt_websocket import WebsocketProvider
 
 from txl.base import Contents
 
-ydocs = {ep.name: ep.load() for ep in pkg_resources.iter_entry_points(group="jupyter_ydoc")}
+ydocs = {ep.name: ep.load() for ep in entry_points(group="jupyter_ydoc")}
 
 
 class Websocket:
