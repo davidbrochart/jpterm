@@ -1,4 +1,5 @@
-import pkg_resources
+from importlib.metadata import entry_points
+
 from asphalt.core import Component, Context
 from pycrdt import TransactionEvent
 from ypywidgets.utils import (
@@ -15,7 +16,7 @@ from txl.base import Kernels, Widgets
 class _Widgets:
     def __init__(self):
         self.ydocs = {
-            ep.name: ep.load() for ep in pkg_resources.iter_entry_points(group="ypywidgets")
+            ep.name: ep.load() for ep in entry_points(group="ypywidgets")
         }
         self.widgets = {}
 

@@ -1,15 +1,15 @@
 import json
+from importlib.metadata import entry_points
 from os import scandir
 from typing import List, Union
 
-import pkg_resources
 from anyio import Path
 from asphalt.core import Component, Context
 from pycrdt import Doc
 
 from txl.base import Contents
 
-ydocs = {ep.name: ep.load() for ep in pkg_resources.iter_entry_points(group="jupyter_ydoc")}
+ydocs = {ep.name: ep.load() for ep in entry_points(group="jupyter_ydoc")}
 
 
 class LocalContents(Contents):

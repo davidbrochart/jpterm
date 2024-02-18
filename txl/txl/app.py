@@ -1,10 +1,11 @@
-import pkg_resources
+from importlib.metadata import entry_points
+
 from asphalt.core import CLIApplicationComponent, Context
 from asphalt.core.cli import run as asphalt_run
 from textual.app import App
 
 components = {
-    ep.name: ep.load() for ep in pkg_resources.iter_entry_points(group="txl.components")
+    ep.name: ep.load() for ep in entry_points(group="txl.components")
 }
 
 disabled = []

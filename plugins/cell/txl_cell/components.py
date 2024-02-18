@@ -1,8 +1,8 @@
 import asyncio
 import json
 from functools import partial
+from importlib.metadata import entry_points
 
-import pkg_resources
 from asphalt.core import Component, Context
 from pycrdt import Doc, Map, MapEvent, Text
 from rich.text import Text as RichText
@@ -12,7 +12,7 @@ from textual.widgets import Static
 from txl.base import Cell, CellFactory, Contents, Kernel, Widgets
 from txl.text_input import TextInput
 
-YDOCS = {ep.name: ep.load() for ep in pkg_resources.iter_entry_points(group="ypywidgets")}
+YDOCS = {ep.name: ep.load() for ep in entry_points(group="ypywidgets")}
 
 
 class Source(TextInput):

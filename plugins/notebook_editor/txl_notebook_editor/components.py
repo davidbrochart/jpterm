@@ -1,10 +1,10 @@
 import asyncio
 import json
 from functools import partial
+from importlib.metadata import entry_points
 from typing import Any
 
 import anyio
-import pkg_resources
 from asphalt.core import Component, Context
 from httpx import AsyncClient
 from textual.containers import VerticalScroll
@@ -24,7 +24,7 @@ from txl.base import (
     MainArea,
 )
 
-ydocs = {ep.name: ep.load() for ep in pkg_resources.iter_entry_points(group="jupyter_ydoc")}
+ydocs = {ep.name: ep.load() for ep in entry_points(group="jupyter_ydoc")}
 
 
 class NotebookEditorMeta(type(Editor), type(VerticalScroll)):
