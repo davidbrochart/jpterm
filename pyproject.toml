@@ -97,7 +97,7 @@ pre-install-commands = [
     "pip install -e ./plugins/widgets",
 
     'pip install "jupyterlab>=4"',
-    'pip install jupyter-collaboration >=2',
+    'pip install "jupyter-collaboration >=2"',
 ]
 
 [tool.ruff.lint]
