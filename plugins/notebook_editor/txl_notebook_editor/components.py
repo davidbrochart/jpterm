@@ -152,7 +152,15 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                         kernel_name = kernelspec.get("name")
                         if kernel_name:
                             self.kernel = self.kernels(kernel_name)
+            elif target == "state":
+                if "dirty" in events.keys:
+                    dirty = events.keys["dirty"]["newValue"]
+                    if dirty:
+                        self.main_area.set_dirty(self)
+                    else:
+                        self.main_area.clear_dirty(self)
             elif target == "cells":
+                self.main_area.set_dirty(self)
                 for event in events:
                     if event.path:
                         continue
@@ -229,6 +237,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                 asyncio.create_task(do_later())
         elif event.key == Keys.ControlS:
             await self.contents.save(self.path, self.ynb)
+            self.main_area.clear_dirty(self)
             event.stop()
         elif event.key == Keys.Return or event.key == Keys.Enter:
             event.stop()
