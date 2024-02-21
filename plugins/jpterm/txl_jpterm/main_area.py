@@ -31,19 +31,39 @@ class MainArea(Widget, AbstractMainArea, metaclass=MainAreaMeta):
             else:
                 self.tabs.add_tab(tab)
                 self.tabs.active = tab.id
-            self.widgets[tab.id] = widget
+            self.widgets[tab] = widget
             self.mounted.append(widget)
             self.mount(widget)
         else:
-            tab_id = list(self.widgets.keys())[list(self.widgets.values()).index(widget)]
-            self.tabs.active = tab_id
+            tab = list(self.widgets.keys())[list(self.widgets.values()).index(widget)]
+            self.tabs.active = tab.id
+
+    def get_label(self) -> str:
+        tab = self.tabs.active_tab
+        return tab.label_text
 
     def set_label(self, title: str) -> None:
         tab = self.tabs.active_tab
-        tab.update(title)
+        tab.label = title
+
+    def set_dirty(self, widget: Widget) -> None:
+        if widget not in self.mounted:
+            return
+
+        tab = list(self.widgets.keys())[list(self.widgets.values()).index(widget)]
+        if not tab.label_text.startswith("+ "):
+            tab.label = "+ " + tab.label_text
+
+    def clear_dirty(self, widget: Widget) -> None:
+        if widget not in self.mounted:
+            return
+
+        tab = list(self.widgets.keys())[list(self.widgets.values()).index(widget)]
+        if tab.label_text.startswith("+ "):
+            tab.label = tab.label_text[2:]
 
     def on_tabs_tab_activated(self, event: Tabs.TabActivated) -> None:
-        widget = self.widgets[event.tab.id]
+        widget = self.widgets[event.tab]
         if self.shown is not None:
             self.shown.display = False
         self.shown = widget
