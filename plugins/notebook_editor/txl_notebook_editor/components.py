@@ -173,6 +173,13 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                         if delete is not None:
                             self.cells[idx].remove()
                             del self.cells[idx]
+                            if self.cell_i == len(self.cells):
+                                self.cell_i -= 1
+                                self.current_cell.select()
+                                self.current_cell.focus()
+                            elif self.cell_i == 0:
+                                self.current_cell.select()
+                                self.current_cell.focus()
                         insert = d.get("insert")
                         if insert is not None:
                             for c in insert:
@@ -206,12 +213,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         elif event.key == Keys.Down:
             if not self.edit_mode:
                 event.stop()
-                if self.cell_i < len(self.cells) - 1:
-                    self.current_cell.unselect()
-                    self.cell_i += 1
-                    self.current_cell.select()
-                    self.current_cell.focus()
-                    self.scroll_to_widget(self.current_cell)
+                self.go_down()
         elif event.key == Keys.ControlUp:
             event.stop()
             if self.cell_i > 0:
@@ -272,7 +274,8 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         elif event.character == "x":
             event.stop()
             self.cell_copy = str(self.current_cell.ycell)
-            del self.ynb.ycells[self.cell_i]
+            if len(self.cells) > 1:
+                del self.ynb.ycells[self.cell_i]
         elif event.key == Keys.ControlV:
             event.stop()
             if self.cell_copy is not None:
@@ -314,13 +317,32 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                         )
                 else:
                     await self.kernel.execute(self.current_cell.ycell)
-            if self.cell_i < len(self.cells) - 1:
-                self.current_cell.unselect()
-                self.cell_i += 1
-                self.current_cell.select()
-                self.current_cell.source.focus()
+            if self.cell_i == len(self.cells) - 1:
+                ycell = self.ynb.create_ycell(
+                    {
+                        "cell_type": "code",
+                        "execution_count": None,
+                        "source": "",
+                    }
+                )
+                self.ynb.ycells.append(ycell)
+            async def will_go_down():
+                while self.cell_i == len(self.cells) - 1:
+                    await asyncio.sleep(0)
+                self.go_down(edit_mode=True)
+            asyncio.create_task(will_go_down())
+
+    def go_down(self, edit_mode: bool = False) -> None:
+        if self.cell_i < len(self.cells) - 1:
+            self.current_cell.unselect()
+            self.cell_i += 1
+            self.current_cell.select()
+            if edit_mode:
                 self.edit_mode = True
-                self.scroll_to_widget(self.current_cell)
+                self.current_cell.source.focus()
+            else:
+                self.current_cell.focus()
+            self.scroll_to_widget(self.current_cell)
 
     def on_click(self) -> None:
         for cell_i, cell in enumerate(self.cells):
