@@ -55,7 +55,7 @@ class _Console(Console, VerticalScroll, metaclass=ConsoleMeta):
             ycell=self.ynb.ycells[self.cell_i],
             language=self.language,
             kernel=self.kernel,
-            show_execution_count=False,
+            show_execution_count=True,
             show_border=False,
         )
         self.mount(cell)
@@ -82,7 +82,7 @@ class _Console(Console, VerticalScroll, metaclass=ConsoleMeta):
                                     ycell=c,
                                     language=self.language,
                                     kernel=self.kernel,
-                                    show_execution_count=False,
+                                    show_execution_count=True,
                                     show_border=False,
                                 )
                                 if not self.cells:

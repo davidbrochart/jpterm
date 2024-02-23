@@ -23,6 +23,8 @@ class Source(TextInput):
         self._selected = False
         self.set_styles(css="height: auto; max-height: 100%;")
         self.is_code = ycell["cell_type"] == "code"
+        if not show_border:
+            self.set_styles(css="border: none;")
         if self.is_code and show_border:
             self.set_styles(css="border: round yellow;")
 
