@@ -35,7 +35,7 @@ nav:
   - usage/key_bindings.md
 - Plugins:
   - plugins/Cell.md
-  - plugins/Console.md
+  - plugins/console.md
   - plugins/Editors.md
   - plugins/File_browser.md
   - plugins/Image_viewer.md
