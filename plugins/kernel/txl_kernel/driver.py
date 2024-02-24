@@ -2,6 +2,7 @@ import asyncio
 import time
 from typing import Dict
 
+from asphalt.core import Event, Signal
 from pycrdt import Array, Map
 
 from .message import create_message
@@ -31,7 +32,15 @@ class Comm:
         asyncio.create_task(self.send_message(msg, self.shell_channel, change_date_to_str=True))
 
 
+class BusyEvent(Event):
+    def __init__(self, source, topic, busy: bool):
+        super().__init__(source, topic)
+        self.busy = busy
+
+
 class KernelMixin:
+    busy = Signal(BusyEvent)
+
     def __init__(self):
         self.msg_cnt = 0
         self.execute_requests: Dict[str, Dict[str, asyncio.Queue]] = {}
@@ -89,6 +98,12 @@ class KernelMixin:
             elif msg_type == "comm_msg":
                 for comm_handler in self.comm_handlers:
                     comm_handler.comm_msg(msg)
+            elif msg_type == "status":
+                execution_state = msg["content"]["execution_state"]
+                if execution_state == "idle":
+                    self.busy.dispatch(False)
+                elif execution_state == "busy":
+                    self.busy.dispatch(True)
             msg_id = msg["parent_header"].get("msg_id")
             if msg_id in self.execute_requests:
                 # msg["header"] = str_to_date(msg["header"])
