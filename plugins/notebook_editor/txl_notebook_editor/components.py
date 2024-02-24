@@ -7,9 +7,12 @@ from typing import Any
 import anyio
 from asphalt.core import Component, Context
 from httpx import AsyncClient
+from textual.app import RenderResult
 from textual.containers import VerticalScroll
 from textual.events import Event
 from textual.keys import Keys
+from textual.reactive import Reactive
+from textual.widget import Widget
 from textual.widgets import Select
 
 from txl.base import (
@@ -25,6 +28,33 @@ from txl.base import (
 )
 
 ydocs = {ep.name: ep.load() for ep in entry_points(group="jupyter_ydoc")}
+
+
+class TopBar(Widget):
+    DEFAULT_CSS = """
+    TopBar {
+        dock: top;
+        width: 100%;
+        background: $foreground 5%;
+        text-align: right;
+        color: $text;
+        height: 1;
+    }
+    """
+    _busy_indicator = Reactive("○")
+    _busy = False
+
+    @property
+    def busy(self) -> bool:
+        return self._busy
+
+    @busy.setter
+    def busy(self, value: bool):
+        self._busy = value
+        self._busy_indicator = "◉" if value else "○"
+
+    def render(self) -> RenderResult:
+        return self._busy_indicator
 
 
 class NotebookEditorMeta(type(Editor), type(VerticalScroll)):
@@ -55,6 +85,11 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         self.edit_mode = False
         self.nb_change_target = asyncio.Queue()
         self.nb_change_events = asyncio.Queue()
+        self.top_bar = TopBar()
+        self.mount(self.top_bar)
+
+    async def watch_busy(self, event):
+        self.top_bar.busy = event.busy
 
     async def on_open(self, event: FileOpenEvent) -> None:
         await self.open(event.path)
@@ -123,6 +158,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
             kernel_name = ipynb.get("metadata", {}).get("kernelspec", {}).get("name")
             if kernel_name:
                 self.kernel = self.kernels(kernel_name)
+                self.kernel.kernel.busy.connect(self.watch_busy)
         for i_cell in range(self.ynb.cell_number):
             cell = self.cell_factory(
                 self.ynb.ycells[i_cell], self.language, self.kernel
@@ -152,6 +188,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                         kernel_name = kernelspec.get("name")
                         if kernel_name:
                             self.kernel = self.kernels(kernel_name)
+                            self.kernel.kernel.busy.connect(self.watch_busy)
             elif target == "state":
                 if "dirty" in events.keys:
                     dirty = events.keys["dirty"]["newValue"]
