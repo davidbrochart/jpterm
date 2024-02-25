@@ -16,7 +16,7 @@ class MainArea(Widget, AbstractMainArea, metaclass=MainAreaMeta):
         self.mounted = []
         self.shown = None
         self.tabs = None
-        self.widgets = {}
+        self.widget_to_tab = {}
         self.title = 0
 
     def show(self, widget: Widget, title: Optional[str] = None):
@@ -31,11 +31,11 @@ class MainArea(Widget, AbstractMainArea, metaclass=MainAreaMeta):
             else:
                 self.tabs.add_tab(tab)
                 self.tabs.active = tab.id
-            self.widgets[tab] = widget
+            self.widget_to_tab[widget] = (tab, False)
             self.mounted.append(widget)
             self.mount(widget)
         else:
-            tab = list(self.widgets.keys())[list(self.widgets.values()).index(widget)]
+            tab, dirty = self.widget_to_tab[widget]
             self.tabs.active = tab.id
 
     def get_label(self) -> str:
@@ -50,20 +50,24 @@ class MainArea(Widget, AbstractMainArea, metaclass=MainAreaMeta):
         if widget not in self.mounted:
             return
 
-        tab = list(self.widgets.keys())[list(self.widgets.values()).index(widget)]
-        if not tab.label_text.startswith("+ "):
+        tab, dirty = self.widget_to_tab[widget]
+        if not dirty:
+            self.widget_to_tab[widget] = (tab, True)
             tab.label = "+ " + tab.label_text
 
     def clear_dirty(self, widget: Widget) -> None:
         if widget not in self.mounted:
             return
 
-        tab = list(self.widgets.keys())[list(self.widgets.values()).index(widget)]
-        if tab.label_text.startswith("+ "):
+        tab, dirty = self.widget_to_tab[widget]
+        if dirty:
+            self.widget_to_tab[widget] = (tab, False)
             tab.label = tab.label_text[2:]
 
     def on_tabs_tab_activated(self, event: Tabs.TabActivated) -> None:
-        widget = self.widgets[event.tab]
+        widgets = list(self.widget_to_tab.keys())
+        tabs = [tab for tab, dirty in self.widget_to_tab.values()]
+        widget = widgets[tabs.index(event.tab)]
         if self.shown is not None:
             self.shown.display = False
         self.shown = widget
