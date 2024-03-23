@@ -1,4 +1,4 @@
-from asphalt.core import Component, Context
+from asphalt.core import Component, add_resource, request_resource
 from textual.widget import Widget
 from textual.widgets import Button
 
@@ -40,10 +40,7 @@ class _Launcher(Launcher, Widget, metaclass=LauncherMeta):
 
 
 class LauncherComponent(Component):
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        main_area = await ctx.request_resource(MainArea)
+    async def start(self) -> None:
+        main_area = await request_resource(MainArea)
         launcher = _Launcher(main_area)
-        ctx.add_resource(launcher, types=Launcher)
+        await add_resource(launcher, types=Launcher)

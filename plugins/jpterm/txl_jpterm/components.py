@@ -1,4 +1,4 @@
-from asphalt.core import Component, Context
+from asphalt.core import Component, add_resource, request_resource, start_background_task
 from textual.app import App, ComposeResult
 from textual.containers import Container
 from textual.reactive import var
@@ -52,20 +52,24 @@ class JptermComponent(Component):
         super().__init__()
         self.driver_class = driver_class
 
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
+    async def start(self) -> None:
         header = _Header()
         footer = _Footer()
         main_area = _MainArea()
-        ctx.add_resource(header, types=Header)
-        ctx.add_resource(footer, types=Footer)
-        ctx.add_resource(main_area, types=MainArea)
-        file_browser = await ctx.request_resource(FileBrowser)
-        editors = await ctx.request_resource(Editors)
-        file_browser.open_file_signal.connect(editors.on_open)
-        launcher = await ctx.request_resource(Launcher)
+        await add_resource(header, types=Header)
+        await add_resource(footer, types=Footer)
+        await add_resource(main_area, types=MainArea)
+        file_browser = await request_resource(FileBrowser)
+        editors = await request_resource(Editors)
+
+        async def open_file():
+            async with file_browser.open_file_signal.stream_events() as stream:
+                async for event in stream:
+                    await editors.on_open(event)
+
+        await start_background_task(open_file, name="File browser open file")
+
+        launcher = await request_resource(Launcher)
         jpterm = Jpterm(
             header,
             footer,
@@ -75,4 +79,4 @@ class JptermComponent(Component):
             launcher,
             driver_class=self.driver_class,
         )
-        ctx.add_resource(jpterm, types=App)
+        await add_resource(jpterm, types=App)

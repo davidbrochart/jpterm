@@ -4,7 +4,7 @@ from os import scandir
 from typing import List, Union
 
 from anyio import Path
-from asphalt.core import Component, Context
+from asphalt.core import Component, add_resource
 from pycrdt import Doc
 
 from txl.base import Contents
@@ -50,9 +50,6 @@ class LocalContents(Contents):
 
 
 class LocalContentsComponent(Component):
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
+    async def start(self) -> None:
         contents = LocalContents()
-        ctx.add_resource(contents, types=Contents)
+        await add_resource(contents, types=Contents)
