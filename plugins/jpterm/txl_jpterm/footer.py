@@ -103,9 +103,9 @@ class Footer(AbstractFooter, Widget, metaclass=FooterMeta):
         key_style = self.get_component_rich_style("footer--key")
 
         bindings = [
-            binding
-            for (_namespace, binding) in self.app.namespace_bindings.values()
-            if binding.show
+            active_binding.binding
+            for active_binding in self.app.active_bindings.values()
+            if active_binding.binding.show
         ]
 
         action_to_bindings = defaultdict(list)

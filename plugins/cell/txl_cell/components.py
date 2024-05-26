@@ -6,6 +6,7 @@ from importlib.metadata import entry_points
 from asphalt.core import Component, Context
 from pycrdt import Doc, Map, MapEvent, Text
 from rich.text import Text as RichText
+from textual.app import ComposeResult
 from textual.containers import Container
 from textual.widgets import Static
 
@@ -68,7 +69,7 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
         self.show_execution_count = show_execution_count
         self.show_border = show_border
         self.outputs = []
-        self.update()
+        self.update(mount=False)
         self.ycell.observe_deep(self.on_change)
         self.styles.height = "auto"
         self.cell_change_events = asyncio.Queue()
@@ -174,7 +175,14 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
         execution_count = " " if value is None else str(value).removesuffix(".0")
         return f"[green]In [[#66ff00]{execution_count}[/#66ff00]]:[/green]"
 
-    def update(self):
+    def compose(self) -> ComposeResult:
+        if self.show_execution_count:
+            yield self.execution_count
+        yield self.source
+        for output in self.outputs:
+            yield output
+
+    def update(self, mount: bool = True):
         cell = json.loads(str(self.ycell))
         if self.show_execution_count:
             execution_state = self.ycell.get("execution_state")
@@ -187,7 +195,8 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
                     self.get_execution_count("*")
                 )
             self.execution_count = Static(execution_count)
-            self.mount(self.execution_count)
+            if mount:
+                self.mount(self.execution_count)
         cell_type = cell["cell_type"]
         if cell_type == "markdown":
             language = "markdown"
@@ -200,12 +209,14 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
             language=language,
             show_border=self.show_border,
         )
-        self.mount(self.source)
+        if mount:
+            self.mount(self.source)
 
         for output in cell.get("outputs", []):
             output_widget = self.get_output_widget(output)
             if output_widget is not None:
-                self.mount(output_widget)
+                if mount:
+                    self.mount(output_widget)
                 self.outputs.append(output_widget)
 
     def get_output_widget(self, output):

@@ -26,6 +26,7 @@ class Jpterm(App):
         self.file_browser = file_browser
         self.editors = editors
         self.launcher = launcher
+        self.main_area.show(self.launcher, "Launcher", mount=False)
         super().__init__(*args, **kwargs)
 
     def watch_show_browser(self, show_browser: bool) -> None:
@@ -33,7 +34,6 @@ class Jpterm(App):
 
     def compose(self) -> ComposeResult:
         yield self.header
-        self.main_area.show(self.launcher, "Launcher")
         yield Container(
             self.file_browser,
             self.main_area,
