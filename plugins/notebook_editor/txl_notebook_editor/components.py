@@ -7,7 +7,7 @@ from typing import Any
 import anyio
 from asphalt.core import Component, Context
 from httpx import AsyncClient
-from textual.app import RenderResult
+from textual.app import ComposeResult, RenderResult
 from textual.containers import VerticalScroll
 from textual.events import Event
 from textual.keys import Keys
@@ -86,7 +86,9 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         self.nb_change_target = asyncio.Queue()
         self.nb_change_events = asyncio.Queue()
         self.top_bar = TopBar()
-        self.mount(self.top_bar)
+
+    def compose(self) -> ComposeResult:
+        yield self.top_bar
 
     async def watch_busy(self, event):
         self.top_bar.busy = event.busy

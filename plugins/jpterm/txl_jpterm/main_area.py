@@ -1,5 +1,6 @@
 from typing import Optional
 
+from textual.app import ComposeResult
 from textual.widget import Widget
 from textual.widgets import Tab, Tabs
 
@@ -19,7 +20,7 @@ class MainArea(Widget, AbstractMainArea, metaclass=MainAreaMeta):
         self.widget_to_tab = {}
         self.title = 0
 
-    def show(self, widget: Widget, title: Optional[str] = None):
+    def show(self, widget: Widget, title: Optional[str] = None, mount: bool = True):
         if widget not in self.mounted:
             if title is None:
                 title = self.title
@@ -27,16 +28,21 @@ class MainArea(Widget, AbstractMainArea, metaclass=MainAreaMeta):
             tab = Tab(str(title))
             if self.tabs is None:
                 self.tabs = Tabs(tab)
-                self.mount(self.tabs)
             else:
                 self.tabs.add_tab(tab)
                 self.tabs.active = tab.id
             self.widget_to_tab[widget] = (tab, False)
             self.mounted.append(widget)
-            self.mount(widget)
+            if mount:
+                self.mount(widget)
         else:
             tab, dirty = self.widget_to_tab[widget]
             self.tabs.active = tab.id
+
+    def compose(self) -> ComposeResult:
+        yield self.tabs
+        for widget in self.mounted:
+            yield widget
 
     def get_label(self) -> str:
         tab = self.tabs.active_tab
