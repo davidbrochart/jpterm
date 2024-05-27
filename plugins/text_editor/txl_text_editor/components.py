@@ -1,7 +1,7 @@
 import asyncio
 from functools import partial
 
-from asphalt.core import Component, Context
+from asphalt.core import Component, add_resource, request_resource
 from textual.containers import Container
 from textual.events import Event
 from textual.keys import Keys
@@ -66,17 +66,14 @@ class TextEditorComponent(Component):
         super().__init__()
         self.register = register
 
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        contents = await ctx.request_resource(Contents)
-        main_area = await ctx.request_resource(MainArea)
+    async def start(self) -> None:
+        contents = await request_resource(Contents)
+        main_area = await request_resource(MainArea)
 
         text_editor_factory = partial(TextEditor, contents, main_area)
 
         if self.register:
-            editors = await ctx.request_resource(Editors)
+            editors = await request_resource(Editors)
             editors.register_editor_factory(text_editor_factory)
         else:
-            ctx.add_resource(text_editor_factory, types=Editor)
+            await add_resource(text_editor_factory, types=Editor)
