@@ -25,7 +25,7 @@ Jpterm can also be a client to a Jupyter server, just like when you use JupyterL
 pip install "jupyterlab>=4"
 pip install jupyter-collaboration
 # Launch it:
-jupyter lab --ServerApp.token='' --ServerApp.password='' --no-browser --port=8000
+jupyter lab --ServerApp.token='' --ServerApp.password='' --ServerApp.disable_check_xsrf=True --no-browser --port=8000
 
 # Or install jupyverse:
 pip install "jupyverse[jupyterlab, noauth]"
