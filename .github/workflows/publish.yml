@@ -1,0 +1,60 @@
+name: publish
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Build the source tarball and the wheel
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.x
+    - name: Install dependencies
+      run: pip install hatch
+    - name: Create packages
+      run: |
+        hatch build
+        cd txl; hatch build ../dist; cd ..
+        cd plugins/cell; hatch build ../../dist; cd ../..
+        cd plugins/console; hatch build ../../dist; cd ../..
+        cd plugins/editors; hatch build ../../dist; cd ../..
+        cd plugins/file_browser; hatch build ../../dist; cd ../..
+        cd plugins/image_viewer; hatch build ../../dist; cd ../..
+        cd plugins/jpterm; hatch build ../../dist; cd ../..
+        cd plugins/kernel; hatch build ../../dist; cd ../..
+        cd plugins/local_contents; hatch build ../../dist; cd ../..
+        cd plugins/local_terminals; hatch build ../../dist; cd ../..
+        cd plugins/local_kernels; hatch build ../../dist; cd ../..
+        cd plugins/notebook_editor; hatch build ../../dist; cd ../..
+        cd plugins/remote_contents; hatch build ../../dist; cd ../..
+        cd plugins/remote_terminals; hatch build ../../dist; cd ../..
+        cd plugins/remote_kernels; hatch build ../../dist; cd ../..
+        cd plugins/text_editor; hatch build ../../dist; cd ../..
+        cd plugins/markdown_viewer; hatch build ../../dist; cd ../..
+        cd plugins/terminal; hatch build ../../dist; cd ../..
+        cd plugins/launcher; hatch build ../../dist; cd ../..
+        cd plugins/widgets; hatch build ../../dist; cd ../..
+    - name: Archive packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist
+        path: dist
+
+  publish:
+    name: Publish build artifacts to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write
+    steps:
+    - name: Retrieve packages
+      uses: actions/download-artifact@v4
+    - name: Upload packages
+      uses: pypa/gh-action-pypi-publish@release/v1
