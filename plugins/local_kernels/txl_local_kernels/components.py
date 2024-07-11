@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from asphalt.core import Component, Context, context_teardown
+from asphalt.core import Component, add_resource, context_teardown
 from pycrdt import Map
 
 from txl.base import Kernels, Kernelspecs
@@ -35,11 +35,8 @@ class LocalKernelspecs(Kernelspecs):
 
 class LocalKernelsComponent(Component):
     @context_teardown
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        ctx.add_resource(LocalKernels, types=Kernels)
+    async def start(self) -> None:
+        await add_resource(LocalKernels, types=Kernels)
 
         yield
 
@@ -48,9 +45,6 @@ class LocalKernelsComponent(Component):
 
 
 class LocalKernelspecsComponent(Component):
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
+    async def start(self) -> None:
         kernelspecs = LocalKernelspecs()
-        ctx.add_resource(kernelspecs, types=Kernelspecs)
+        await add_resource(kernelspecs, types=Kernelspecs)
