@@ -1,9 +1,11 @@
+import asyncio
 from functools import partial
 from importlib.metadata import entry_points
 from typing import Any
 
 from asphalt.core import Component, Context
 from pycrdt import ArrayEvent, Doc
+from textual import on
 from textual.containers import VerticalScroll
 from textual.events import Event
 from textual.keys import Keys
@@ -36,14 +38,18 @@ class _Console(Console, VerticalScroll, metaclass=ConsoleMeta):
 
     async def open(self):
         self.select = Select((name, name) for name in self.kernelspecs["kernelspecs"])
-        self.select.watch_value = self.on_select_kernel
         self.mount(self.select)
 
-    def on_select_kernel(self):
+    @on(Select.Changed)
+    async def select_changed(self, event: Select.Changed) -> None:
         if self.select.value == Select.BLANK:
             return
-        self.main_area.set_label("Console")
+        while True:
+            await asyncio.sleep(0)
+            if not self.select.expanded:
+                break
         self.select.remove()
+        self.main_area.set_label("Console")
         kernel = self.kernelspecs["kernelspecs"][self.select.value]
         self.kernel = self.kernels(kernel["name"])
         self.language = kernel["spec"]["language"]
