@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "jpterm"
-version = "0.2.15"
+version = "0.2.16"
 description = "Jupyter in the terminal"
 readme = "README.md"
 license = { text = "MIT" }
@@ -25,9 +25,9 @@ keywords = [
 ]
 dependencies = [
     "rich-click >=1.6.0",
-    "txl ==0.2.15",
+    "txl ==0.2.16",
     "txl_cell ==0.2.13",
-    "txl_console ==0.2.13",
+    "txl_console ==0.2.14",
     "txl_editors ==0.2.13",
     "txl_file_browser ==0.2.13",
     "txl_image_viewer ==0.2.13",
@@ -44,7 +44,7 @@ dependencies = [
     "txl_markdown_viewer ==0.2.13",
     "txl_terminal ==0.2.13",
     "txl_launcher ==0.2.13",
-    "txl_widgets ==0.2.13",
+    "txl_widgets ==0.2.14",
 ]
 
 [project.optional-dependencies]
