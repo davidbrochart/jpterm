@@ -25,7 +25,7 @@ for dependency in pyproject["project"]["dependencies"]:
             if package == "txl":
                 package_dir /= package
             else:
-                package_dir /= "plugins" / package[len("txl_"):]
+                package_dir = package_dir / "plugins" / package[len("txl_"):]
                 dist_dir = f"../{dist_dir}"
             run(f"hatch build {dist_dir}", cwd=str(package_dir))
             for path in Path("dist").iterdir():
