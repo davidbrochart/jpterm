@@ -22,10 +22,11 @@ for dependency in pyproject["project"]["dependencies"]:
             print(f"Building {package}-{version}")
             package_dir = Path()
             dist_dir = "../dist"
-            if package != "txl":
-                package_dir /= "plugins"
+            if package == "txl":
+                package_dir /= package
+            else:
+                package_dir /= "plugins" / package[len("txl_"):]
                 dist_dir = f"../{dist_dir}"
-            package_dir /= package
             run(f"hatch build {dist_dir}", cwd=str(package_dir))
             for path in Path("dist").iterdir():
                 if f"{package}-{version}" in path.name:
