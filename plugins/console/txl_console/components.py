@@ -1,4 +1,3 @@
-import asyncio
 from functools import partial
 from importlib.metadata import entry_points
 from typing import Any
@@ -44,10 +43,6 @@ class _Console(Console, VerticalScroll, metaclass=ConsoleMeta):
     async def select_changed(self, event: Select.Changed) -> None:
         if self.select.value == Select.BLANK:
             return
-        while True:
-            await asyncio.sleep(0)
-            if not self.select.expanded:
-                break
         self.select.remove()
         self.main_area.set_label("Console")
         kernel = self.kernelspecs["kernelspecs"][self.select.value]
