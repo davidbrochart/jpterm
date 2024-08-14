@@ -11,6 +11,7 @@ def run(cmd: str, cwd: str | None = None) -> list[str]:
 
 
 pyproject = tomllib.load(open("pyproject.toml", "rb"))
+jpterm_version = pyproject["project"]["version"]
 for dependency in pyproject["project"]["dependencies"]:
     idx = dependency.find("==")
     version = dependency[idx + 2:].strip()
@@ -37,5 +38,5 @@ for dependency in pyproject["project"]["dependencies"]:
                 )
 
 
-print("Building jpterm")
+print(f"Building jpterm-{jpterm_version}")
 run("hatch build")
