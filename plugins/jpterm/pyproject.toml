@@ -4,6 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "txl_jpterm"
+version = "0.2.13"
 description = "TXL plugin for the jpterm app"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -22,9 +23,8 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "txl",
+  "txl >=0.2.18,<0.3.0",
 ]
-dynamic = ["version"]
 
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/jpterm"
@@ -32,6 +32,3 @@ Source = "https://github.com/davidbrochart/jpterm/plugins/jpterm"
 [project.entry-points]
 "asphalt.components" = {jpterm = "txl_jpterm.components:JptermComponent"}
 "txl.components"     = {jpterm = "txl_jpterm.components:JptermComponent"}
-
-[tool.hatch.version]
-path = "txl_jpterm/__init__.py"

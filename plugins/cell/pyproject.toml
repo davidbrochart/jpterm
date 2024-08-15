@@ -4,6 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "txl_cell"
+version = "0.2.13"
 description = "TXL plugin for a cell"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -22,10 +23,9 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "txl",
+  "txl >=0.2.18,<0.3.0",
   "pycrdt >=0.8.11,<0.9.0",
 ]
-dynamic = ["version"]
 
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/cell"
@@ -33,6 +33,3 @@ Source = "https://github.com/davidbrochart/jpterm/plugins/cell"
 [project.entry-points]
 "asphalt.components" = {cell = "txl_cell.components:CellComponent"}
 "txl.components"     = {cell = "txl_cell.components:CellComponent"}
-
-[tool.hatch.version]
-path = "txl_cell/__init__.py"

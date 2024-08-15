@@ -4,6 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "txl_kernel"
+version = "0.2.13"
 description = "TXL plugin for a kernel driver"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -22,15 +23,11 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "txl",
-  "asphalt",
+  "txl >=0.2.18,<0.3.0",
+  "asphalt >=4.0.0,<5.0.0",
   "python-dateutil >=2.8.2",
   "pycrdt >=0.8.11,<0.9.0",
 ]
-dynamic = ["version"]
 
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/kernel"
-
-[tool.hatch.version]
-path = "txl_kernel/__init__.py"

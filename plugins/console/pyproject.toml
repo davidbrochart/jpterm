@@ -4,6 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "txl_console"
+version = "0.2.15"
 description = "TXL plugin for a Jupyter console"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -22,10 +23,9 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "txl",
+  "txl >=0.2.18,<0.3.0",
   "jupyter-ydoc >=2.0.0,<3.0.0",
 ]
-dynamic = ["version"]
 
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/console"
@@ -33,6 +33,3 @@ Source = "https://github.com/davidbrochart/jpterm/plugins/console"
 [project.entry-points]
 "asphalt.components" = {console = "txl_console.components:ConsoleComponent"}
 "txl.components"     = {console = "txl_console.components:ConsoleComponent"}
-
-[tool.hatch.version]
-path = "txl_console/__init__.py"

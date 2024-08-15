@@ -4,6 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "txl_remote_kernels"
+version = "0.2.13"
 description = "TXL plugin for remote kernels"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -22,13 +23,12 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "txl",
+  "txl >=0.2.18,<0.3.0",
   "txl_kernel",
   "httpx >=0.23.1",
   "httpx-ws >=0.4.2",
   "pycrdt >=0.8.11,<0.9.0",
 ]
-dynamic = ["version"]
 
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/remote_kernels"
@@ -36,6 +36,3 @@ Source = "https://github.com/davidbrochart/jpterm/plugins/remote_kernels"
 [project.entry-points]
 "asphalt.components" = {remote_kernels = "txl_remote_kernels.components:RemoteKernelsComponent", remote_kernelspecs = "txl_remote_kernels.components:RemoteKernelspecsComponent"}
 "txl.components"     = {remote_kernels = "txl_remote_kernels.components:RemoteKernelsComponent", remote_kernelspecs = "txl_remote_kernels.components:RemoteKernelspecsComponent"}
-
-[tool.hatch.version]
-path = "txl_remote_kernels/__init__.py"
