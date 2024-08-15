@@ -121,6 +121,7 @@ class KernelMixin:
         if ycell["cell_type"] != "code":
             return
         ycell["outputs"].clear()
+        ycell["execution_count"] = None
         code = str(ycell["source"])
         content = {"code": code, "silent": False}
         msg = create_message(

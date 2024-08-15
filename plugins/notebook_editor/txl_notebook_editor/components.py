@@ -86,6 +86,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         self.nb_change_target = asyncio.Queue()
         self.nb_change_events = asyncio.Queue()
         self.top_bar = TopBar()
+        self._background_tasks = set()
 
     def compose(self) -> ComposeResult:
         yield self.top_bar
@@ -340,7 +341,9 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                             }
                         )
                 else:
-                    await self.kernel.execute(self.current_cell.ycell)
+                    task = asyncio.create_task(self.kernel.execute(self.current_cell.ycell))
+                    self._background_tasks.add(task)
+                    task.add_done_callback(self._background_tasks.discard)
         elif event.key == Keys.ControlR:
             event.stop()
             if self.kernel:
@@ -355,7 +358,9 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                             }
                         )
                 else:
-                    await self.kernel.execute(self.current_cell.ycell)
+                    task = asyncio.create_task(self.kernel.execute(self.current_cell.ycell))
+                    self._background_tasks.add(task)
+                    task.add_done_callback(self._background_tasks.discard)
             if self.cell_i == len(self.cells) - 1:
                 ycell = self.ynb.create_ycell(
                     {
