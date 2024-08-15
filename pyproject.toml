@@ -60,9 +60,6 @@ jpterm = "jpterm.cli:main"
 [project.urls]
 Homepage = "https://github.com/davidbrochart/jpterm"
 
-[tool.hatch.version]
-path = "jpterm/__init__.py"
-
 [tool.hatch.envs.docs]
 features = ["docs"]
 

@@ -4,6 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "txl_notebook_editor"
+version = "0.2.13"
 description = "TXL plugin for a notebook editor"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -22,11 +23,10 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "txl",
+  "txl >=0.2.18,<0.3.0",
   "pycrdt >=0.8.11,<0.9.0",
   "jupyter-ydoc >=2.0.0,<3.0.0",
 ]
-dynamic = ["version"]
 
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/notebook_editor"
@@ -34,6 +34,3 @@ Source = "https://github.com/davidbrochart/jpterm/plugins/notebook_editor"
 [project.entry-points]
 "asphalt.components" = {notebook_editor = "txl_notebook_editor.components:NotebookEditorComponent"}
 "txl.components"     = {notebook_editor = "txl_notebook_editor.components:NotebookEditorComponent"}
-
-[tool.hatch.version]
-path = "txl_notebook_editor/__init__.py"

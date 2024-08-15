@@ -4,6 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "txl_text_editor"
+version = "0.2.13"
 description = "TXL plugin for a text editor"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -22,9 +23,8 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "txl"
+  "txl >=0.2.18,<0.3.0"
 ]
-dynamic = ["version"]
 
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/text_editor"
@@ -32,6 +32,3 @@ Source = "https://github.com/davidbrochart/jpterm/plugins/text_editor"
 [project.entry-points]
 "asphalt.components" = {text_editor = "txl_text_editor.components:TextEditorComponent"}
 "txl.components"     = {text_editor = "txl_text_editor.components:TextEditorComponent"}
-
-[tool.hatch.version]
-path = "txl_text_editor/__init__.py"

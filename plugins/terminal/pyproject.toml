@@ -4,6 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "txl_terminal"
+version = "0.2.13"
 description = "TXL plugin for a terminal widget"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -22,10 +23,9 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "txl",
+  "txl >=0.2.18,<0.3.0",
   "pyte>=0.8.1",
 ]
-dynamic = ["version"]
 
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/terminal"
@@ -33,6 +33,3 @@ Source = "https://github.com/davidbrochart/jpterm/plugins/terminal"
 [project.entry-points]
 "asphalt.components" = {terminal = "txl_terminal.components:TerminalComponent"}
 "txl.components"     = {terminal = "txl_terminal.components:TerminalComponent"}
-
-[tool.hatch.version]
-path = "txl_terminal/__init__.py"

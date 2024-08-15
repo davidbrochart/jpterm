@@ -4,6 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "txl"
+version = "0.2.18"
 description = ""
 readme = "README.md"
 requires-python = ">=3.10"
@@ -25,10 +26,6 @@ dependencies = [
   "asphalt >=4.12.0,<5",
   "textual[syntax] >=0.76.0,<0.77.0",
 ]
-dynamic = ["version"]
 
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/txl"
-
-[tool.hatch.version]
-path = "txl/__init__.py"
