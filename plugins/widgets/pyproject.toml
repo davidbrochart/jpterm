@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "txl_widgets"
-version = "0.2.14"
+version = "0.2.15"
 description = "TXL plugin for kernel widgets"
 readme = "README.md"
 requires-python = ">=3.10"

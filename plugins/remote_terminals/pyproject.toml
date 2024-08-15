@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "txl_remote_terminals"
-version = "0.2.13"
+version = "0.2.14"
 description = "TXL plugin for remote terminals"
 readme = "README.md"
 requires-python = ">=3.10"
