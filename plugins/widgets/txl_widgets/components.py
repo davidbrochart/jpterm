@@ -1,13 +1,13 @@
 from importlib.metadata import entry_points
 
 from asphalt.core import Component, Context
-from pycrdt import TransactionEvent
-from ypywidgets.utils import (
+from pycrdt import (
+    TransactionEvent,
     YMessageType,
     YSyncMessageType,
+    create_sync_message,
     create_update_message,
-    process_sync_message,
-    sync,
+    handle_sync_message,
 )
 
 from txl.base import Kernels, Widgets
@@ -30,15 +30,15 @@ class _Widgets:
         self.comm = comm
         model = self.ydocs[name]()
         self.widgets[comm_id] = {"model": model, "comm": comm}
-        msg = sync(model.ydoc)
-        comm.send(**msg)
+        msg = create_sync_message(model.ydoc)
+        comm.send(buffers=[msg])
 
     def comm_msg(self, msg) -> None:
         comm_id = msg["content"]["comm_id"]
         message = bytes(msg["buffers"][0])
         if message[0] == YMessageType.SYNC:
             ydoc = self.widgets[comm_id]["model"].ydoc
-            reply = process_sync_message(
+            reply = handle_sync_message(
                 message[1:],
                 ydoc,
             )
