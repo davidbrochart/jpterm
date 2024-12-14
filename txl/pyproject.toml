@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "txl"
-version = "0.2.19"
+version = "0.2.20"
 description = ""
 readme = "README.md"
 requires-python = ">=3.10"

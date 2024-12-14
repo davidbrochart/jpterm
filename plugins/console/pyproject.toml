@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "txl_console"
-version = "0.2.16"
+version = "0.2.17"
 description = "TXL plugin for a Jupyter console"
 readme = "README.md"
 requires-python = ">=3.10"
