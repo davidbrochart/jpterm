@@ -26,7 +26,7 @@ classifiers = [
 dependencies = [
   "txl >=0.2.18,<0.3.0",
   "pycrdt >=0.10.9,<0.11.0",
-  "jupyter-ydoc >=2.0.0,<3.0.0",
+  "jupyter-ydoc >=3.0.2,<4.0.0",
 ]
 
 [project.urls]
