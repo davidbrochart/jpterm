@@ -1,4 +1,3 @@
-import asyncio
 import fcntl
 import os
 import pty
@@ -6,6 +5,8 @@ import shlex
 import struct
 import termios
 
+from anyio import wait_readable
+from anyioutils import Event, Queue
 from textual.widget import Widget
 from textual.widgets._header import HeaderTitle
 
@@ -17,13 +18,14 @@ class TerminalsMeta(type(Terminals), type(Widget)):
 
 
 class LocalTerminals(Terminals, Widget, metaclass=TerminalsMeta):
-    def __init__(self, header: Header, terminal: TerminalFactory):
+    def __init__(self, task_group, header: Header, terminal: TerminalFactory):
+        self.task_group = task_group
         self.header = header
         self.terminal = terminal
-        self._send_queue = asyncio.Queue()
-        self._recv_queue = asyncio.Queue()
+        self._send_queue = Queue()
+        self._recv_queue = Queue()
         self._data_or_disconnect = None
-        self._event = asyncio.Event()
+        self._event = Event()
         super().__init__()
 
     async def open(self):
@@ -35,8 +37,9 @@ class LocalTerminals(Terminals, Widget, metaclass=TerminalsMeta):
         self._nrow = terminal.size.height
         self._fd = self._open_terminal()
         self._p_out = os.fdopen(self._fd, "w+b", 0)
-        asyncio.create_task(self._run())
-        asyncio.create_task(self._send())
+        self.task_group.start_soon(self._run)
+        self.task_group.start_soon(self._receive)
+        self.task_group.start_soon(self._send)
         self.header.query_one(HeaderTitle).text = "Terminal"
 
     def _open_terminal(self):
@@ -52,19 +55,17 @@ class LocalTerminals(Terminals, Widget, metaclass=TerminalsMeta):
             os.execvpe(argv[0], argv, env)
         return fd
 
-    async def _run(self):
-        loop = asyncio.get_running_loop()
-
-        def on_output():
-            try:
+    async def _receive(self):
+        try:
+            while True:
+                await wait_readable(self._p_out)
                 self._data_or_disconnect = self._p_out.read(65536).decode()
                 self._event.set()
-            except Exception:
-                loop.remove_reader(self._p_out)
-                self._data_or_disconnect = None
-                self._event.set()
+        except Exception:
+            self._data_or_disconnect = None
+            self._event.set()
 
-        loop.add_reader(self._p_out, on_output)
+    async def _run(self):
         await self._send_queue.put(["setup", {}])
         while True:
             msg = await self._recv_queue.get()

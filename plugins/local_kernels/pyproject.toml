@@ -34,5 +34,5 @@ dependencies = [
 Source = "https://github.com/davidbrochart/jpterm/plugins/local_kernels"
 
 [project.entry-points]
-"asphalt.components" = {local_kernels = "txl_local_kernels.components:LocalKernelsComponent", local_kernelspecs = "txl_local_kernels.components:LocalKernelspecsComponent"}
-"txl.components"     = {local_kernels = "txl_local_kernels.components:LocalKernelsComponent", local_kernelspecs = "txl_local_kernels.components:LocalKernelspecsComponent"}
+"fps.modules" = {local_kernels = "txl_local_kernels.main:LocalKernelsModule", local_kernelspecs = "txl_local_kernels.main:LocalKernelspecsModule"}
+"txl.modules" = {local_kernels = "txl_local_kernels.main:LocalKernelsModule", local_kernelspecs = "txl_local_kernels.main:LocalKernelspecsModule"}

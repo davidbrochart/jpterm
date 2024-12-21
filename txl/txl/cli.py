@@ -13,12 +13,6 @@ def set_main(main):
 
 
 @click.option(
-    "--configfile",
-    type=str,
-    multiple=True,
-    help="Read YAML configuration file.",
-)
-@click.option(
     "--set",
     "set_",
     multiple=True,
@@ -32,7 +26,6 @@ def txl_main(
 ) -> None:
     kwargs = MAIN(kwargs)
     # MAIN may have changed our options, based on its own options
-    kwargs["set_"].append("component.type=txl.app:AppComponent")
     run(kwargs)
 
 

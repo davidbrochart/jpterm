@@ -1,13 +1,13 @@
 from functools import partial
 
-from asphalt.core import Component, Context
+from fps import Module
 from rich.syntax import Syntax
 from rich.traceback import Traceback
 from textual.app import ComposeResult
 from textual.containers import Container
 from textual.widgets import Static
 
-from txl.base import Contents, Editor, Editors, FileOpenEvent
+from txl.base import Contents, Editor, Editors
 
 
 class TextViewerMeta(type(Editor), type(Static)):
@@ -52,9 +52,6 @@ class TextViewer(Editor, Container, metaclass=TextViewerMeta):
     def compose(self) -> ComposeResult:
         yield self.viewer
 
-    async def on_open(self, event: FileOpenEvent) -> None:
-        await self.open(event.path)
-
     async def open(self, path: str) -> None:
         self.path = path
         self.ytext = await self.contents.get(path, type="file")
@@ -68,21 +65,18 @@ class TextViewer(Editor, Container, metaclass=TextViewerMeta):
         self.viewer._update(self.path, self.ytext.source)
 
 
-class TextViewerComponent(Component):
+class TextViewerModule(Module):
     def __init__(self, register: bool = True):
         super().__init__()
         self.register = register
 
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        contents = await ctx.request_resource(Contents)
+    async def start(self) -> None:
+        contents = await self.get(Contents)
 
         text_viewer_factory = partial(TextViewer, contents)
 
         if self.register:
-            editors = await ctx.request_resource(Editors)
+            editors = await self.get(Editors)
             editors.register_editor_factory(text_viewer_factory)
         else:
-            ctx.add_resource(text_viewer_factory(), types=Editor)
+            self.put(text_viewer_factory(), Editor)

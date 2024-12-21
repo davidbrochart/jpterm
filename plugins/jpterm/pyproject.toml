@@ -31,5 +31,5 @@ dependencies = [
 Source = "https://github.com/davidbrochart/jpterm/plugins/jpterm"
 
 [project.entry-points]
-"asphalt.components" = {jpterm = "txl_jpterm.components:JptermComponent"}
-"txl.components"     = {jpterm = "txl_jpterm.components:JptermComponent"}
+"fps.modules" = {jpterm = "txl_jpterm.main:JptermModule"}
+"txl.modules" = {jpterm = "txl_jpterm.main:JptermModule"}

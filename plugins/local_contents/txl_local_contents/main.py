@@ -4,7 +4,7 @@ from os import scandir
 from typing import List, Union
 
 from anyio import Path
-from asphalt.core import Component, Context
+from fps import Module
 from pycrdt import Doc
 
 from txl.base import Contents
@@ -49,10 +49,7 @@ class LocalContents(Contents):
             await p.write_text(source)
 
 
-class LocalContentsComponent(Component):
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
+class LocalContentsModule(Module):
+    async def start(self) -> None:
         contents = LocalContents()
-        ctx.add_resource(contents, types=Contents)
+        self.put(contents, Contents)

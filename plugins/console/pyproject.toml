@@ -32,5 +32,5 @@ dependencies = [
 Source = "https://github.com/davidbrochart/jpterm/plugins/console"
 
 [project.entry-points]
-"asphalt.components" = {console = "txl_console.components:ConsoleComponent"}
-"txl.components"     = {console = "txl_console.components:ConsoleComponent"}
+"fps.modules" = {console = "txl_console.main:ConsoleModule"}
+"txl.modules" = {console = "txl_console.main:ConsoleModule"}
