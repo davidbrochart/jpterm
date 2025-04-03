@@ -4,7 +4,8 @@ from typing import Any
 from urllib import parse
 
 import httpx
-from asphalt.core import Component, Context
+from anyio import create_task_group, sleep
+from fps import Module
 from pycrdt import Map
 
 from txl.base import Kernels, Kernelspecs
@@ -20,7 +21,7 @@ class RemoteKernels(Kernels):
         url: str,
         kernel_name: str | None,
     ):
-        self.kernel = KernelDriver(url, kernel_name, comm_handlers=self.comm_handlers)
+        self.kernel = KernelDriver(self.task_group, url, kernel_name, comm_handlers=self.comm_handlers)
 
     async def execute(self, ycell: Map):
         await self.kernel.execute(ycell)
@@ -52,32 +53,34 @@ class RemoteKernelspecs(Kernelspecs):
             raise RuntimeError(f"Could not connect to a Jupyter server at {url}")
 
 
-class RemoteKernelsComponent(Component):
-    def __init__(self, url: str = "http://127.0.0.1:8000"):
-        super().__init__()
+class RemoteKernelsModule(Module):
+    def __init__(self, name: str, url: str = "http://127.0.0.1:8000"):
+        super().__init__(name)
         self.url = url
 
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
+    async def start(self) -> None:
         url = self.url
 
-        class _RemoteKernels(RemoteKernels):
-            def __init__(self, *args, **kwargs):
-                super().__init__(url, *args, **kwargs)
+        async with create_task_group() as self.tg:
+            class _RemoteKernels(RemoteKernels):
+                task_group = self.tg
 
-        ctx.add_resource(_RemoteKernels, types=Kernels)
+                def __init__(self, *args, **kwargs):
+                    super().__init__(url, *args, **kwargs)
+
+            self.put(_RemoteKernels, Kernels)
+            self.done()
+            await sleep(float("inf"))
+
+    async def stop(self) -> None:
+        self.tg.cancel_scope.cancel()
 
 
-class RemoteKernelspecsComponent(Component):
-    def __init__(self, url: str = "http://127.0.0.1:8000"):
-        super().__init__()
+class RemoteKernelspecsModule(Module):
+    def __init__(self, name: str, url: str = "http://127.0.0.1:8000"):
+        super().__init__(name)
         self.url = url
 
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
+    async def start(self) -> None:
         kernelspecs = RemoteKernelspecs(self.url)
-        ctx.add_resource(kernelspecs, types=Kernelspecs)
+        self.put(kernelspecs, Kernelspecs)

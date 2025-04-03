@@ -33,5 +33,5 @@ dependencies = [
 Source = "https://github.com/davidbrochart/jpterm/plugins/local_contents"
 
 [project.entry-points]
-"asphalt.components" = {local_contents = "txl_local_contents.components:LocalContentsComponent"}
-"txl.components"     = {local_contents = "txl_local_contents.components:LocalContentsComponent"}
+"fps.modules" = {local_contents = "txl_local_contents.main:LocalContentsModule"}
+"txl.modules" = {local_contents = "txl_local_contents.main:LocalContentsModule"}

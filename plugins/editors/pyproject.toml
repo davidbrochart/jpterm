@@ -31,5 +31,5 @@ dependencies = [
 Source = "https://github.com/davidbrochart/jpterm/plugins/editors"
 
 [project.entry-points]
-"asphalt.components" = {editors = "txl_editors.components:EditorsComponent"}
-"txl.components"     = {editors = "txl_editors.components:EditorsComponent"}
+"fps.modules" = {editors = "txl_editors.main:EditorsModule"}
+"txl.modules" = {editors = "txl_editors.main:EditorsModule"}

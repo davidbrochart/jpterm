@@ -71,7 +71,7 @@ serve = "mkdocs serve --dev-addr localhost:8000"
 [tool.hatch.envs.dev]
 pre-install-commands = [
     "pip install pre-commit",
-    "pip install textual",
+    'pip install "textual>=2,<3"',
     "pip install textual-dev",
     "pip install -e ./txl",
     "pip install -e ./plugins/cell",

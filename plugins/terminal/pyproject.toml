@@ -32,5 +32,4 @@ dependencies = [
 Source = "https://github.com/davidbrochart/jpterm/plugins/terminal"
 
 [project.entry-points]
-"asphalt.components" = {terminal = "txl_terminal.components:TerminalComponent"}
-"txl.components"     = {terminal = "txl_terminal.components:TerminalComponent"}
+"txl.modules" = {terminal = "txl_terminal.main:TerminalModule"}

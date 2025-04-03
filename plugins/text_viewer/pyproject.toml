@@ -31,8 +31,7 @@ dynamic = ["version"]
 Source = "https://github.com/davidbrochart/jpterm/plugins/text_viewer"
 
 [project.entry-points]
-"asphalt.components" = {text_viewer = "txl_text_viewer.components:TextViewerComponent"}
-"txl.components"     = {text_viewer = "txl_text_viewer.components:TextViewerComponent"}
+"txl.modules" = {text_viewer = "txl_text_viewer.main:TextViewerModule"}
 
 [tool.hatch.version]
 path = "txl_text_viewer/__init__.py"

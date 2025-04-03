@@ -25,7 +25,7 @@ classifiers = [
 ]
 dependencies = [
   "txl >=0.2.18,<0.3.0",
-  "pycrdt >=0.10.9,<0.11.0",
+  "pycrdt >=0.10.9,<0.13.0",
   "jupyter-ydoc >=3.0.2,<4.0.0",
 ]
 
@@ -33,5 +33,5 @@ dependencies = [
 Source = "https://github.com/davidbrochart/jpterm/plugins/notebook_editor"
 
 [project.entry-points]
-"asphalt.components" = {notebook_editor = "txl_notebook_editor.components:NotebookEditorComponent"}
-"txl.components"     = {notebook_editor = "txl_notebook_editor.components:NotebookEditorComponent"}
+"fps.modules" = {notebook_editor = "txl_notebook_editor.main:NotebookEditorModule"}
+"txl.modules" = {notebook_editor = "txl_notebook_editor.main:NotebookEditorModule"}

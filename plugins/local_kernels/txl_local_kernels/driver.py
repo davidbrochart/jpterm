@@ -1,8 +1,9 @@
-import asyncio
 import os
 import uuid
 from typing import Any, Dict, List, Optional, cast
 
+from anyio import create_task_group, sleep
+from anyioutils import Task, create_task
 from txl_kernel.driver import KernelMixin
 
 from .connect import cfg_t, connect_channel, launch_kernel, read_connection_file
@@ -16,6 +17,7 @@ kernel_drivers = []
 class KernelDriver(KernelMixin):
     def __init__(
         self,
+        task_group,
         kernel_name: str = "",
         kernelspec_path: str = "",
         kernel_cwd: str = "",
@@ -24,7 +26,8 @@ class KernelDriver(KernelMixin):
         capture_kernel_output: bool = True,
         comm_handlers=[],
     ) -> None:
-        super().__init__()
+        super().__init__(task_group)
+        self.task_group = task_group
         self.capture_kernel_output = capture_kernel_output
         self.kernelspec_path = kernelspec_path or find_kernelspec(kernel_name)
         self.kernel_cwd = kernel_cwd
@@ -37,9 +40,9 @@ class KernelDriver(KernelMixin):
             self.connection_cfg = read_connection_file(connection_file)
         self.key = cast(str, self.connection_cfg["key"])
         self.session_id = uuid.uuid4().hex
-        self.channel_tasks: List[asyncio.Task] = []
+        self.channel_tasks: List[Task] = []
         self.comm_handlers = comm_handlers
-        asyncio.create_task(self.start())
+        task_group.start_soon(self.start)
         kernel_drivers.append(self)
 
     async def restart(self, startup_timeout: float = float("inf")) -> None:
@@ -81,8 +84,8 @@ class KernelDriver(KernelMixin):
         self.iopub_channel = connect_channel("iopub", connection_cfg)
 
     def listen_channels(self):
-        self.channel_tasks.append(asyncio.create_task(self._recv_iopub()))
-        self.channel_tasks.append(asyncio.create_task(self._recv_shell()))
+        self.channel_tasks.append(create_task(self._recv_iopub(), self.task_group))
+        self.channel_tasks.append(create_task(self._recv_shell(), self.task_group))
 
     async def stop(self) -> None:
         self.kernel_process.kill()

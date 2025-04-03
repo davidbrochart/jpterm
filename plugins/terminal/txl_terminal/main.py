@@ -1,8 +1,9 @@
-import asyncio
 from functools import partial
 
 import pyte
-from asphalt.core import Component, Context
+from anyio import create_task_group, sleep
+from anyioutils import Event, create_task
+from fps import Module
 from rich.console import RenderableType
 from rich.text import Text
 from textual import events
@@ -38,13 +39,13 @@ class _Terminal(Terminal, Widget, metaclass=TerminalMeta, can_focus=True):
     }
     """
 
-    def __init__(self, send_queue, recv_queue, main_area: MainArea):
+    def __init__(self, send_queue, recv_queue, main_area: MainArea, task_group):
         super().__init__()
         self._send_queue = send_queue
         self._recv_queue = recv_queue
         self._display = PyteDisplay([Text()])
-        self.size_set = asyncio.Event()
-        asyncio.create_task(self._recv())
+        self.size_set = Event()
+        create_task(self._recv(), task_group)
         main_area.set_label("Terminal")
 
     def render(self) -> RenderableType:
@@ -88,10 +89,14 @@ class _Terminal(Terminal, Widget, metaclass=TerminalMeta, can_focus=True):
                 self.refresh()
 
 
-class TerminalComponent(Component):
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        main_area = await ctx.request_resource(MainArea)
-        ctx.add_resource(partial(_Terminal, main_area=main_area), types=TerminalFactory)
+class TerminalModule(Module):
+    async def start(self) -> None:
+        main_area = await self.get(MainArea)
+
+        async with create_task_group() as self.tg:
+            self.put(partial(_Terminal, main_area=main_area, task_group=self.tg), TerminalFactory)
+            self.done()
+            await sleep(float("inf"))
+
+    async def stop(self) -> None:
+        self.tg.cancel_scope.cancel()

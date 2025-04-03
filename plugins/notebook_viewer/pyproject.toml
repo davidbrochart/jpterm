@@ -31,8 +31,8 @@ dynamic = ["version"]
 Source = "https://github.com/davidbrochart/jpterm/plugins/notebook_viewer"
 
 [project.entry-points]
-"asphalt.components" = {notebook_viewer = "txl_notebook_viewer.components:NotebookViewerComponent"}
-"txl.components"     = {notebook_viewer = "txl_notebook_viewer.components:NotebookViewerComponent"}
+"fps.modules" = {notebook_viewer = "txl_notebook_viewer.main:NotebookViewerModule"}
+"txl.modules" = {notebook_viewer = "txl_notebook_viewer.main:NotebookViewerModule"}
 
 [tool.hatch.version]
 path = "txl_notebook_viewer/__init__.py"
