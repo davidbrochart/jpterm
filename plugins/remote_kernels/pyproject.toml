@@ -1,39 +1,28 @@
 [build-system]
-requires = ["hatchling"]
+requires = [ "hatchling",]
 build-backend = "hatchling.build"
 
 [project]
 name = "txl_remote_kernels"
-version = "0.2.15"
+version = "0.3.2"
 description = "TXL plugin for remote kernels"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 keywords = []
-authors = [
-  { name = "David Brochart", email = "david.brochart@gmail.com" },
-]
-classifiers = [
-  "Development Status :: 4 - Beta",
-  "Programming Language :: Python",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
-  "Programming Language :: Python :: Implementation :: CPython",
-  "Programming Language :: Python :: Implementation :: PyPy",
-]
-dependencies = [
-  "txl >=0.2.18,<0.3.0",
-  "txl_kernel",
-  "httpx >=0.23.1",
-  "httpx-ws >=0.4.2",
-  "pycrdt >=0.10.9,<0.13.0",
-]
+classifiers = [ "Development Status :: 4 - Beta", "Programming Language :: Python", "Programming Language :: Python :: 3.10", "Programming Language :: Python :: 3.11", "Programming Language :: Python :: 3.12", "Programming Language :: Python :: 3.13", "Programming Language :: Python :: Implementation :: CPython", "Programming Language :: Python :: Implementation :: PyPy",]
+dependencies = [ "txl ==0.3.0", "txl_kernel", "httpx >=0.23.1", "httpx-ws >=0.4.2", "pycrdt >=0.10.9,<0.13.0",]
+[[project.authors]]
+name = "David Brochart"
+email = "david.brochart@gmail.com"
 
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/remote_kernels"
 
-[project.entry-points]
-"fps.modules" = {remote_kernels = "txl_remote_kernels.main:RemoteKernelsModule", remote_kernelspecs = "txl_remote_kernels.main:RemoteKernelspecsModule"}
-"txl.modules" = {remote_kernels = "txl_remote_kernels.main:RemoteKernelsModule", remote_kernelspecs = "txl_remote_kernels.main:RemoteKernelspecsModule"}
+[project.entry-points."fps.modules"]
+remote_kernels = "txl_remote_kernels.main:RemoteKernelsModule"
+remote_kernelspecs = "txl_remote_kernels.main:RemoteKernelspecsModule"
+
+[project.entry-points."txl.modules"]
+remote_kernels = "txl_remote_kernels.main:RemoteKernelsModule"
+remote_kernelspecs = "txl_remote_kernels.main:RemoteKernelspecsModule"
