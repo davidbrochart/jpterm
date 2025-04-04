@@ -33,5 +33,4 @@ dependencies = [
 Source = "https://github.com/davidbrochart/jpterm/plugins/local_terminals"
 
 [project.entry-points]
-"asphalt.components" = {local_terminals = "txl_local_terminals.components:LocalTerminalsComponent"}
-"txl.components"     = {local_terminals = "txl_local_terminals.components:LocalTerminalsComponent"}
+"txl.modules" = {local_terminals = "txl_local_terminals.main:LocalTerminalsModule"}

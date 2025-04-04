@@ -1,4 +1,3 @@
-import asyncio
 import json
 import time
 import uuid
@@ -6,6 +5,8 @@ from typing import Any, Dict
 from urllib import parse
 
 import httpx
+from anyio import Lock, sleep
+from anyioutils import create_task
 from httpx_ws import aconnect_ws
 from txl_kernel.driver import KernelMixin
 from txl_kernel.message import date_to_str
@@ -25,11 +26,13 @@ def deadline_to_timeout(deadline: float) -> float:
 class KernelDriver(KernelMixin):
     def __init__(
         self,
+        task_group,
         url: str,
         kernel_name: str | None = "",
         comm_handlers=[],
     ) -> None:
-        super().__init__()
+        super().__init__(task_group)
+        self.task_group = task_group
         self.kernel_name = kernel_name
         parsed_url = parse.urlparse(url)
         self.base_url = parse.urljoin(url, parsed_url.path).rstrip("/")
@@ -37,12 +40,12 @@ class KernelDriver(KernelMixin):
         self.cookies = httpx.Cookies()
         i = self.base_url.find(":")
         self.ws_url = ("wss" if self.base_url[i - 1] == "s" else "ws") + self.base_url[i:]
-        self.start_task = asyncio.create_task(self.start())
+        self.start_task = create_task(self.start(), task_group)
         self.comm_handlers = comm_handlers
         self.shell_channel = "shell"
         self.control_channel = "control"
         self.iopub_channel = "iopub"
-        self.send_lock = asyncio.Lock()
+        self.send_lock = Lock()
         self.kernel_id = None
 
     async def start(self):
@@ -76,11 +79,11 @@ class KernelDriver(KernelMixin):
             cookies=self.cookies,
             subprotocols=["v1.kernel.websocket.jupyter.org"],
         ) as self.websocket:
-            recv_task = asyncio.create_task(self._recv())
+            recv_task = create_task(self._recv(), self.task_group)
             try:
                 await self.wait_for_ready()
                 self.started.set()
-                await asyncio.Future()
+                await sleep(float("inf"))
             except BaseException:
                 recv_task.cancel()
                 self.start_task.cancel()

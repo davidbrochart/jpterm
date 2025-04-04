@@ -1,9 +1,10 @@
-import asyncio
 from typing import Dict, List
 from urllib import parse
 
 import httpx
-from asphalt.core import Component, Context
+from anyio import create_task_group, sleep
+from anyioutils import Event, Queue, create_task
+from fps import Module
 from httpx_ws import aconnect_ws
 from textual.widget import Widget
 from textual.widgets._header import HeaderTitle
@@ -23,17 +24,19 @@ class RemoteTerminals(Terminals, Widget, metaclass=TerminalsMeta):
         cookies: httpx.Cookies,
         header: Header,
         terminal: TerminalFactory,
+        task_group,
     ) -> None:
         self.base_url = base_url
         self.query_params = query_params
         self.cookies = cookies
         self.header = header
         self.terminal = terminal
+        self.task_group = task_group
         i = base_url.find(":")
         self.ws_url = ("wss" if base_url[i - 1] == "s" else "ws") + base_url[i:]
-        self._recv_queue = asyncio.Queue()
-        self._send_queue = asyncio.Queue()
-        self._done = asyncio.Event()
+        self._recv_queue = Queue()
+        self._send_queue = Queue()
+        self._done = Event()
         super().__init__()
 
     async def open(self):
@@ -61,8 +64,8 @@ class RemoteTerminals(Terminals, Widget, metaclass=TerminalsMeta):
             async with aconnect_ws(
                 f"{self.ws_url}/terminals/websocket/{name}", cookies=self.cookies
             ) as self.websocket:
-                asyncio.create_task(self._recv())
-                self.send_task = asyncio.create_task(self._send())
+                self.task_group.start_soon(self._recv)
+                self.send_task = create_task(self._send(), self.task_group)
                 await self._done.wait()
 
     async def _send(self):
@@ -84,25 +87,28 @@ class RemoteTerminals(Terminals, Widget, metaclass=TerminalsMeta):
             await self._recv_queue.put(message)
 
 
-class RemoteTerminalsComponent(Component):
-    def __init__(self, url: str = "http://127.0.0.1:8000"):
-        super().__init__()
+class RemoteTerminalsModule(Module):
+    def __init__(self, name: str, url: str = "http://127.0.0.1:8000"):
+        super().__init__(name)
         self.url = url
 
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        header = await ctx.request_resource(Header)
-        terminal = await ctx.request_resource(TerminalFactory)
-        launcher = await ctx.request_resource(Launcher)
+    async def start(self) -> None:
+        header = await self.get(Header)
+        terminal = await self.get(TerminalFactory)
+        launcher = await self.get(Launcher)
         parsed_url = parse.urlparse(self.url)
         base_url = parse.urljoin(self.url, parsed_url.path).rstrip("/")
         query_params = parse.parse_qs(parsed_url.query)
         cookies = httpx.Cookies()
 
-        def terminals_factory():
-            return RemoteTerminals(base_url, query_params, cookies, header, terminal)
+        async with create_task_group() as self.tg:
+            def terminals_factory():
+                return RemoteTerminals(base_url, query_params, cookies, header, terminal, self.tg)
 
-        launcher.register("terminal", terminals_factory)
-        ctx.add_resource(terminals_factory, types=Terminals)
+            launcher.register("terminal", terminals_factory)
+            self.put(terminals_factory, Terminals)
+            self.done()
+            await sleep(float("inf"))
+
+    async def stop(self) -> None:
+        self.tg.cancel_scope.cancel()

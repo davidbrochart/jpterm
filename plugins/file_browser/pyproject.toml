@@ -31,5 +31,5 @@ dependencies = [
 Source = "https://github.com/davidbrochart/jpterm/plugins/file_browser"
 
 [project.entry-points]
-"asphalt.components" = {file_browser = "txl_file_browser.components:FileBrowserComponent"}
-"txl.components"     = {file_browser = "txl_file_browser.components:FileBrowserComponent"}
+"fps.modules" = {file_browser = "txl_file_browser.main:FileBrowserModule"}
+"txl.modules" = {file_browser = "txl_file_browser.main:FileBrowserModule"}

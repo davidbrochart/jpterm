@@ -31,5 +31,5 @@ dependencies = [
 Source = "https://github.com/davidbrochart/jpterm/plugins/launcher"
 
 [project.entry-points]
-"asphalt.components" = {launcher = "txl_launcher.components:LauncherComponent"}
-"txl.components"     = {launcher = "txl_launcher.components:LauncherComponent"}
+"fps.modules" = {launcher = "txl_launcher.main:LauncherModule"}
+"txl.modules" = {launcher = "txl_launcher.main:LauncherModule"}

@@ -1,13 +1,13 @@
-import asyncio
 import json
-from functools import partial
 from importlib.metadata import entry_points
 from typing import Any
 
 import anyio
-from asphalt.core import Component, Context
+from anyioutils import Queue, TaskGroup
+from fps import Module
 from httpx import AsyncClient
-from textual.app import ComposeResult, RenderResult
+from textual._context import active_app
+from textual.app import App, ComposeResult, RenderResult
 from textual.containers import VerticalScroll
 from textual.events import Event
 from textual.keys import Keys
@@ -20,7 +20,6 @@ from txl.base import (
     Contents,
     Editor,
     Editors,
-    FileOpenEvent,
     Kernels,
     Kernelspecs,
     Launcher,
@@ -64,6 +63,7 @@ class NotebookEditorMeta(type(Editor), type(VerticalScroll)):
 class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
     def __init__(
         self,
+        task_group,
         contents: Contents,
         kernels: Kernels,
         kernelspecs: dict[str, Any],
@@ -72,6 +72,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         experimental: bool = False,
     ) -> None:
         super().__init__()
+        self.task_group = task_group
         self.contents = contents
         self.kernels = kernels
         self.kernelspecs = kernelspecs
@@ -83,19 +84,15 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         self.cell_i = 0
         self.cell_copy = None
         self.edit_mode = False
-        self.nb_change_target = asyncio.Queue()
-        self.nb_change_events = asyncio.Queue()
+        self.nb_change_target = Queue()
+        self.nb_change_events = Queue()
         self.top_bar = TopBar()
-        self._background_tasks = set()
 
     def compose(self) -> ComposeResult:
         yield self.top_bar
 
-    async def watch_busy(self, event):
-        self.top_bar.busy = event.busy
-
-    async def on_open(self, event: FileOpenEvent) -> None:
-        await self.open(event.path)
+    def watch_busy(self, busy):
+        self.top_bar.busy = busy
 
     async def select_kernel(self) -> str:
         select = Select((name, name) for name in self.kernelspecs["kernelspecs"])
@@ -152,7 +149,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         self.ynb = await self.contents.get(self.path, type="notebook", format="json")
         self.update()
         self.ynb.observe(self.on_change)
-        asyncio.create_task(self.observe_nb_changes())
+        self.task_group.create_task(self.observe_nb_changes())
 
     def update(self):
         ipynb = self.ynb.source
@@ -265,7 +262,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                     self.current_cell.select()
                     self.current_cell.focus()
                     self.scroll_to_widget(self.current_cell)
-                asyncio.create_task(do_later())
+                self.task_group.create_task(do_later())
         elif event.key == Keys.ControlDown:
             event.stop()
             if self.cell_i < len(self.cells) - 1:
@@ -276,7 +273,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                     self.current_cell.select()
                     self.current_cell.focus()
                     self.scroll_to_widget(self.current_cell)
-                asyncio.create_task(do_later())
+                self.task_group.create_task(do_later())
         elif event.key == Keys.ControlS:
             await self.contents.save(self.path, self.ynb)
             self.main_area.clear_dirty(self)
@@ -341,9 +338,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                             }
                         )
                 else:
-                    task = asyncio.create_task(self.kernel.execute(self.current_cell.ycell))
-                    self._background_tasks.add(task)
-                    task.add_done_callback(self._background_tasks.discard)
+                    self.task_group.create_task(self.kernel.execute(self.current_cell.ycell))
         elif event.key == Keys.ControlR:
             event.stop()
             if self.kernel:
@@ -358,9 +353,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                             }
                         )
                 else:
-                    task = asyncio.create_task(self.kernel.execute(self.current_cell.ycell))
-                    self._background_tasks.add(task)
-                    task.add_done_callback(self._background_tasks.discard)
+                    self.task_group.create_task(self.kernel.execute(self.current_cell.ycell))
             if self.cell_i == len(self.cells) - 1:
                 ycell = self.ynb.create_ycell(
                     {
@@ -372,9 +365,9 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                 self.ynb.ycells.append(ycell)
             async def will_go_down():
                 while self.cell_i == len(self.cells) - 1:
-                    await asyncio.sleep(0)
+                    await anyio.sleep(0)
                 self.go_down(edit_mode=True)
-            asyncio.create_task(will_go_down())
+            self.task_group.create_task(will_go_down())
 
     def go_down(self, edit_mode: bool = False) -> None:
         if self.cell_i < len(self.cells) - 1:
@@ -403,40 +396,47 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         return self.cells[self.cell_i]
 
 
-class NotebookEditorComponent(Component):
-    def __init__(self, register: bool = True, experimental: bool = False):
-        super().__init__()
+class NotebookEditorModule(Module):
+    def __init__(self, name: str, register: bool = True, experimental: str = "False"):
+        super().__init__(name)
         self.register = register
-        self.experimental = experimental
+        self.experimental = False if experimental == "False" else True
 
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        contents = await ctx.request_resource(Contents)
-        kernels = await ctx.request_resource(Kernels)
-        kernelspecs = await ctx.request_resource(Kernelspecs)
-        cell_factory = await ctx.request_resource(CellFactory)
-        launcher = await ctx.request_resource(Launcher)
-        main_area = await ctx.request_resource(MainArea)
+    async def start(self) -> None:
+        contents = await self.get(Contents)
+        kernels = await self.get(Kernels)
+        kernelspecs = await self.get(Kernelspecs)
+        cell_factory = await self.get(CellFactory)
+        launcher = await self.get(Launcher)
+        main_area = await self.get(MainArea)
+        app = await self.get(App)
 
         _kernelspecs = await kernelspecs.get()
 
-        notebook_editor_factory = partial(
-            NotebookEditor,
-            contents,
-            kernels,
-            _kernelspecs,
-            cell_factory,
-            main_area,
-            self.experimental,
-        )
+        async with TaskGroup() as self.tg:
+            def notebook_editor_factory():
+                active_app.set(app)
+                return NotebookEditor(
+                    self.tg,
+                    contents,
+                    kernels,
+                    _kernelspecs,
+                    cell_factory,
+                    main_area,
+                    self.experimental,
+                )
 
-        launcher.register("notebook", notebook_editor_factory)
+            launcher.register("notebook", notebook_editor_factory)
 
-        if self.register:
-            editors = await ctx.request_resource(Editors)
-            editors.register_editor_factory(notebook_editor_factory, [".ipynb"])
-        else:
-            notebook_editor = notebook_editor_factory()
-            ctx.add_resource(notebook_editor, types=Editor)
+            if self.register:
+                editors = await self.get(Editors)
+                editors.register_editor_factory(notebook_editor_factory, [".ipynb"])
+            else:
+                notebook_editor = notebook_editor_factory()
+                self.put(notebook_editor, Editor)
+
+            self.done()
+            await anyio.sleep(float("inf"))
+
+    async def stop(self) -> None:
+        self.tg.cancel_scope.cancel()

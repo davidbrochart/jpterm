@@ -24,7 +24,7 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "asphalt >=4.12.0,<5",
+  "fps >=0.2.1,<0.3.0",
   "textual[syntax] >=1.0.0,<2.0.0",
 ]
 

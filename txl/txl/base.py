@@ -1,19 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from asphalt.core import Event, Signal
+from fps import Signal
 from pycrdt import Doc, Map
 from textual.binding import Binding
 
 
-class FileOpenEvent(Event):
-    def __init__(self, source, topic, path):
-        super().__init__(source, topic)
-        self.path = path
-
-
 class FileBrowser(ABC):
-    open_file_signal = Signal(FileOpenEvent)
+    open_file_signal = Signal[str]()
 
     @abstractmethod
     async def load_directory(self, node) -> None:
@@ -35,7 +29,7 @@ class Editors(ABC):
         ...
 
     @abstractmethod
-    async def on_open(self, event: FileOpenEvent) -> None:
+    def on_open(self, path: str) -> None:
         ...
 
 

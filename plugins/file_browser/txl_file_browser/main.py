@@ -4,7 +4,7 @@ import os.path
 from dataclasses import dataclass
 from typing import ClassVar
 
-from asphalt.core import Component, Context
+from fps import Module
 from rich.style import Style
 from rich.text import Text, TextType
 from textual._types import MessageTarget
@@ -144,22 +144,19 @@ class DirectoryTree(FileBrowser, Tree[DirEntry], metaclass=DirectoryTreeMeta):
             if not dir_entry.loaded:
                 await self.load_directory(event.node)
         else:
-            self.open_file_signal.dispatch(dir_entry.path)
+            await self.open_file_signal.emit(dir_entry.path)
 
-    def on_tree_node_selected(self, event: Tree.NodeSelected) -> None:
+    async def on_tree_node_selected(self, event: Tree.NodeSelected) -> None:
         event.stop()
         dir_entry = event.node.data
         if dir_entry is None:
             return
         if not dir_entry.is_dir:
-            self.open_file_signal.dispatch(dir_entry.path)
+            await self.open_file_signal.emit(dir_entry.path)
 
 
-class FileBrowserComponent(Component):
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        contents = await ctx.request_resource(Contents)
+class FileBrowserModule(Module):
+    async def start(self) -> None:
+        contents = await self.get(Contents)
         file_browser = DirectoryTree(".", contents, id="browser-view")
-        ctx.add_resource(file_browser, types=FileBrowser)
+        self.put(file_browser, FileBrowser)

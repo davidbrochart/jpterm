@@ -18,15 +18,21 @@ def jpterm_main(kwargs):
     collaborative = kwargs.pop("collaborative")
     experimental = kwargs.pop("experimental")
     set_ = list(kwargs["set_"])
-    set_.append("logging.version=1")  # disable logging
     if server:
-        set_.append(f"component.components.remote_contents.url={server}")
-        set_.append(f"component.components.remote_terminals.url={server}")
-        set_.append(f"component.components.remote_kernels.url={server}")
-        set_.append(f"component.components.remote_kernelspecs.url={server}")
-        set_.append(f"component.components.remote_contents.collaborative={collaborative}")
-        set_.append(f"component.components.notebook_editor.experimental={experimental}")
-        disabled.extend(["local_contents", "local_terminals", "local_kernels", "local_kernelspecs"])
+        set_.append(f"remote_contents.url={server}")
+        set_.append(f"remote_terminals.url={server}")
+        set_.append(f"remote_kernels.url={server}")
+        set_.append(f"remote_kernelspecs.url={server}")
+        set_.append(f"remote_contents.collaborative={collaborative}")
+        set_.append(f"notebook_editor.experimental={experimental}")
+        disabled.extend(
+            [
+                "local_contents",
+                "local_terminals",
+                "local_kernels",
+                "local_kernelspecs",
+            ]
+        )
     else:
         disabled.extend(
             [
@@ -45,6 +51,7 @@ def main():
     decorators = [
         click.option("--logo", is_flag=True, default=False, help="Show the jpterm logo."),
         click.option("--server", default="", help="The URL to the Jupyter server."),
+        click.option("--backend", default="asyncio", help="The name of the event loop to use (asyncio or trio)."),
         click.option(
             "--collaborative/--no-collaborative",
             default=False,

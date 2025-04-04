@@ -2,7 +2,7 @@ from functools import partial
 from importlib.metadata import entry_points
 from typing import Any
 
-from asphalt.core import Component, Context
+from fps import Module
 from pycrdt import ArrayEvent, Doc
 from textual import on
 from textual.containers import VerticalScroll
@@ -126,20 +126,17 @@ class _Console(Console, VerticalScroll, metaclass=ConsoleMeta):
         return self.cells[self.cell_i]
 
 
-class ConsoleComponent(Component):
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        main_area = await ctx.request_resource(MainArea)
-        kernels = await ctx.request_resource(Kernels)
-        kernelspecs = await ctx.request_resource(Kernelspecs)
-        cell_factory = await ctx.request_resource(CellFactory)
-        launcher = await ctx.request_resource(Launcher)
+class ConsoleModule(Module):
+    async def start(self) -> None:
+        main_area = await self.get(MainArea)
+        kernels = await self.get(Kernels)
+        kernelspecs = await self.get(Kernelspecs)
+        cell_factory = await self.get(CellFactory)
+        launcher = await self.get(Launcher)
 
         _kernelspecs = await kernelspecs.get()
 
         console_factory = partial(_Console, kernels, _kernelspecs, cell_factory, main_area)
 
         launcher.register("console", console_factory)
-        ctx.add_resource_factory(console_factory, types=Console)
+        self.put(console_factory, Console)

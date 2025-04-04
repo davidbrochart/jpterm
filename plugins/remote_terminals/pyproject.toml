@@ -33,5 +33,4 @@ dependencies = [
 Source = "https://github.com/davidbrochart/jpterm/plugins/remote_terminals"
 
 [project.entry-points]
-"asphalt.components" = {remote_terminals = "txl_remote_terminals.components:RemoteTerminalsComponent"}
-"txl.components"     = {remote_terminals = "txl_remote_terminals.components:RemoteTerminalsComponent"}
+"txl.modules" = {remote_terminals = "txl_remote_terminals.main:RemoteTerminalsModule"}

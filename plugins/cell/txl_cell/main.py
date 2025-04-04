@@ -1,9 +1,10 @@
-import asyncio
 import json
 from functools import partial
 from importlib.metadata import entry_points
 
-from asphalt.core import Component, Context
+from anyio import create_task_group, sleep
+from anyioutils import Queue, create_task
+from fps import Module
 from pycrdt import Doc, Map, MapEvent, Text
 from rich.text import Text as RichText
 from textual.app import ComposeResult
@@ -57,6 +58,7 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
         kernel: Kernel | None,
         contents: Contents | None,
         widgets: Widgets | None,
+        task_group,
         show_execution_count: bool = True,
         show_border: bool = True,
     ) -> None:
@@ -66,18 +68,17 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
         self.kernel = kernel
         self.contents = contents
         self.widgets = widgets
+        self.task_group = task_group
         self.show_execution_count = show_execution_count
         self.show_border = show_border
         self.outputs = []
         self.update(mount=False)
         self.ycell.observe_deep(self.on_change)
         self.styles.height = "auto"
-        self.cell_change_events = asyncio.Queue()
-        self.widget_change_events = asyncio.Queue()
-        self.tasks = [
-            asyncio.create_task(self.observe_cell_changes()),
-            asyncio.create_task(self.observe_widget_changes()),
-        ]
+        self.cell_change_events = Queue()
+        self.widget_change_events = Queue()
+        create_task(self.observe_cell_changes(), task_group)
+        create_task(self.observe_widget_changes(), task_group)
 
     def on_click(self):
         self.clicked = True
@@ -149,9 +150,10 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
                                             # this is a widget
                                             is_widget = True
                                             room_id = f"ywidget:{inserted.guid}"
-                                            asyncio.create_task(self.contents.websocket_provider(
-                                                room_id, inserted
-                                            ))
+                                            create_task(
+                                                self.contents.websocket_provider(room_id, inserted),
+                                                self.task_group,
+                                            )
                                             inserted["_model_name"] = model_name = Text()
                                             model_name.observe(partial(
                                                 self.on_widget_change, inserted
@@ -209,6 +211,7 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
             language=language,
             show_border=self.show_border,
         )
+        create_task(self.source.start(), self.task_group)
         if mount:
             self.mount(self.source)
 
@@ -224,7 +227,7 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
             guid = output["guid"]
             ywidget_doc = Doc()
             room_id = f"ywidget:{guid}"
-            asyncio.create_task(self.contents.websocket_provider(room_id, ywidget_doc))
+            create_task(self.contents.websocket_provider(room_id, ywidget_doc), self.task_group)
             ywidget_doc["_model_name"] = model_name = Text()
             model_name.observe(partial(self.on_widget_change, ywidget_doc))
             return
@@ -296,23 +299,54 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
         self.source.language = value
 
 
-class CellComponent(Component):
-    def __init__(self, show_execution_count: bool = True, show_border: bool = True):
-        super().__init__()
+class _CellFactory:
+    def __init__(self, task_group, contents, widgets, show_execution_count, show_border):
+        self.task_group = task_group
+        self.contents = contents
+        self.widgets = widgets
         self.show_execution_count = show_execution_count
         self.show_border = show_border
+        self.cells = []
 
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        contents = await ctx.request_resource(Contents)
-        widgets = await ctx.request_resource(Widgets)
-        cell_factory = partial(
-            _Cell,
-            contents=contents,
-            widgets=widgets,
+    def __call__(self, *args, **kwargs):
+        _kwargs = dict(
+            contents=self.contents,
+            widgets=self.widgets,
+            task_group=self.task_group,
             show_execution_count=self.show_execution_count,
             show_border=self.show_border,
         )
-        ctx.add_resource(cell_factory, types=CellFactory)
+        _kwargs.update(kwargs)
+        cell = _Cell(
+            *args,
+            **_kwargs,
+        )
+        self.cells.append(cell)
+        return cell
+
+    async def stop(self):
+        async with create_task_group() as tg:
+            for cell in self.cells:
+                tg.start_soon(cell.source.stop)
+
+
+class CellModule(Module):
+    def __init__(self, name: str, show_execution_count: bool = True, show_border: bool = True):
+        super().__init__(name)
+        self.show_execution_count = show_execution_count
+        self.show_border = show_border
+
+    async def start(self) -> None:
+        contents = await self.get(Contents)
+        widgets = await self.get(Widgets)
+
+        async with create_task_group() as self.tg:
+
+            self.cell_factory = _CellFactory(self.tg, contents, widgets, self.show_execution_count, self.show_border)
+            self.put(self.cell_factory, CellFactory)
+            self.done()
+            await sleep(float("inf"))
+
+    async def stop(self) -> None:
+        await self.cell_factory.stop()
+        self.tg.cancel_scope.cancel()

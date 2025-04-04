@@ -28,12 +28,12 @@ dependencies = [
   "txl_kernel",
   "httpx >=0.23.1",
   "httpx-ws >=0.4.2",
-  "pycrdt >=0.10.9,<0.11.0",
+  "pycrdt >=0.10.9,<0.13.0",
 ]
 
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/remote_kernels"
 
 [project.entry-points]
-"asphalt.components" = {remote_kernels = "txl_remote_kernels.components:RemoteKernelsComponent", remote_kernelspecs = "txl_remote_kernels.components:RemoteKernelspecsComponent"}
-"txl.components"     = {remote_kernels = "txl_remote_kernels.components:RemoteKernelsComponent", remote_kernelspecs = "txl_remote_kernels.components:RemoteKernelspecsComponent"}
+"fps.modules" = {remote_kernels = "txl_remote_kernels.main:RemoteKernelsModule", remote_kernelspecs = "txl_remote_kernels.main:RemoteKernelspecsModule"}
+"txl.modules" = {remote_kernels = "txl_remote_kernels.main:RemoteKernelsModule", remote_kernelspecs = "txl_remote_kernels.main:RemoteKernelspecsModule"}

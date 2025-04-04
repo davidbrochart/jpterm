@@ -32,5 +32,5 @@ dependencies = [
 Source = "https://github.com/davidbrochart/jpterm/plugins/image_viewer"
 
 [project.entry-points]
-"asphalt.components" = {image_viewer = "txl_image_viewer.components:ImageViewerComponent"}
-"txl.components"     = {image_viewer = "txl_image_viewer.components:ImageViewerComponent"}
+"fps.modules" = {image_viewer = "txl_image_viewer.main:ImageViewerModule"}
+"txl.modules" = {image_viewer = "txl_image_viewer.main:ImageViewerModule"}

@@ -1,10 +1,11 @@
 from pathlib import Path
 from typing import Callable, Dict, List
 
-from asphalt.core import Component, Context
+from anyio import create_task_group
+from fps import Module
 from textual.containers import Container
 
-from txl.base import Editor, Editors, FileOpenEvent, Footer, Header, MainArea
+from txl.base import Editor, Editors, Footer, Header, MainArea
 
 
 class EditorsMeta(type(Editors), type(Container)):
@@ -36,8 +37,8 @@ class _Editors(Editors, Container, metaclass=EditorsMeta):
                 self.ext_editor_factories[ext] = []
             self.ext_editor_factories[ext].append(editor_factory)
 
-    async def on_open(self, event: FileOpenEvent) -> None:
-        path = Path(event.path)
+    async def on_open(self, path: str) -> None:
+        path = Path(path)
         extension = path.suffix
         for ext, editor_factories in self.ext_editor_factories.items():
             if ext == extension:
@@ -56,13 +57,10 @@ class _Editors(Editors, Container, metaclass=EditorsMeta):
         preferred_editor.refresh(layout=True)
 
 
-class EditorsComponent(Component):
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        header = await ctx.request_resource(Header)
-        footer = await ctx.request_resource(Footer)
-        main_area = await ctx.request_resource(MainArea)
+class EditorsModule(Module):
+    async def start(self) -> None:
+        header = await self.get(Header)
+        footer = await self.get(Footer)
+        main_area = await self.get(MainArea)
         editors = _Editors(header, footer, main_area)
-        ctx.add_resource(editors, types=Editors)
+        self.put(editors, Editors)

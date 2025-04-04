@@ -1,6 +1,6 @@
 from typing import Optional, Tuple
 
-from asphalt.core import Component, Context
+from fps import Module
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.syntax import Syntax
@@ -8,7 +8,7 @@ from rich.text import Text
 from textual import events
 from textual.widgets import DataTable
 
-from txl.base import Contents, Editor, Editors, FileOpenEvent, Kernels, Widgets
+from txl.base import Contents, Editor, Editors, Kernels, Widgets
 
 
 def _line_range(
@@ -45,9 +45,6 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
         self.kernel = None
         self._row_to_cell_idx = []
         self._selected_cell_idx = None
-
-    async def on_open(self, event: FileOpenEvent) -> None:
-        await self.open(event.path)
 
     async def open(self, path: str) -> None:
         self.ynb = await self.contents.get(path, type="notebook")
@@ -124,12 +121,9 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
                         f"[red]Out[[#ee4b2b]{execution_count}[/#ee4b2b]]:[/red]\n"
                     )
                     if "application/vnd.jupyter.ywidget-view+json" in output["data"]:
-                        print(f'{output["data"]["application/vnd.jupyter.ywidget-view+json"]=}')
                         model_id = output["data"]["application/vnd.jupyter.ywidget-view+json"][
                             "model_id"
                         ]
-                        print(f"{model_id=}")
-                        print(f"{self.widgets.widgets=}")
                         if model_id in self.widgets.widgets:
                             widget = self.widgets.widgets[model_id]["widget"]
                     if not widget:
@@ -169,25 +163,22 @@ class NotebookViewer(Editor, DataTable, metaclass=NotebookViewerMeta):
             await self.kernel.execute(self.ynb.ydoc, ycell)
 
 
-class NotebookViewerComponent(Component):
+class NotebookViewerModule(Module):
     def __init__(self, register: bool = True):
         super().__init__()
         self.register = register
 
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        contents = await ctx.request_resource(Contents)
-        kernels = await ctx.request_resource(Kernels)
-        widgets = await ctx.request_resource(Widgets)
+    async def start(self) -> None:
+        contents = await self.get(Contents)
+        kernels = await self.get(Kernels)
+        widgets = await self.get(Widgets)
 
         def notebook_viewer_factory():
             return NotebookViewer(contents, kernels, widgets)
 
         if self.register:
-            editors = await ctx.request_resource(Editors)
+            editors = await self.get(Editors)
             editors.register_editor_factory(notebook_viewer_factory, [".ipynb"])
         else:
             notebook_viewer = notebook_viewer_factory()
-            ctx.add_resource(notebook_viewer, types=Editor)
+            self.put(notebook_viewer, Editor)

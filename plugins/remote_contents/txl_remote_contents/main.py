@@ -1,4 +1,3 @@
-import asyncio
 import json
 from base64 import b64encode
 from importlib.metadata import entry_points
@@ -6,7 +5,8 @@ from typing import Any, Dict, List, Optional, Union
 from urllib import parse
 
 import httpx
-from asphalt.core import Component, Context
+from anyio import create_task_group, sleep
+from fps import Module
 from httpx_ws import aconnect_ws
 from pycrdt import Doc
 from pycrdt_websocket import WebsocketProvider
@@ -72,11 +72,13 @@ class RemoteContents(Contents):
         query_params: Dict[str, List[str]],
         cookies: httpx.Cookies,
         collaborative: bool,
+        task_group,
     ) -> None:
         self.base_url = base_url
         self.query_params = query_params
         self.cookies = cookies
         self.collaborative = collaborative
+        self.task_group = task_group
         i = base_url.find(":")
         self.ws_url = ("wss" if base_url[i - 1] == "s" else "ws") + base_url[i:]
         self.document_id = {}
@@ -131,7 +133,7 @@ class RemoteContents(Contents):
             session_id = r["sessionId"]
             ydoc = Doc()
             jupyter_ydoc = ydocs[type](ydoc)
-            asyncio.create_task(self.websocket_provider(room_id, ydoc, session_id))
+            self.task_group.start_soon(self.websocket_provider, room_id, ydoc, session_id)
             self.document_id[jupyter_ydoc] = room_id
             return jupyter_ydoc
 
@@ -174,22 +176,22 @@ class RemoteContents(Contents):
             ws_url, cookies=self.cookies, params=params
         ) as websocket:
             async with WebsocketProvider(ydoc, Websocket(websocket, room_id)):
-                await asyncio.Future()
+                await sleep(float("inf"))
 
 
-class RemoteContentsComponent(Component):
-    def __init__(self, url: str = "http://127.0.0.1:8000", collaborative: bool = True):
-        super().__init__()
+class RemoteContentsModule(Module):
+    def __init__(self, name: str, url: str = "http://127.0.0.1:8000", collaborative: str = "True"):
+        super().__init__(name)
         self.url = url
-        self.collaborative = collaborative
+        self.collaborative = True if collaborative == "True" else False
 
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
+    async def start(self) -> None:
         parsed_url = parse.urlparse(self.url)
         base_url = parse.urljoin(self.url, parsed_url.path).rstrip("/")
         query_params = parse.parse_qs(parsed_url.query)
         cookies = httpx.Cookies()
-        contents = RemoteContents(base_url, query_params, cookies, self.collaborative)
-        ctx.add_resource(contents, types=Contents)
+        async with create_task_group() as tg:
+            contents = RemoteContents(base_url, query_params, cookies, self.collaborative, tg)
+            self.put(contents, Contents)
+            self.done()
+            await sleep(float("inf"))

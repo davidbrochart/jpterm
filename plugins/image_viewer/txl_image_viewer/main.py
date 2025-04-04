@@ -1,12 +1,14 @@
 import os
 import tempfile
 
-from asphalt.core import Component, Context
+from fps import Module
 from PIL import Image
+from textual._context import active_app
 from textual.widget import Widget
+from textual.app import App
 from textual_imageview.viewer import ImageViewer
 
-from txl.base import Contents, Editor, Editors, FileOpenEvent
+from txl.base import Contents, Editor, Editors
 
 
 class ImageViewerMeta(type(Editor), type(Widget)):
@@ -21,9 +23,6 @@ class _ImageViewer(Editor, Widget, metaclass=ImageViewerMeta):
         super().__init__()
         self.contents = contents
         self.image_viewer = None
-
-    async def on_open(self, event: FileOpenEvent) -> None:
-        await self.open(event.path)
 
     async def open(self, path: str) -> None:
         self.ydoc = await self.contents.get(path, type="blob")
@@ -52,23 +51,22 @@ class _ImageViewer(Editor, Widget, metaclass=ImageViewerMeta):
         self.update_viewer()
 
 
-class ImageViewerComponent(Component):
-    def __init__(self, register: bool = True):
-        super().__init__()
+class ImageViewerModule(Module):
+    def __init__(self, name: str, register: bool = True):
+        super().__init__(name)
         self.register = register
 
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        contents = await ctx.request_resource(Contents)
+    async def start(self) -> None:
+        contents = await self.get(Contents)
+        app = await self.get(App)
 
         def image_viewer_factory():
+            active_app.set(app)
             return _ImageViewer(contents)
 
         if self.register:
-            editors = await ctx.request_resource(Editors)
+            editors = await self.get(Editors)
             editors.register_editor_factory(image_viewer_factory, [".png", ".jpg", ".jpeg"])
         else:
             image_viewer = image_viewer_factory()
-            ctx.add_resource(image_viewer, types=Editor)
+            self.put(image_viewer, Editor)

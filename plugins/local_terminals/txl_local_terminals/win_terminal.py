@@ -1,8 +1,8 @@
-import asyncio
 import os
 from functools import partial
 
 from anyio import to_thread
+from anyioutils import Event, Queue
 from textual.widget import Widget
 from textual.widgets._header import HeaderTitle
 from winpty import PTY
@@ -15,13 +15,14 @@ class TerminalsMeta(type(Terminals), type(Widget)):
 
 
 class LocalTerminals(Terminals, Widget, metaclass=TerminalsMeta):
-    def __init__(self, header: Header, terminal: TerminalFactory):
+    def __init__(self, task_group, header: Header, terminal: TerminalFactory):
+        self.task_group = task_group
         self.header = header
         self.terminal = terminal
-        self._send_queue = asyncio.Queue()
-        self._recv_queue = asyncio.Queue()
+        self._send_queue = Queue()
+        self._recv_queue = Queue()
         self._data_or_disconnect = None
-        self._event = asyncio.Event()
+        self._event = Event()
         super().__init__()
 
     async def open(self):
@@ -32,7 +33,7 @@ class LocalTerminals(Terminals, Widget, metaclass=TerminalsMeta):
         self._ncol = terminal.size.width
         self._nrow = terminal.size.height
         self._process = self._open_terminal()
-        asyncio.create_task(self._run())
+        self.task_group.start_soon(self._run)
         self.header.query_one(HeaderTitle).text = "Terminal"
 
     def _open_terminal(self):
@@ -45,10 +46,9 @@ class LocalTerminals(Terminals, Widget, metaclass=TerminalsMeta):
     async def _run(self):
         await self._send_queue.put(["setup", {}])
 
-        self.send_task = asyncio.create_task(self._send())
-        self.recv_task = asyncio.create_task(self._recv())
-
-        await asyncio.gather(self.send_task, self.recv_task)
+        async with create_task_group() as tg:
+            tg.start_soon(self._send)
+            tg.start_soon(self._recv)
 
     async def _send(self):
         while True:
