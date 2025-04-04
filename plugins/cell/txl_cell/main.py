@@ -175,7 +175,7 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
 
     def get_execution_count(self, value):
         execution_count = " " if value is None else str(value).removesuffix(".0")
-        return f"[green]In [[#66ff00]{execution_count}[/#66ff00]]:[/green]"
+        return r"[green]In \[[#66ff00]" + execution_count + r"[/#66ff00]]:[/green]"
 
     def compose(self) -> ComposeResult:
         if self.show_execution_count:
