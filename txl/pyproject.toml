@@ -11,7 +11,7 @@ requires-python = ">=3.10"
 license = "MIT"
 keywords = []
 classifiers = [ "Development Status :: 4 - Beta", "Programming Language :: Python", "Programming Language :: Python :: 3.10", "Programming Language :: Python :: 3.11", "Programming Language :: Python :: 3.12", "Programming Language :: Python :: 3.13", "Programming Language :: Python :: Implementation :: CPython", "Programming Language :: Python :: Implementation :: PyPy",]
-dependencies = [ "fps >=0.2.1,<0.3.0", "textual[syntax] >=1.0.0,<2.0.0",]
+dependencies = [ "fps >=0.2.1,<0.3.0", "textual[syntax] >=3.0.1,<4.0.0",]
 [[project.authors]]
 name = "David Brochart"
 email = "david.brochart@gmail.com"
