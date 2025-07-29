@@ -1,34 +1,37 @@
+import logging
 from importlib.metadata import entry_points
 
-from asphalt.core import CLIApplicationComponent, Context
-from asphalt.core.cli import run as asphalt_run
+import anyio
+from fps import Module
+from fps.cli._cli import main
 from textual.app import App
+from textual._context import active_app
 
-components = {
-    ep.name: ep.load() for ep in entry_points(group="txl.components")
+logging.getLogger("httpx").setLevel(logging.CRITICAL)
+logging.getLogger("httpcore").setLevel(logging.CRITICAL)
+
+modules = {
+    ep.name: ep.load() for ep in entry_points(group="txl.modules")
 }
 
 disabled = []
 
 
-class AppComponent(CLIApplicationComponent):
-    def __init__(self, components=None):
-        super().__init__(components)
-
-    async def start(self, ctx: Context) -> None:
-        for name, component in components.items():
+class AppModule(Module):
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.app_exited = anyio.Event()
+        for name, module_class in modules.items():
             if name not in disabled:
-                self.add_component(name, component)
-        await super().start(ctx)
+                self.add_module(module_class, name)
 
-    async def run(self, ctx: Context) -> None:
-        app = ctx.require_resource(App)
+    async def start(self) -> None:
+        self.done()
+        app = await self.get(App)
+        active_app.set(app)
         await app.run_async()
+        self.app_exited.set()
 
 
 def run(kwargs) -> None:
-    asphalt_run.callback(unsafe=False, loop=None, service=None, **kwargs)
-
-
-if __name__ == "__main__":
-    run()
+    main.callback("txl.app:AppModule", None, **kwargs)

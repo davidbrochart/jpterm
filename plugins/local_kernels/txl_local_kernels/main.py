@@ -2,7 +2,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-from asphalt.core import Component, Context, context_teardown
+from anyio import create_task_group, sleep
+from fps import Module
 from pycrdt import Map
 
 from txl.base import Kernels, Kernelspecs
@@ -15,7 +16,7 @@ class LocalKernels(Kernels):
     comm_handlers = []
 
     def __init__(self, kernel_name: str | None = None):
-        self.kernel = KernelDriver(kernel_name, comm_handlers=self.comm_handlers)
+        self.kernel = KernelDriver(self.task_group, kernel_name, comm_handlers=self.comm_handlers)
 
     async def execute(self, ycell: Map):
         await self.kernel.execute(ycell)
@@ -33,24 +34,24 @@ class LocalKernelspecs(Kernelspecs):
         return {"kernelspecs": kernelspecs}
 
 
-class LocalKernelsComponent(Component):
-    @context_teardown
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
-        ctx.add_resource(LocalKernels, types=Kernels)
+class LocalKernelsModule(Module):
+    async def start(self) -> None:
 
-        yield
+        async with create_task_group() as self.tg:
+            class _LocalKernels(LocalKernels):
+                task_group = self.tg
 
+            self.put(_LocalKernels, Kernels)
+            self.done()
+            await sleep(float("inf"))
+
+    async def stop(self) -> None:
         for kernel_driver in kernel_drivers:
-            await kernel_driver.stop()
+            self.tg.start_soon(kernel_driver.stop)
+        self.tg.cancel_scope.cancel()
 
 
-class LocalKernelspecsComponent(Component):
-    async def start(
-        self,
-        ctx: Context,
-    ) -> None:
+class LocalKernelspecsModule(Module):
+    async def start(self) -> None:
         kernelspecs = LocalKernelspecs()
-        ctx.add_resource(kernelspecs, types=Kernelspecs)
+        self.put(kernelspecs, Kernelspecs)

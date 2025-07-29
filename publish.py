@@ -2,7 +2,7 @@ import subprocess
 from pathlib import Path
 
 import httpx
-import tomllib
+import toml
 
 
 def run(cmd: str, cwd: str | None = None) -> list[str]:
@@ -10,8 +10,10 @@ def run(cmd: str, cwd: str | None = None) -> list[str]:
     return res.stdout.decode().splitlines()
 
 
-pyproject = tomllib.load(open("pyproject.toml", "rb"))
+Path("dist").mkdir(exist_ok=True)
+pyproject = toml.load("pyproject.toml")
 jpterm_version = pyproject["project"]["version"]
+txl_version = toml.load("txl/pyproject.toml")["project"]["version"]
 for dependency in pyproject["project"]["dependencies"]:
     idx = dependency.find("==")
     version = dependency[idx + 2:].strip()
@@ -28,6 +30,16 @@ for dependency in pyproject["project"]["dependencies"]:
             else:
                 package_dir = package_dir / "plugins" / package[len("txl_"):]
                 dist_dir = f"../{dist_dir}"
+            package_pyproject = toml.load(package_dir / "pyproject.toml")
+            package_pyproject["project"]["version"] = version
+            for idx, dependency in enumerate(package_pyproject["project"]["dependencies"]):
+                if dependency.startswith("txl") and not dependency.startswith("txl_"):
+                    package_pyproject["project"]["dependencies"][idx] = f"txl =={txl_version}"
+                    with open(package_dir / "pyproject.toml", "w") as f:
+                        toml.dump(package_pyproject, f)
+                    break
+            with open(package_dir / "pyproject.toml", "w") as f:
+                toml.dump(package_pyproject, f)
             run(f"hatch build {dist_dir}", cwd=str(package_dir))
             for path in Path("dist").iterdir():
                 if f"{package}-{version}" in path.name:

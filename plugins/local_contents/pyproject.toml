@@ -1,37 +1,26 @@
 [build-system]
-requires = ["hatchling"]
+requires = [ "hatchling",]
 build-backend = "hatchling.build"
 
 [project]
 name = "txl_local_contents"
-version = "0.2.15"
+version = "0.3.3"
 description = "TXL plugin for local contents"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 keywords = []
-authors = [
-  { name = "David Brochart", email = "david.brochart@gmail.com" },
-]
-classifiers = [
-  "Development Status :: 4 - Beta",
-  "Programming Language :: Python",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
-  "Programming Language :: Python :: Implementation :: CPython",
-  "Programming Language :: Python :: Implementation :: PyPy",
-]
-dependencies = [
-  "txl >=0.2.18,<0.3.0",
-  "anyio >=3.7.0,<5",
-  "jupyter-ydoc >=3.0.2,<4.0.0",
-]
+classifiers = [ "Development Status :: 4 - Beta", "Programming Language :: Python", "Programming Language :: Python :: 3.10", "Programming Language :: Python :: 3.11", "Programming Language :: Python :: 3.12", "Programming Language :: Python :: 3.13", "Programming Language :: Python :: Implementation :: CPython", "Programming Language :: Python :: Implementation :: PyPy",]
+dependencies = [ "txl ==0.3.1", "anyio >=3.7.0,<5", "jupyter-ydoc >=3.0.2,<4.0.0",]
+[[project.authors]]
+name = "David Brochart"
+email = "david.brochart@gmail.com"
 
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/local_contents"
 
-[project.entry-points]
-"asphalt.components" = {local_contents = "txl_local_contents.components:LocalContentsComponent"}
-"txl.components"     = {local_contents = "txl_local_contents.components:LocalContentsComponent"}
+[project.entry-points."fps.modules"]
+local_contents = "txl_local_contents.main:LocalContentsModule"
+
+[project.entry-points."txl.modules"]
+local_contents = "txl_local_contents.main:LocalContentsModule"

@@ -1,38 +1,26 @@
 [build-system]
-requires = ["hatchling"]
+requires = [ "hatchling",]
 build-backend = "hatchling.build"
 
 [project]
 name = "txl_widgets"
-version = "0.2.16"
+version = "0.3.3"
 description = "TXL plugin for kernel widgets"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 keywords = []
-authors = [
-  { name = "David Brochart", email = "david.brochart@gmail.com" },
-]
-classifiers = [
-  "Development Status :: 4 - Beta",
-  "Programming Language :: Python",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
-  "Programming Language :: Python :: Implementation :: CPython",
-  "Programming Language :: Python :: Implementation :: PyPy",
-]
-dependencies = [
-  "txl >=0.2.18,<0.3.0",
-  "ypywidgets >=0.9.4,<0.10.0",
-  "ypywidgets-textual >=0.5.1,<0.6.0",
-  "pycrdt >=0.10.9,<0.11.0",
-]
+classifiers = [ "Development Status :: 4 - Beta", "Programming Language :: Python", "Programming Language :: Python :: 3.10", "Programming Language :: Python :: 3.11", "Programming Language :: Python :: 3.12", "Programming Language :: Python :: 3.13", "Programming Language :: Python :: Implementation :: CPython", "Programming Language :: Python :: Implementation :: PyPy",]
+dependencies = [ "txl ==0.3.1", "ypywidgets >=0.9.4,<0.10.0", "ypywidgets-textual >=0.5.4,<0.6.0", "pycrdt >=0.10.9,<0.13.0",]
+[[project.authors]]
+name = "David Brochart"
+email = "david.brochart@gmail.com"
 
 [project.urls]
 Source = "https://github.com/davidbrochart/jpterm/plugins/widgets"
 
-[project.entry-points]
-"asphalt.components" = {widgets = "txl_widgets.components:WidgetsComponent"}
-"txl.components"     = {widgets = "txl_widgets.components:WidgetsComponent"}
+[project.entry-points."fps.modules"]
+widgets = "txl_widgets.main:WidgetsModule"
+
+[project.entry-points."txl.modules"]
+widgets = "txl_widgets.main:WidgetsModule"
