@@ -16,7 +16,7 @@ jobs:
       with:
         python-version: 3.x
     - name: Install dependencies
-      run: pip install hatch httpx
+      run: pip install hatch httpx toml
     - name: Create packages
       run: python publish.py
     - name: Archive packages
