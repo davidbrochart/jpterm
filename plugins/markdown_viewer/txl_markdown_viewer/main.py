@@ -1,10 +1,10 @@
 from anyio import create_task_group, sleep
 from anyioutils import create_task
 from fps import Module
+from textual._context import active_app
 from textual.app import App
 from textual.containers import Container
 from textual.widgets import MarkdownViewer as TextualMarkdownViewer
-from textual._context import active_app
 
 from txl.base import Contents, Editor, Editors
 
