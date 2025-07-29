@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "jpterm"
-version = "0.3.4"
+version = "0.3.5"
 description = "Jupyter in the terminal"
 readme = "README.md"
 license = { text = "MIT" }
@@ -27,25 +27,25 @@ keywords = [
 dependencies = [
     "rich-click >=1.6.0",
     "txl ==0.3.2",
-    "txl_cell ==0.3.4",
-    "txl_console ==0.3.4",
-    "txl_editors ==0.3.4",
-    "txl_file_browser ==0.3.4",
-    "txl_image_viewer ==0.3.4",
-    "txl_jpterm ==0.3.4",
-    "txl_kernel ==0.3.4",
-    "txl_local_contents ==0.3.4",
-    "txl_local_terminals ==0.3.4",
-    "txl_local_kernels ==0.3.4",
-    "txl_notebook_editor ==0.3.4",
-    "txl_remote_contents ==0.3.4",
-    "txl_remote_terminals ==0.3.4",
-    "txl_remote_kernels ==0.3.4",
-    "txl_text_editor ==0.3.4",
-    "txl_markdown_viewer ==0.3.4",
-    "txl_terminal ==0.3.4",
-    "txl_launcher ==0.3.4",
-    "txl_widgets ==0.3.4",
+    "txl_cell ==0.3.5",
+    "txl_console ==0.3.5",
+    "txl_editors ==0.3.5",
+    "txl_file_browser ==0.3.5",
+    "txl_image_viewer ==0.3.5",
+    "txl_jpterm ==0.3.5",
+    "txl_kernel ==0.3.5",
+    "txl_local_contents ==0.3.5",
+    "txl_local_terminals ==0.3.5",
+    "txl_local_kernels ==0.3.5",
+    "txl_notebook_editor ==0.3.5",
+    "txl_remote_contents ==0.3.5",
+    "txl_remote_terminals ==0.3.5",
+    "txl_remote_kernels ==0.3.5",
+    "txl_text_editor ==0.3.5",
+    "txl_markdown_viewer ==0.3.5",
+    "txl_terminal ==0.3.5",
+    "txl_launcher ==0.3.5",
+    "txl_widgets ==0.3.5",
 ]
 
 [project.optional-dependencies]

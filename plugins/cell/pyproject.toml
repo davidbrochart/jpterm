@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "txl_cell"
-version = "0.3.3"
+version = "0.3.5"
 description = "TXL plugin for a cell"
 readme = "README.md"
 requires-python = ">=3.10"
