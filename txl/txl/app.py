@@ -2,7 +2,8 @@ import logging
 from importlib.metadata import entry_points
 
 import anyio
-from fps import Module, main
+from fps import Module
+from fps.cli._cli import main
 from textual.app import App
 from textual._context import active_app
 
