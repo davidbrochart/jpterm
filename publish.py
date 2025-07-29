@@ -13,11 +13,12 @@ def run(cmd: str, cwd: str | None = None) -> list[str]:
 Path("dist").mkdir(exist_ok=True)
 pyproject = toml.load("pyproject.toml")
 jpterm_version = pyproject["project"]["version"]
-txl_version = toml.load("txl/pyproject.toml")["project"]["version"]
 for dependency in pyproject["project"]["dependencies"]:
     idx = dependency.find("==")
     version = dependency[idx + 2:].strip()
     package = dependency[:idx].strip()
+    if package == "txl":
+        txl_version = version
     if package.startswith("txl"):
         response = httpx.get(f"https://pypi.org/pypi/{package}/json")
         releases = response.json()["releases"].keys()

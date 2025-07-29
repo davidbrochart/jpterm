@@ -4,14 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "txl_jpterm"
-version = "0.3.5"
+version = "0.3.6"
 description = "TXL plugin for the jpterm app"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 keywords = []
 classifiers = [ "Development Status :: 4 - Beta", "Programming Language :: Python", "Programming Language :: Python :: 3.10", "Programming Language :: Python :: 3.11", "Programming Language :: Python :: 3.12", "Programming Language :: Python :: 3.13", "Programming Language :: Python :: Implementation :: CPython", "Programming Language :: Python :: Implementation :: PyPy",]
-dependencies = [ "txl ==0.3.1",]
+dependencies = [ "txl ==0.3.2",]
 [[project.authors]]
 name = "David Brochart"
 email = "david.brochart@gmail.com"
