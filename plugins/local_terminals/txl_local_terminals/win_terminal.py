@@ -1,7 +1,7 @@
 import os
 from functools import partial
 
-from anyio import to_thread
+from anyio import create_task_group, to_thread
 from anyioutils import Event, Queue
 from textual.widget import Widget
 from textual.widgets._header import HeaderTitle

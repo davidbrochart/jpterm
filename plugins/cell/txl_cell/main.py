@@ -342,7 +342,13 @@ class CellModule(Module):
 
         async with create_task_group() as self.tg:
 
-            self.cell_factory = _CellFactory(self.tg, contents, widgets, self.show_execution_count, self.show_border)
+            self.cell_factory = _CellFactory(
+                self.tg,
+                contents,
+                widgets,
+                self.show_execution_count,
+                self.show_border,
+            )
             self.put(self.cell_factory, CellFactory)
             self.done()
             await sleep(float("inf"))

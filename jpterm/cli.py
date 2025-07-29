@@ -51,7 +51,11 @@ def main():
     decorators = [
         click.option("--logo", is_flag=True, default=False, help="Show the jpterm logo."),
         click.option("--server", default="", help="The URL to the Jupyter server."),
-        click.option("--backend", default="asyncio", help="The name of the event loop to use (asyncio or trio)."),
+        click.option(
+            "--backend",
+            default="asyncio",
+            help="The name of the event loop to use (asyncio or trio).",
+        ),
         click.option(
             "--collaborative/--no-collaborative",
             default=False,

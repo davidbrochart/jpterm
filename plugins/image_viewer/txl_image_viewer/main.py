@@ -4,8 +4,8 @@ import tempfile
 from fps import Module
 from PIL import Image
 from textual._context import active_app
-from textual.widget import Widget
 from textual.app import App
+from textual.widget import Widget
 from textual_imageview.viewer import ImageViewer
 
 from txl.base import Contents, Editor, Editors

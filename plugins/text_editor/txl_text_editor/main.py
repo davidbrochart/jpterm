@@ -2,8 +2,8 @@ from anyio import create_task_group, sleep
 from anyioutils import Queue
 from fps import Module
 from textual._context import active_app
-from textual.containers import Container
 from textual.app import App
+from textual.containers import Container
 from textual.events import Event
 from textual.keys import Keys
 

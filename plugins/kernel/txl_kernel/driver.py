@@ -31,7 +31,9 @@ class Comm:
             buffers=buffers,
         )
         self.msg_cnt += 1
-        create_task(self.send_message(msg, self.shell_channel, change_date_to_str=True), self.task_group)
+        create_task(
+            self.send_message(msg, self.shell_channel, change_date_to_str=True), self.task_group
+        )
 
 
 class KernelMixin:
@@ -85,7 +87,13 @@ class KernelMixin:
             if msg_type == "comm_open":
                 for comm_handler in self.comm_handlers:
                     comm_id = msg["content"]["comm_id"]
-                    comm = Comm(comm_id, self.shell_channel, self.session_id, self.send_message, self.task_group)
+                    comm = Comm(
+                        comm_id,
+                        self.shell_channel,
+                        self.session_id,
+                        self.send_message,
+                        self.task_group,
+                    )
                     comm_handler.comm_open(msg, comm)
             elif msg_type == "comm_msg":
                 for comm_handler in self.comm_handlers:

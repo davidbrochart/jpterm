@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Callable, Dict, List
 
-from anyio import create_task_group
 from fps import Module
 from textual.containers import Container
 

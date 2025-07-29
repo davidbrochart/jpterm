@@ -21,7 +21,9 @@ class RemoteKernels(Kernels):
         url: str,
         kernel_name: str | None,
     ):
-        self.kernel = KernelDriver(self.task_group, url, kernel_name, comm_handlers=self.comm_handlers)
+        self.kernel = KernelDriver(
+            self.task_group, url, kernel_name, comm_handlers=self.comm_handlers
+        )
 
     async def execute(self, ycell: Map):
         await self.kernel.execute(ycell)
