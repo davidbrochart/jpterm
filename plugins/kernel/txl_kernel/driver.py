@@ -181,7 +181,15 @@ class KernelMixin:
                     )
                 else:
                     outputs[-1]["text"].append(content["text"])  # type: ignore
-        elif msg_type in ("display_data", "execute_result"):
+        elif msg_type == "display_data":
+            outputs.append(
+                {
+                    "data": content["data"],
+                    "metadata": {},
+                    "output_type": msg_type,
+                }
+            )
+        elif msg_type == "execute_result":
             outputs.append(
                 {
                     "data": content["data"],
