@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "jpterm"
-version = "0.3.7"
+version = "0.3.8"
 description = "Jupyter in the terminal"
 readme = "README.md"
 license = { text = "MIT" }
@@ -33,7 +33,7 @@ dependencies = [
     "txl_file_browser ==0.3.6",
     "txl_image_viewer ==0.3.6",
     "txl_jpterm ==0.3.6",
-    "txl_kernel ==0.3.7",
+    "txl_kernel ==0.3.8",
     "txl_local_contents ==0.3.6",
     "txl_local_terminals ==0.3.6",
     "txl_local_kernels ==0.3.6",
