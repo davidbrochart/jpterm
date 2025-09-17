@@ -169,7 +169,7 @@ class KernelMixin:
         content = msg["content"]
         if msg_type == "stream":
             with outputs.doc.transaction():
-                if (not outputs) or (outputs[-1]["name"] != content["name"]):  # type: ignore
+                if (not outputs) or (outputs[-1].get("name") != content["name"]):  # type: ignore
                     outputs.append(
                         Map(
                             {
