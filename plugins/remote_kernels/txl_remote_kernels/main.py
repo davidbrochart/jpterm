@@ -6,8 +6,8 @@ from urllib import parse
 import httpx
 from anyio import create_task_group, sleep
 from fps import Module
+from httpx import USE_CLIENT_DEFAULT, Timeout
 from pycrdt import Map
-
 from txl.base import Kernels, Kernelspecs
 
 from .driver import KernelDriver
@@ -20,9 +20,11 @@ class RemoteKernels(Kernels):
         self,
         url: str,
         kernel_name: str | None,
+        *,
+        timeout: Timeout = USE_CLIENT_DEFAULT,
     ):
         self.kernel = KernelDriver(
-            self.task_group, url, kernel_name, comm_handlers=self.comm_handlers
+            self.task_group, url, kernel_name, comm_handlers=self.comm_handlers, timeout=timeout
         )
 
     async def execute(self, ycell: Map):
@@ -56,19 +58,28 @@ class RemoteKernelspecs(Kernelspecs):
 
 
 class RemoteKernelsModule(Module):
-    def __init__(self, name: str, url: str = "http://127.0.0.1:8000"):
+    def __init__(
+        self,
+        name: str,
+        url: str = "http://127.0.0.1:8000",
+        *,
+        timeout: Timeout = USE_CLIENT_DEFAULT,
+    ):
         super().__init__(name)
         self.url = url
+        self.timeout = timeout
 
     async def start(self) -> None:
         url = self.url
 
         async with create_task_group() as self.tg:
+
             class _RemoteKernels(RemoteKernels):
                 task_group = self.tg
+                timeout = self.timeout
 
                 def __init__(self, *args, **kwargs):
-                    super().__init__(url, *args, **kwargs)
+                    super().__init__(url, *args, timeout=self.timeout, **kwargs)
 
             self.put(_RemoteKernels, Kernels)
             self.done()
