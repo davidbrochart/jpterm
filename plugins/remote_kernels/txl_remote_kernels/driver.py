@@ -7,6 +7,7 @@ from urllib import parse
 import httpx
 from anyio import Lock, sleep
 from anyioutils import create_task
+from httpx import USE_CLIENT_DEFAULT, Timeout
 from httpx_ws import aconnect_ws
 from txl_kernel.driver import KernelMixin
 from txl_kernel.message import date_to_str
@@ -30,6 +31,7 @@ class KernelDriver(KernelMixin):
         url: str,
         kernel_name: str | None = "",
         comm_handlers=[],
+        timeout: Timeout = USE_CLIENT_DEFAULT,
     ) -> None:
         super().__init__(task_group)
         self.task_group = task_group
@@ -78,6 +80,7 @@ class KernelDriver(KernelMixin):
             params={"session_id": self.session_id},
             cookies=self.cookies,
             subprotocols=["v1.kernel.websocket.jupyter.org"],
+            timeout=self.timeout,
         ) as self.websocket:
             recv_task = create_task(self._recv(), self.task_group)
             try:
