@@ -10,6 +10,7 @@ from rich.text import Text as RichText
 from textual.app import ComposeResult
 from textual.containers import Container
 from textual.widgets import Static
+
 from txl.base import Cell, CellFactory, Contents, Kernel, Widgets
 from txl.text_input import TextInput
 
