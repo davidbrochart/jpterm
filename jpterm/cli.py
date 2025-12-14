@@ -1,3 +1,5 @@
+import functools
+import os
 import sys
 
 import rich_click as click
@@ -47,6 +49,7 @@ def jpterm_main(kwargs):
 
 
 def main():
+    _ensure_unicode_streams()
     set_main(jpterm_main)
     decorators = [
         click.option("--logo", is_flag=True, default=False, help="Show the jpterm logo."),
@@ -72,3 +75,17 @@ def main():
         _main = decorator(_main)
     command = click.command()(_main)
     command()
+
+
+@functools.cache
+def _ensure_unicode_streams() -> None:
+    # Before Python 3.15, this isn't always unicode
+    if (
+        sys.version_info < (3, 15)
+        and "PYTHONIOENCODING" not in os.environ
+        and "PYTHONUTF8" not in os.environ
+    ):
+        if sys.stdout.encoding != "utf-8":
+            sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
+        if sys.stderr.encoding != "utf-8":
+            sys.stderr.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
