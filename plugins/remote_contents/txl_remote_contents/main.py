@@ -5,42 +5,15 @@ from typing import Any, Dict, List, Optional, Union
 from urllib import parse
 
 import httpx
-from anyio import create_task_group, sleep
+from anyio import create_task_group, sleep_forever
 from fps import Module
 from httpx_ws import aconnect_ws
-from pycrdt import Doc
-from pycrdt_websocket import WebsocketProvider
+from pycrdt import Doc, Provider
+from pycrdt.websocket.websocket import HttpxWebsocket
 
 from txl.base import Contents
 
 ydocs = {ep.name: ep.load() for ep in entry_points(group="jupyter_ydoc")}
-
-
-class Websocket:
-    def __init__(self, websocket, roomid: str):
-        self.websocket = websocket
-        self.roomid = roomid
-
-    @property
-    def path(self) -> str:
-        return self.roomid
-
-    def __aiter__(self):
-        return self
-
-    async def __anext__(self) -> bytes:
-        try:
-            message = await self.recv()
-        except BaseException:
-            raise StopAsyncIteration()
-        return message
-
-    async def send(self, message: bytes):
-        await self.websocket.send_bytes(message)
-
-    async def recv(self) -> bytes:
-        b = await self.websocket.receive_bytes()
-        return bytes(b)
 
 
 class Entry:
@@ -175,8 +148,8 @@ class RemoteContents(Contents):
         async with aconnect_ws(
             ws_url, cookies=self.cookies, params=params
         ) as websocket:
-            async with WebsocketProvider(ydoc, Websocket(websocket, room_id)):
-                await sleep(float("inf"))
+            async with Provider(ydoc, HttpxWebsocket(websocket, room_id)):
+                await sleep_forever()
 
 
 class RemoteContentsModule(Module):
@@ -194,4 +167,4 @@ class RemoteContentsModule(Module):
             contents = RemoteContents(base_url, query_params, cookies, self.collaborative, tg)
             self.put(contents, Contents)
             self.done()
-            await sleep(float("inf"))
+            await sleep_forever()
