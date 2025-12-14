@@ -11,7 +11,7 @@ requires-python = ">=3.10"
 license = "MIT"
 keywords = []
 classifiers = [ "Development Status :: 4 - Beta", "Programming Language :: Python", "Programming Language :: Python :: 3.10", "Programming Language :: Python :: 3.11", "Programming Language :: Python :: 3.12", "Programming Language :: Python :: 3.13", "Programming Language :: Python :: Implementation :: CPython", "Programming Language :: Python :: Implementation :: PyPy",]
-dependencies = [ "txl ==0.3.2", "httpx>=0.23.1", "httpx-ws>=0.4.2", "pycrdt >=0.10.9,<0.11.0", "pycrdt-websocket >=0.15.3,<0.16.0", "jupyter-ydoc >=3.0.2,<4.0.0",]
+dependencies = [ "txl ==0.3.2", "httpx>=0.23.1", "httpx-ws>=0.4.2", "pycrdt >=0.12.44,<0.13.0", "pycrdt-websocket >=0.16.0,<0.17.0", "jupyter-ydoc >=3.0.2,<4.0.0",]
 [[project.authors]]
 name = "David Brochart"
 email = "david.brochart@gmail.com"
