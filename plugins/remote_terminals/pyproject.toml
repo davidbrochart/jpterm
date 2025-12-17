@@ -4,20 +4,20 @@ build-backend = "hatchling.build"
 
 [project]
 name = "txl_remote_terminals"
-version = "0.3.6"
+version = "0.3.7"
 description = "TXL plugin for remote terminals"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 keywords = []
 classifiers = [ "Development Status :: 4 - Beta", "Programming Language :: Python", "Programming Language :: Python :: 3.10", "Programming Language :: Python :: 3.11", "Programming Language :: Python :: 3.12", "Programming Language :: Python :: 3.13", "Programming Language :: Python :: Implementation :: CPython", "Programming Language :: Python :: Implementation :: PyPy",]
-dependencies = [ "txl ==0.3.2", "httpx>=0.23.1", "httpx-ws>=0.4.2",]
+dependencies = [ "txl ==0.3.3", "httpx>=0.23.1", "httpx-ws>=0.4.2",]
 [[project.authors]]
 name = "David Brochart"
 email = "david.brochart@gmail.com"
 
 [project.urls]
-Source = "https://github.com/davidbrochart/jpterm/plugins/remote_terminals"
+Source = "https://github.com/davidbrochart/jpterm/tree/main/plugins/remote_terminals"
 
 [project.entry-points."txl.modules"]
 remote_terminals = "txl_remote_terminals.main:RemoteTerminalsModule"

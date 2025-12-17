@@ -35,5 +35,7 @@ jobs:
     steps:
     - name: Retrieve packages
       uses: actions/download-artifact@v7
+      with:
+        path: dist
     - name: Upload packages
       uses: pypa/gh-action-pypi-publish@release/v1

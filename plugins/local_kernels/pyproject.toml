@@ -4,20 +4,20 @@ build-backend = "hatchling.build"
 
 [project]
 name = "txl_local_kernels"
-version = "0.3.6"
+version = "0.3.7"
 description = "TXL plugin for local kernels"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 keywords = []
 classifiers = [ "Development Status :: 4 - Beta", "Programming Language :: Python", "Programming Language :: Python :: 3.10", "Programming Language :: Python :: 3.11", "Programming Language :: Python :: 3.12", "Programming Language :: Python :: 3.13", "Programming Language :: Python :: Implementation :: CPython", "Programming Language :: Python :: Implementation :: PyPy",]
-dependencies = [ "txl ==0.3.2", "txl_kernel", "pyzmq >=24.0.1", "ipykernel",]
+dependencies = [ "txl ==0.3.3", "txl_kernel", "pyzmq >=24.0.1", "ipykernel",]
 [[project.authors]]
 name = "David Brochart"
 email = "david.brochart@gmail.com"
 
 [project.urls]
-Source = "https://github.com/davidbrochart/jpterm/plugins/local_kernels"
+Source = "https://github.com/davidbrochart/jpterm/tree/main/plugins/local_kernels"
 
 [project.entry-points."fps.modules"]
 local_kernels = "txl_local_kernels.main:LocalKernelsModule"
