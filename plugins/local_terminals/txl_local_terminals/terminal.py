@@ -69,7 +69,7 @@ class LocalTerminals(Terminals, Widget, metaclass=TerminalsMeta):
         await self._send_queue.put(["setup", {}])
         while True:
             msg = await self._recv_queue.get()
-            if msg[0] == "stdin":
+            if msg[0] == "stdin" and msg[1] is not None:
                 self._p_out.write(msg[1].encode())
             elif msg[0] == "set_size":
                 winsize = struct.pack("HH", msg[1], msg[2])
