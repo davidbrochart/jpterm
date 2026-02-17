@@ -48,7 +48,7 @@ jobs:
           activate-environment: "true"
       - name: Install jpterm and plugins
         run: |
-          uv venv
+          uv venv --clear
           uv pip install -e "."
 
       - name: Run jpterm
