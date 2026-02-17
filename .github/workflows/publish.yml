@@ -11,14 +11,9 @@ jobs:
     environment: release
     steps:
     - uses: actions/checkout@v6
-    - name: Set up Python
-      uses: actions/setup-python@v6
-      with:
-        python-version: 3.x
-    - name: Install dependencies
-      run: pip install hatch httpx toml
-    - name: Create packages
-      run: python publish.py
+    - uses: astral-sh/setup-uv@v7
+    - name: Build packages
+      run: uv build --all-packages
     - name: Archive packages
       uses: actions/upload-artifact@v6
       with:

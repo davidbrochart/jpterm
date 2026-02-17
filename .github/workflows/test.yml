@@ -42,14 +42,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Install hatch
-        run: pip install hatch
+          activate-environment: "true"
+      - name: Install jpterm and plugins
+        run: |
+          uv venv --clear
+          uv pip install -e "."
 
       - name: Run jpterm
-        run: hatch run dev:jpterm --help
+        run: uv run jpterm --help
