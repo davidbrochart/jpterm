@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build"]
+build-backend = "uv_build"
 
 [project]
 name = "jpterm"
@@ -17,6 +17,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
@@ -26,29 +27,29 @@ keywords = [
 ]
 dependencies = [
     "rich-click >=1.6.0",
-    "txl ==0.3.3",
-    "txl_cell ==0.3.7",
-    "txl_console ==0.3.7",
-    "txl_editors ==0.3.7",
-    "txl_file_browser ==0.3.7",
-    "txl_image_viewer ==0.3.7",
-    "txl_jpterm ==0.3.8",
-    "txl_kernel ==0.3.9",
-    "txl_local_contents ==0.3.7",
-    "txl_local_terminals ==0.3.8",
-    "txl_local_kernels ==0.3.7",
-    "txl_notebook_editor ==0.3.7",
-    "txl_remote_contents ==0.3.7",
-    "txl_remote_terminals ==0.3.7",
-    "txl_remote_kernels ==0.3.7",
-    "txl_text_editor ==0.3.7",
-    "txl_markdown_viewer ==0.3.7",
-    "txl_terminal ==0.3.7",
-    "txl_launcher ==0.3.7",
-    "txl_widgets ==0.3.7",
+    "txl >=0.3.3,<0.4.0",
+    "txl_cell >=0.3.7,<0.4.0",
+    "txl_console >=0.3.7,<0.4.0",
+    "txl_editors >=0.3.7,<0.4.0",
+    "txl_file_browser >=0.3.7,<0.4.0",
+    "txl_image_viewer >=0.3.7,<0.4.0",
+    "txl_jpterm >=0.3.8,<0.4.0",
+    "txl_kernel >=0.3.9,<0.4.0",
+    "txl_local_contents >=0.3.7,<0.4.0",
+    "txl_local_terminals >=0.3.8,<0.4.0",
+    "txl_local_kernels >=0.3.7,<0.4.0",
+    "txl_notebook_editor >=0.3.7,<0.4.0",
+    "txl_remote_contents >=0.3.7,<0.4.0",
+    "txl_remote_terminals >=0.3.7,0.4.0",
+    "txl_remote_kernels >=0.3.7<0.4.0",
+    "txl_text_editor >=0.3.7,0.4.0",
+    "txl_markdown_viewer >=0.3.7,<0.4.0",
+    "txl_terminal >=0.3.7,<0.4.0",
+    "txl_launcher >=0.3.7,<0.4.0",
+    "txl_widgets >=0.3.7<0.4.0",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 docs = [
     "mkdocs",
     "mkdocs-material",
@@ -61,41 +62,31 @@ jpterm = "jpterm.cli:main"
 [project.urls]
 Homepage = "https://github.com/davidbrochart/jpterm"
 
-[tool.hatch.envs.docs]
-features = ["docs"]
+[tool.uv.workspace]
+members = ["plugins/*", "txl"]
 
-[tool.hatch.envs.docs.scripts]
-build = "mkdocs build --clean --strict"
-serve = "mkdocs serve --dev-addr localhost:8000"
-
-[tool.hatch.envs.dev]
-pre-install-commands = [
-    "pip install pre-commit",
-    "pip install textual-dev",
-    "pip install -e ./txl",
-    "pip install -e ./plugins/cell",
-    "pip install -e ./plugins/console",
-    "pip install -e ./plugins/editors",
-    "pip install -e ./plugins/file_browser",
-    "pip install -e ./plugins/image_viewer",
-    "pip install -e ./plugins/jpterm",
-    "pip install -e ./plugins/kernel",
-    "pip install -e ./plugins/local_contents",
-    "pip install -e ./plugins/local_terminals",
-    "pip install -e ./plugins/local_kernels",
-    "pip install -e ./plugins/notebook_editor",
-    "pip install -e ./plugins/remote_contents",
-    "pip install -e ./plugins/remote_terminals",
-    "pip install -e ./plugins/remote_kernels",
-    "pip install -e ./plugins/text_editor",
-    "pip install -e ./plugins/markdown_viewer",
-    "pip install -e ./plugins/terminal",
-    "pip install -e ./plugins/launcher",
-    "pip install -e ./plugins/widgets",
-
-    'pip install "jupyterlab>=4"',
-    'pip install "jupyter-collaboration >=2"',
-]
+[tool.uv.sources]
+jpterm = { workspace = true }
+txl = { workspace = true }
+txl-cell = { workspace = true }
+txl-console = { workspace = true }
+txl-editors = { workspace = true }
+txl-file_browser = { workspace = true }
+txl-image_viewer = { workspace = true }
+txl-jpterm = { workspace = true }
+txl-kernel = { workspace = true }
+txl-local_contents = { workspace = true }
+txl-local_terminals = { workspace = true }
+txl-local_kernels = { workspace = true }
+txl-notebook_editor = { workspace = true }
+txl-remote_contents = { workspace = true }
+txl-remote_terminals = { workspace = true }
+txl-remote_kernels = { workspace = true }
+txl-text_editor = { workspace = true }
+txl-markdown_viewer = { workspace = true }
+txl-terminal = { workspace = true }
+txl-launcher = { workspace = true }
+txl-widgets = { workspace = true }
 
 [tool.ruff.lint]
 select = [
