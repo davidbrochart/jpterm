@@ -15,7 +15,7 @@ jobs:
     - name: Build packages
       run: uv build --all-packages
     - name: Archive packages
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: dist
         path: dist
