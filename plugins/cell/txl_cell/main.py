@@ -1,9 +1,10 @@
 import json
+import math
 from functools import partial
 from importlib.metadata import entry_points
+from typing import Any
 
-from anyio import create_task_group, sleep
-from anyioutils import Queue, create_task
+from anyio import create_memory_object_stream, create_task_group, sleep
 from fps import Module
 from pycrdt import Doc, Map, MapEvent, Text
 from rich.text import Text as RichText
@@ -12,6 +13,7 @@ from textual.containers import Container
 from textual.widgets import Static
 
 from txl.base import Cell, CellFactory, Contents, Kernel, Widgets
+from txl.stapled import StapledObjectStream
 from txl.text_input import TextInput
 
 YDOCS = {ep.name: ep.load() for ep in entry_points(group="ypywidgets")}
@@ -75,23 +77,27 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
         self.update(mount=False)
         self.ycell.observe_deep(self.on_change)
         self.styles.height = "auto"
-        self.cell_change_events = Queue()
-        self.widget_change_events = Queue()
-        create_task(self.observe_cell_changes(), task_group)
-        create_task(self.observe_widget_changes(), task_group)
+        self.cell_change_events = StapledObjectStream(
+            *create_memory_object_stream[Any](max_buffer_size=math.inf)
+        )
+        self.widget_change_events = StapledObjectStream(
+            *create_memory_object_stream[Any](max_buffer_size=math.inf)
+        )
+        task_group.create_task(self.observe_cell_changes())
+        task_group.create_task(self.observe_widget_changes())
 
     def on_click(self):
         self.clicked = True
 
     def on_change(self, events):
-        self.cell_change_events.put_nowait(events)
+        self.cell_change_events.send_nowait(events)
 
     def on_widget_change(self, ydoc, event):
-        self.widget_change_events.put_nowait((ydoc, event))
+        self.widget_change_events.send_nowait((ydoc, event))
 
     async def observe_widget_changes(self):
         while True:
-            ydoc, event = await self.widget_change_events.get()
+            ydoc, event = await self.widget_change_events.receive()
             model_name = event.delta[0]["insert"]
             model = YDOCS[f"{model_name}Model"](ydoc=ydoc)
             widget = YDOCS[f"txl_{model_name}"](model)
@@ -100,7 +106,7 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
 
     async def observe_cell_changes(self):
         while True:
-            events = await self.cell_change_events.get()
+            events = await self.cell_change_events.receive()
             for event in events:
                 if isinstance(event, MapEvent):
                     if "execution_state" in event.keys:
@@ -150,9 +156,8 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
                                             # this is a widget
                                             is_widget = True
                                             room_id = f"ywidget:{inserted.guid}"
-                                            create_task(
+                                            self.task_group.create_task(
                                                 self.contents.websocket_provider(room_id, inserted),
-                                                self.task_group,
                                             )
                                             inserted["_model_name"] = model_name = Text()
                                             model_name.observe(partial(
@@ -211,7 +216,7 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
             language=language,
             show_border=self.show_border,
         )
-        create_task(self.source.start(), self.task_group)
+        self.task_group.create_task(self.source.start())
         if mount:
             self.mount(self.source)
 
@@ -227,7 +232,7 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
             guid = output["guid"]
             ywidget_doc = Doc()
             room_id = f"ywidget:{guid}"
-            create_task(self.contents.websocket_provider(room_id, ywidget_doc), self.task_group)
+            self.task_group.create_task(self.contents.websocket_provider(room_id, ywidget_doc))
             ywidget_doc["_model_name"] = model_name = Text()
             model_name.observe(partial(self.on_widget_change, ywidget_doc))
             return

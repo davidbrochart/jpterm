@@ -1,5 +1,4 @@
 from anyio import create_task_group, sleep
-from anyioutils import create_task
 from fps import Module
 from textual._context import active_app
 from textual.app import App
@@ -34,7 +33,7 @@ class MarkdownViewer(Editor, Container, metaclass=MarkdownViewerMeta):
         self.mount(self.viewer)
 
     def on_change(self, target, event):
-        create_task(self.update_viewer(), self.task_group)
+        self.task_group.create_task(self.update_viewer())
 
 
 class MarkdownViewerModule(Module):

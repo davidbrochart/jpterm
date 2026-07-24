@@ -1,16 +1,18 @@
 import fcntl
+import math
 import os
 import pty
 import shlex
 import struct
 import termios
+from typing import Any
 
-from anyio import wait_readable
-from anyioutils import Event, Queue
+from anyio import Event, create_memory_object_stream, wait_readable
 from textual.widget import Widget
 from textual.widgets._header import HeaderTitle
 
 from txl.base import Header, TerminalFactory, Terminals
+from txl.stapled import StapledObjectStream
 
 
 class TerminalsMeta(type(Terminals), type(Widget)):
@@ -22,8 +24,12 @@ class LocalTerminals(Terminals, Widget, metaclass=TerminalsMeta):
         self.task_group = task_group
         self.header = header
         self.terminal = terminal
-        self._send_queue = Queue()
-        self._recv_queue = Queue()
+        self._send_queue = StapledObjectStream(
+            *create_memory_object_stream[Any](max_buffer_size=math.inf)
+        )
+        self._recv_queue = StapledObjectStream(
+            *create_memory_object_stream[Any](max_buffer_size=math.inf)
+        )
         self._data_or_disconnect = None
         self._event = Event()
         super().__init__()
@@ -66,9 +72,9 @@ class LocalTerminals(Terminals, Widget, metaclass=TerminalsMeta):
             self._event.set()
 
     async def _run(self):
-        await self._send_queue.put(["setup", {}])
+        await self._send_queue.send(["setup", {}])
         while True:
-            msg = await self._recv_queue.get()
+            msg = await self._recv_queue.receive()
             if msg[0] == "stdin" and msg[1] is not None:
                 self._p_out.write(msg[1].encode())
             elif msg[0] == "set_size":
@@ -78,8 +84,8 @@ class LocalTerminals(Terminals, Widget, metaclass=TerminalsMeta):
     async def _send(self):
         while True:
             await self._event.wait()
-            self._event.clear()
+            self._event = Event()
             if self._data_or_disconnect is None:
-                await self._send_queue.put(["disconnect", 1])
+                await self._send_queue.send(["disconnect", 1])
             else:
-                await self._send_queue.put(["stdout", self._data_or_disconnect])
+                await self._send_queue.send(["stdout", self._data_or_disconnect])

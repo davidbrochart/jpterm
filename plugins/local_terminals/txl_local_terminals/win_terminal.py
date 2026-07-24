@@ -1,13 +1,15 @@
+import math
 import os
 from functools import partial
+from typing import Any
 
-from anyio import create_task_group, to_thread
-from anyioutils import Event, Queue
+from anyio import create_memory_object_stream, create_task_group, to_thread
 from textual.widget import Widget
 from textual.widgets._header import HeaderTitle
 from winpty import PTY
 
 from txl.base import Header, TerminalFactory, Terminals
+from txl.stapled import StapledObjectStream
 
 
 class TerminalsMeta(type(Terminals), type(Widget)):
@@ -19,10 +21,13 @@ class LocalTerminals(Terminals, Widget, metaclass=TerminalsMeta):
         self.task_group = task_group
         self.header = header
         self.terminal = terminal
-        self._send_queue = Queue()
-        self._recv_queue = Queue()
+        self._send_queue = StapledObjectStream(
+            *create_memory_object_stream[Any](max_buffer_size=math.inf)
+        )
+        self._recv_queue = StapledObjectStream(
+            *create_memory_object_stream[Any](max_buffer_size=math.inf)
+        )
         self._data_or_disconnect = None
-        self._event = Event()
         super().__init__()
 
     async def open(self):
@@ -44,7 +49,7 @@ class LocalTerminals(Terminals, Widget, metaclass=TerminalsMeta):
         return process
 
     async def _run(self):
-        await self._send_queue.put(["setup", {}])
+        await self._send_queue.send(["setup", {}])
 
         async with create_task_group() as tg:
             tg.start_soon(self._send)
@@ -55,15 +60,15 @@ class LocalTerminals(Terminals, Widget, metaclass=TerminalsMeta):
             try:
                 data = await to_thread.run_sync(partial(self._process.read, blocking=True))
             except Exception:
-                await self._send_queue.put(["disconnect", 1])
+                await self._send_queue.send(["disconnect", 1])
                 return
             else:
-                await self._send_queue.put(["stdout", data])
+                await self._send_queue.send(["stdout", data])
 
     async def _recv(self):
         while True:
             try:
-                msg = await self._recv_queue.get()
+                msg = await self._recv_queue.receive()
             except Exception:
                 return
             if msg[0] == "stdin":

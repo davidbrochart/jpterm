@@ -1,10 +1,12 @@
+import math
 import time
-from typing import Dict
+from typing import Any, Dict
 
-from anyio import move_on_after
-from anyioutils import Event, Queue, create_task
+from anyio import Event, create_memory_object_stream, move_on_after
 from fps import Signal
 from pycrdt import Array, Map
+
+from txl.stapled import StapledObjectStream
 
 from .message import create_message
 
@@ -31,8 +33,8 @@ class Comm:
             buffers=buffers,
         )
         self.msg_cnt += 1
-        create_task(
-            self.send_message(msg, self.shell_channel, change_date_to_str=True), self.task_group
+        self.task_group.create_task(
+            self.send_message(msg, self.shell_channel, change_date_to_str=True)
         )
 
 
@@ -41,10 +43,12 @@ class KernelMixin:
         self.task_group = task_group
         self.busy = Signal[bool]()
         self.msg_cnt = 0
-        self.execute_requests: Dict[str, Dict[str, Queue]] = {}
-        self.recv_queue = Queue()
+        self.execute_requests: Dict[str, Dict[str, StapledObjectStream]] = {}
+        self.recv_queue = StapledObjectStream(
+            *create_memory_object_stream[Any](max_buffer_size=math.inf)
+        )
         self.started = Event()
-        create_task(self.recv(), task_group)
+        task_group.create_task(self.recv())
 
     def create_message(self, *args, **kwargs):
         return create_message(*args, **kwargs)
@@ -62,18 +66,22 @@ class KernelMixin:
             await self.send_message(msg, self.shell_channel, change_date_to_str=True)
             msg_id = msg["header"]["msg_id"]
             self.execute_requests[msg_id] = {
-                "iopub": Queue(),
-                "shell": Queue(),
+                "iopub": StapledObjectStream(
+                    *create_memory_object_stream[Any](max_buffer_size=math.inf)
+                ),
+                "shell": StapledObjectStream(
+                    *create_memory_object_stream[Any](max_buffer_size=math.inf)
+                ),
             }
             with move_on_after(new_timeout) as scope:
-                msg = await self.execute_requests[msg_id]["shell"].get()
+                msg = await self.execute_requests[msg_id]["shell"].receive()
             if scope.cancelled_caught:
                 del self.execute_requests[msg_id]
                 error_message = f"Kernel didn't respond in {timeout} seconds"
                 raise RuntimeError(error_message)
             if msg["header"]["msg_type"] == "kernel_info_reply":
                 with move_on_after(0.2) as scope:
-                    msg = await self.execute_requests[msg_id]["iopub"].get()
+                    msg = await self.execute_requests[msg_id]["iopub"].receive()
                 if not scope.cancelled_caught:
                     break
             del self.execute_requests[msg_id]
@@ -81,7 +89,7 @@ class KernelMixin:
 
     async def recv(self):
         while True:
-            msg = await self.recv_queue.get()
+            msg = await self.recv_queue.receive()
             channel = msg.pop("channel")
             msg_type = msg["header"]["msg_type"]
             if msg_type == "comm_open":
@@ -108,7 +116,7 @@ class KernelMixin:
             if msg_id in self.execute_requests:
                 # msg["header"] = str_to_date(msg["header"])
                 # msg["parent_header"] = str_to_date(msg["parent_header"])
-                self.execute_requests[msg_id][channel].put_nowait(msg)
+                self.execute_requests[msg_id][channel].send_nowait(msg)
 
     async def execute(
         self,
@@ -136,15 +144,19 @@ class KernelMixin:
             msg_id = msg["header"]["msg_id"]
         self.msg_cnt += 1
         self.execute_requests[msg_id] = {
-            "iopub": Queue(),
-            "shell": Queue(),
+            "iopub": StapledObjectStream(
+                *create_memory_object_stream[Any](max_buffer_size=math.inf)
+            ),
+            "shell": StapledObjectStream(
+                *create_memory_object_stream[Any](max_buffer_size=math.inf)
+            ),
         }
         await self.send_message(msg, self.shell_channel, change_date_to_str=True)
         if wait_for_executed:
             deadline = time.monotonic() + timeout
             while True:
                 with move_on_after(deadline_to_timeout(deadline)) as scope:
-                    msg = await self.execute_requests[msg_id]["iopub"].get()
+                    msg = await self.execute_requests[msg_id]["iopub"].receive()
                 if scope.cancelled_caught:
                     del self.execute_requests[msg_id]
                     error_message = f"Kernel didn't respond in {timeout} seconds"
@@ -156,7 +168,7 @@ class KernelMixin:
                 ):
                     break
             with move_on_after(deadline_to_timeout(deadline)) as scope:
-                msg = await self.execute_requests[msg_id]["shell"].get()
+                msg = await self.execute_requests[msg_id]["shell"].receive()
             if scope.cancelled_caught:
                 del self.execute_requests[msg_id]
                 error_message = f"Kernel didn't respond in {timeout} seconds"

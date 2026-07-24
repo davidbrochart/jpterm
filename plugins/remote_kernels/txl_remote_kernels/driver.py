@@ -6,7 +6,6 @@ from urllib import parse
 
 import httpx
 from anyio import Lock, sleep
-from anyioutils import create_task
 from httpx_ws import aconnect_ws
 from txl_kernel.driver import KernelMixin
 from txl_kernel.message import date_to_str
@@ -40,7 +39,7 @@ class KernelDriver(KernelMixin):
         self.cookies = httpx.Cookies()
         i = self.base_url.find(":")
         self.ws_url = ("wss" if self.base_url[i - 1] == "s" else "ws") + self.base_url[i:]
-        self.start_task = create_task(self.start(), task_group)
+        self.start_task = task_group.create_task(self.start())
         self.comm_handlers = comm_handlers
         self.shell_channel = "shell"
         self.control_channel = "control"
@@ -79,7 +78,7 @@ class KernelDriver(KernelMixin):
             cookies=self.cookies,
             subprotocols=["v1.kernel.websocket.jupyter.org"],
         ) as self.websocket:
-            recv_task = create_task(self._recv(), self.task_group)
+            recv_task = self.task_group.create_task(self._recv())
             try:
                 await self.wait_for_ready()
                 self.started.set()
@@ -98,7 +97,7 @@ class KernelDriver(KernelMixin):
                     msg = json.loads(message.data)
                 else:
                     msg = from_binary(message.data)
-            self.recv_queue.put_nowait(msg)
+            self.recv_queue.send_nowait(msg)
 
     async def send_message(
         self,
