@@ -1,9 +1,9 @@
 import json
+import math
 from importlib.metadata import entry_points
 from typing import Any
 
 import anyio
-from anyioutils import Queue, TaskGroup
 from fps import Module
 from httpx import AsyncClient
 from textual._context import active_app
@@ -25,6 +25,7 @@ from txl.base import (
     Launcher,
     MainArea,
 )
+from txl.stapled import StapledObjectStream
 
 ydocs = {ep.name: ep.load() for ep in entry_points(group="jupyter_ydoc")}
 
@@ -84,8 +85,12 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         self.cell_i = 0
         self.cell_copy = None
         self.edit_mode = False
-        self.nb_change_target = Queue()
-        self.nb_change_events = Queue()
+        self.nb_change_target = StapledObjectStream(
+            *anyio.create_memory_object_stream[Any](max_buffer_size=math.inf)
+        )
+        self.nb_change_events = StapledObjectStream(
+            *anyio.create_memory_object_stream[Any](max_buffer_size=math.inf)
+        )
         self.top_bar = TopBar()
 
     def compose(self) -> ComposeResult:
@@ -169,13 +174,13 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
             self.cells[self.cell_i].select()
 
     def on_change(self, target, events):
-        self.nb_change_target.put_nowait(target)
-        self.nb_change_events.put_nowait(events)
+        self.nb_change_target.send_nowait(target)
+        self.nb_change_events.send_nowait(events)
 
     async def observe_nb_changes(self):
         while True:
-            target = await self.nb_change_target.get()
-            events = await self.nb_change_events.get()
+            target = await self.nb_change_target.receive()
+            events = await self.nb_change_events.receive()
             if target == "meta":
                 for event in events:
                     meta = event.target
@@ -413,7 +418,7 @@ class NotebookEditorModule(Module):
 
         _kernelspecs = await kernelspecs.get()
 
-        async with TaskGroup() as self.tg:
+        async with anyio.create_task_group() as self.tg:
             def notebook_editor_factory():
                 active_app.set(app)
                 return NotebookEditor(

@@ -1,8 +1,7 @@
 from functools import partial
 
 import pyte
-from anyio import create_task_group, sleep
-from anyioutils import Event, create_task
+from anyio import Event, create_task_group, sleep
 from fps import Module
 from rich.console import RenderableType
 from rich.text import Text
@@ -45,7 +44,7 @@ class _Terminal(Terminal, Widget, metaclass=TerminalMeta, can_focus=True):
         self._recv_queue = recv_queue
         self._display = PyteDisplay([Text()])
         self.size_set = Event()
-        create_task(self._recv(), task_group)
+        task_group.create_task(self._recv())
         main_area.set_label("Terminal")
 
     def render(self) -> RenderableType:
@@ -60,16 +59,16 @@ class _Terminal(Terminal, Widget, metaclass=TerminalMeta, can_focus=True):
 
     async def on_key(self, event: events.Key) -> None:
         char = CTRL_KEYS.get(event.key) or event.character
-        await self._send_queue.put(["stdin", char])
+        await self._send_queue.send(["stdin", char])
         event.stop()
 
     async def _recv(self):
         await self.size_set.wait()
         while True:
-            message = await self._recv_queue.get()
+            message = await self._recv_queue.receive()
             cmd = message[0]
             if cmd == "setup":
-                await self._send_queue.put(["set_size", self._nrow, self._ncol, 567, 573])
+                await self._send_queue.send(["set_size", self._nrow, self._ncol, 567, 573])
             elif cmd == "stdout":
                 chars = message[1]
                 self._stream.feed(chars)

@@ -2,7 +2,7 @@ import os
 import uuid
 from typing import Any, Dict, List, Optional, cast
 
-from anyioutils import Task, create_task
+from anyio import TaskHandle
 from txl_kernel.driver import KernelMixin
 
 from .connect import cfg_t, connect_channel, launch_kernel, read_connection_file
@@ -39,7 +39,7 @@ class KernelDriver(KernelMixin):
             self.connection_cfg = read_connection_file(connection_file)
         self.key = cast(str, self.connection_cfg["key"])
         self.session_id = uuid.uuid4().hex
-        self.channel_tasks: List[Task] = []
+        self.channel_tasks: List[TaskHandle] = []
         self.comm_handlers = comm_handlers
         task_group.start_soon(self.start)
         kernel_drivers.append(self)
@@ -83,8 +83,8 @@ class KernelDriver(KernelMixin):
         self.iopub_channel = connect_channel("iopub", connection_cfg)
 
     def listen_channels(self):
-        self.channel_tasks.append(create_task(self._recv_iopub(), self.task_group))
-        self.channel_tasks.append(create_task(self._recv_shell(), self.task_group))
+        self.channel_tasks.append(self.task_group.create_task(self._recv_iopub()))
+        self.channel_tasks.append(self.task_group.create_task(self._recv_shell()))
 
     async def stop(self) -> None:
         self.kernel_process.kill()
@@ -97,13 +97,13 @@ class KernelDriver(KernelMixin):
         while True:
             msg = await self.receive_message(self.iopub_channel, change_str_to_date=True)
             msg["channel"] = "iopub"
-            self.recv_queue.put_nowait(msg)
+            self.recv_queue.send_nowait(msg)
 
     async def _recv_shell(self):
         while True:
             msg = await self.receive_message(self.shell_channel, change_str_to_date=True)
             msg["channel"] = "shell"
-            self.recv_queue.put_nowait(msg)
+            self.recv_queue.send_nowait(msg)
 
     async def send_message(
         self,

@@ -1,5 +1,7 @@
-from anyio import create_task_group, sleep
-from anyioutils import Queue
+import math
+from typing import Any
+
+from anyio import create_memory_object_stream, create_task_group, sleep
 from fps import Module
 from textual._context import active_app
 from textual.app import App
@@ -8,6 +10,7 @@ from textual.events import Event
 from textual.keys import Keys
 
 from txl.base import Contents, Editor, Editors, MainArea
+from txl.stapled import StapledObjectStream
 from txl.text_input import TextInput
 
 
@@ -24,8 +27,12 @@ class TextEditor(Editor, Container, metaclass=TextEditorMeta):
         self.contents = contents
         self.main_area = main_area
         self.task_group = task_group
-        self.change_target = Queue()
-        self.change_events = Queue()
+        self.change_target = StapledObjectStream(
+            *create_memory_object_stream[Any](max_buffer_size=math.inf)
+        )
+        self.change_events = StapledObjectStream(
+            *create_memory_object_stream[Any](max_buffer_size=math.inf)
+        )
 
     async def open(self, path: str) -> None:
         self.path = path
@@ -40,13 +47,13 @@ class TextEditor(Editor, Container, metaclass=TextEditorMeta):
         await self.editor.stop()
 
     def on_change(self, target, events):
-        self.change_target.put_nowait(target)
-        self.change_events.put_nowait(events)
+        self.change_target.send_nowait(target)
+        self.change_events.send_nowait(events)
 
     async def observe_changes(self):
         while True:
-            target = await self.change_target.get()
-            events = await self.change_events.get()
+            target = await self.change_target.receive()
+            events = await self.change_events.receive()
             if target == "state":
                 if "dirty" in events.keys:
                     dirty = events.keys["dirty"]["newValue"]

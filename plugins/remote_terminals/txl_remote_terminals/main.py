@@ -1,15 +1,16 @@
-from typing import Dict, List
+import math
+from typing import Any, Dict, List
 from urllib import parse
 
 import httpx
-from anyio import create_task_group, sleep
-from anyioutils import Event, Queue, create_task
+from anyio import Event, create_memory_object_stream, create_task_group, sleep
 from fps import Module
 from httpx_ws import aconnect_ws
 from textual.widget import Widget
 from textual.widgets._header import HeaderTitle
 
 from txl.base import Header, Launcher, TerminalFactory, Terminals
+from txl.stapled import StapledObjectStream
 
 
 class TerminalsMeta(type(Terminals), type(Widget)):
@@ -34,8 +35,12 @@ class RemoteTerminals(Terminals, Widget, metaclass=TerminalsMeta):
         self.task_group = task_group
         i = base_url.find(":")
         self.ws_url = ("wss" if base_url[i - 1] == "s" else "ws") + base_url[i:]
-        self._recv_queue = Queue()
-        self._send_queue = Queue()
+        self._recv_queue = StapledObjectStream(
+            *create_memory_object_stream[Any](max_buffer_size=math.inf)
+        )
+        self._send_queue = StapledObjectStream(
+            *create_memory_object_stream[Any](max_buffer_size=math.inf)
+        )
         self._done = Event()
         super().__init__()
 
@@ -65,12 +70,12 @@ class RemoteTerminals(Terminals, Widget, metaclass=TerminalsMeta):
                 f"{self.ws_url}/terminals/websocket/{name}", cookies=self.cookies
             ) as self.websocket:
                 self.task_group.start_soon(self._recv)
-                self.send_task = create_task(self._send(), self.task_group)
+                self.send_task = self.task_group.create_task(self._send())
                 await self._done.wait()
 
     async def _send(self):
         while True:
-            message = await self._send_queue.get()
+            message = await self._send_queue.receive()
             try:
                 await self.websocket.send_json(message)
             except BaseException:
@@ -84,7 +89,7 @@ class RemoteTerminals(Terminals, Widget, metaclass=TerminalsMeta):
             except Exception:
                 self.send_task.cancel()
                 return
-            await self._recv_queue.put(message)
+            await self._recv_queue.send(message)
 
 
 class RemoteTerminalsModule(Module):
