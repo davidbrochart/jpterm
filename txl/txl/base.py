@@ -15,6 +15,8 @@ class FileBrowser(ABC):
 
 
 class Editor(ABC):
+    read_only: bool = False
+
     @abstractmethod
     async def open(self, path: str) -> None:
         ...
@@ -24,6 +26,10 @@ class Editor(ABC):
 
 
 class Editors(ABC):
+    @abstractmethod
+    def create_editor(self, path: str) -> Editor:
+        ...
+
     @abstractmethod
     def register_editor_factory(self, editor_factory: Callable, extensions: List[str] = [None]):
         ...

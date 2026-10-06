@@ -20,6 +20,12 @@ def jpterm_main(kwargs):
     collaborative = kwargs.pop("collaborative")
     experimental = kwargs.pop("experimental")
     set_ = list(kwargs["set_"])
+    backend_modules = {
+        f"{location}_{service}"
+        for location in ("local", "remote")
+        for service in ("contents", "terminals", "kernels", "kernelspecs")
+    }
+    disabled[:] = [name for name in disabled if name not in backend_modules]
     if server:
         set_.append(f"remote_contents.url={server}")
         set_.append(f"remote_terminals.url={server}")
@@ -70,10 +76,26 @@ def main():
             help="Experimental mode (with Jupyverse).",
         ),
     ]
-    _main = txl_main
+    @functools.wraps(txl_main)
+    def _main(**kwargs):
+        return txl_main(**kwargs)
+
+    _main.__click_params__ = list(getattr(txl_main, "__click_params__", []))
     for decorator in decorators[::-1]:
         _main = decorator(_main)
-    command = click.command()(_main)
+    @click.group(invoke_without_command=True)
+    @click.pass_context
+    def command(ctx, **kwargs):
+        if ctx.invoked_subcommand is None:
+            _main(**kwargs)
+        else:
+            ctx.obj = kwargs
+
+    # Keep the existing TUI options on the root command.
+    command.params.extend(click.command()(_main).params)
+    from .show import show
+
+    command.add_command(show)
     command()
 
 

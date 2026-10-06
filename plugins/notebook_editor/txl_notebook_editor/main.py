@@ -71,6 +71,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         cell_factory: CellFactory,
         main_area: MainArea,
         experimental: bool = False,
+        read_only: bool = False,
     ) -> None:
         super().__init__()
         self.task_group = task_group
@@ -80,21 +81,17 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         self.cell_factory = cell_factory
         self.main_area = main_area
         self.experimental = experimental
+        self.read_only = read_only
         self.kernel = None
         self.cells = []
         self.cell_i = 0
         self.cell_copy = None
         self.edit_mode = False
-        self.nb_change_target = StapledObjectStream(
-            *anyio.create_memory_object_stream[Any](max_buffer_size=math.inf)
-        )
-        self.nb_change_events = StapledObjectStream(
-            *anyio.create_memory_object_stream[Any](max_buffer_size=math.inf)
-        )
         self.top_bar = TopBar()
 
     def compose(self) -> ComposeResult:
-        yield self.top_bar
+        if not self.read_only:
+            yield self.top_bar
 
     def watch_busy(self, busy):
         self.top_bar.busy = busy
@@ -153,13 +150,20 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         self.path = path
         self.ynb = await self.contents.get(self.path, type="notebook", format="json")
         self.update()
-        self.ynb.observe(self.on_change)
-        self.task_group.create_task(self.observe_nb_changes())
+        if not self.read_only:
+            self.nb_change_target = StapledObjectStream(
+                *anyio.create_memory_object_stream[Any](max_buffer_size=math.inf)
+            )
+            self.nb_change_events = StapledObjectStream(
+                *anyio.create_memory_object_stream[Any](max_buffer_size=math.inf)
+            )
+            self.ynb.observe(self.on_change)
+            self.task_group.create_task(self.observe_nb_changes())
 
     def update(self):
         ipynb = self.ynb.source
         self.language = ipynb.get("metadata", {}).get("kernelspec", {}).get("language", None)
-        if self.kernel is None:
+        if self.kernel is None and not self.read_only:
             kernel_name = ipynb.get("metadata", {}).get("kernelspec", {}).get("name")
             if kernel_name:
                 self.kernel = self.kernels(kernel_name)
@@ -168,9 +172,15 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
             cell = self.cell_factory(
                 self.ynb.ycells[i_cell], self.language, self.kernel
             )
+            if self.read_only:
+                cell.source.read_only = True
+                cell.source.highlight_cursor_line = False
+                cell.source.show_cursor = False
+                cell.source.styles.max_height = None
+                cell.source.styles.scrollbar_size_vertical = 0
             self.mount(cell)
             self.cells.append(cell)
-        if self.cells:
+        if self.cells and not self.read_only:
             self.cells[self.cell_i].select()
 
     def on_change(self, target, events):
@@ -240,6 +250,8 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                                 idx += 1
 
     async def on_key(self, event: Event) -> None:
+        if self.read_only:
+            return
         if event.key == Keys.Escape:
             self.edit_mode = False
             self.current_cell.focus()
@@ -402,9 +414,13 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
 
 
 class NotebookEditorModule(Module):
-    def __init__(self, name: str, register: bool = True, experimental: str = "False"):
+    def __init__(
+        self, name: str, register: bool = True, experimental: str = "False",
+        read_only: bool = False,
+    ):
         super().__init__(name)
         self.register = register
+        self.read_only = read_only
         self.experimental = False if experimental == "False" else True
 
     async def start(self) -> None:
@@ -416,7 +432,7 @@ class NotebookEditorModule(Module):
         main_area = await self.get(MainArea)
         app = await self.get(App)
 
-        _kernelspecs = await kernelspecs.get()
+        _kernelspecs = {} if self.read_only or app.cli else await kernelspecs.get()
 
         async with anyio.create_task_group() as self.tg:
             def notebook_editor_factory():
@@ -429,6 +445,7 @@ class NotebookEditorModule(Module):
                     cell_factory,
                     main_area,
                     self.experimental,
+                    self.read_only,
                 )
 
             launcher.register("notebook", notebook_editor_factory)
