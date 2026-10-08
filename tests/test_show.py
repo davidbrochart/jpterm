@@ -7,13 +7,12 @@ import anyio
 import httpx
 from click.testing import CliRunner
 from fps import Module, get_root_module
+from jpterm.cli import main
+from jpterm.show import load_document
 from pycrdt import YMessageType, YSyncMessageType
 from rich.console import Console
 from textual.app import App
 from textual.widgets import Static
-from txl.app import AppModule
-from txl.base import CellFactory, Contents, Editors, Kernels, Kernelspecs, Launcher
-from txl.base import MainArea as MainAreaService
 from txl_editors.main import _Editors
 from txl_jpterm.main import Jpterm
 from txl_jpterm.main_area import MainArea
@@ -22,8 +21,9 @@ from txl_notebook_editor.main import NotebookEditor, NotebookEditorModule
 from txl_remote_contents.main import RemoteContents, SyncedWebsocket, ydocs
 from txl_text_editor.main import TextEditor, TextEditorModule
 
-from jpterm.cli import main
-from jpterm.show import load_document
+from txl.app import AppModule
+from txl.base import CellFactory, Contents, Editors, Kernels, Kernelspecs, Launcher
+from txl.base import MainArea as MainAreaService
 
 
 def test_ctrl_q_exits_application_and_stops_plugins():

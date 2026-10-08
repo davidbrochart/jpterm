@@ -51,12 +51,15 @@ def jupyverse_server(tmp_path_factory):
     }
     (server_root / "remote.ipynb").write_text(json.dumps(server.notebook), encoding="utf-8")
     server.text = "SERVER LICENSE\n\nOnly available from the server.\n"
-    (server_root / "LICENSE").write_text(server.text, encoding="utf-8")
+    # Write exact bytes so Windows does not translate LF into CRLF.
+    (server_root / "LICENSE").write_bytes(server.text.encode("utf-8"))
+    server.crlf_text = server.text.replace("\n", "\r\n")
+    (server_root / "LICENSE_CRLF").write_bytes(server.crlf_text.encode("utf-8"))
     server.markdown = "# Server heading\n\n" + "\n\n".join(
         (f"server_paragraph_{index:02}" for index in range(30))
     )
     (server_root / "remote.md").write_text(server.markdown, encoding="utf-8")
-    for name in ("remote.ipynb", "LICENSE", "remote.md"):
+    for name in ("remote.ipynb", "LICENSE", "LICENSE_CRLF", "remote.md"):
         (server.client_root / name).write_text("WRONG_LOCAL_CONTENT", encoding="utf-8")
     with socket.socket() as listener:
         listener.bind(("127.0.0.1", 0))
@@ -141,11 +144,13 @@ def test_show_notebook(run_cli, jupyverse_server):
         assert response.json() == []
 
 
-@pytest.mark.parametrize("path", ["remote.ipynb", "LICENSE"])
+@pytest.mark.parametrize("path", ["remote.ipynb", "LICENSE", "LICENSE_CRLF"])
 def test_show_json(run_cli, jupyverse_server, path):
     source = json.loads(run_cli(path, "--json").stdout)
     if path == "LICENSE":
         assert source == jupyverse_server.text
+    elif path == "LICENSE_CRLF":
+        assert source == jupyverse_server.crlf_text
     else:
         cell = source["cells"][0]
         assert cell["id"] == "server-cell"
