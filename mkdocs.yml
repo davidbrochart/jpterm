@@ -31,6 +31,7 @@ nav:
 - Overview: index.md
 - install.md
 - Usage:
+  - usage/TUI.md
   - usage/CLI.md
   - usage/key_bindings.md
 - Plugins:

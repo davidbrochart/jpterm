@@ -1,71 +1,19 @@
-Once jpterm has been installed, it can be launched from the command line. You can show the help message like so:
+When jpterm is invoked with a command, it runs as a CLI in your terminal without taking control, inlining potential outputs below the command.
+
+Use the `show` command to display the (rich) content of a file:
 
 ```bash
-$ jpterm --help
+# Without a server:
+jpterm show path/to/file
 
- Usage: jpterm [OPTIONS]
-
-╭─ Options ─────────────────────────────────────────────────────────────────────╮
-│ --logo                                    Show the jpterm logo.               │
-│ --server                            TEXT  The URL to the Jupyter server.      │
-│ --collaborative/--no-collaborative        Collaborative mode (with a server). │
-│ --experimental/--no-experimental          Experimental mode (with Jupyverse). │
-│ --configfile                        TEXT  Read YAML configuration file.       │
-│ --set                               TEXT  Set configuration.                  │
-│ --help                                    Show this message and exit.         │
-╰───────────────────────────────────────────────────────────────────────────────╯
+# With a server:
+jpterm --server http://127.0.0.1:8000 show path/to/file
 ```
 
-The easiest way to launch jpterm is simply by entering `jpterm` and hitting *Enter*. Jpterm will run locally on your machine, without needing a Jupyter server.
+By "rich content" we mean that for instance, a Python file will be rendered with Python syntax highlighting, a Jupyter notebook will be rendered with a nice view of cells, etc.
 
-Jpterm can also be a client to a Jupyter server, just like when you use JupyterLab. While JupyterLab is a Web client that runs in the browser, jpterm runs in the terminal. The two main Jupyter servers are [jupyter-server](https://github.com/jupyter-server/jupyter_server) and [jupyverse](https://github.com/jupyter-server/jupyverse). You can install and launch them like so:
+If you pass `--json` then the content will not be represented as a rich output but as JSON. This can be useful for passing the output to another tool:
 
 ```bash
-# Install jupyter-server:
-pip install "jupyterlab>=4"
-pip install jupyter-collaboration
-# Launch it:
-jupyter lab --ServerApp.token='' --ServerApp.password='' --ServerApp.disable_check_xsrf=True --no-browser --port=8000
-
-# Or install jupyverse:
-pip install "jupyverse[jupyterlab, noauth]"
-# Launch it:
-jupyverse
+jpterm show path/to/notebook --json | jq -r '.cells[0].source'
 ```
-
-Then pass the URL of the Jupyter server to jpterm through the `--server` option:
-
-```bash
-jpterm --server http://127.0.0.1:8000
-```
-
-Use `show` to display a document inline using the same editor selection as the TUI:
-
-```bash
-jpterm show analysis.ipynb
-jpterm show script.py
-jpterm show notes.txt
-jpterm show analysis.ipynb --json
-jpterm --server http://127.0.0.1:8000 show analysis.ipynb
-jpterm --server http://127.0.0.1:8000 --collaborative show analysis.ipynb
-```
-
-The default display uses the file's registered editor in read-only mode. Textual
-prepares the full-height layout off-screen, then prints it once below the shell
-prompt and returns
-automatically, leaving the whole document in terminal scrollback without a vertical scrollbar.
-No kernel is started and cells are not executed. `--json` prints the document source without an
-inline display and is suitable for pipes and scripts. For notebooks this is the
-notebook JSON; for text files it is a JSON string.
-Server paths are relative to the server's contents root. Collaborative reads wait
-for the initial CRDT synchronization before displaying the notebook. Use
-`show --timeout SECONDS` to change the default 30-second loading timeout.
-
-To run the CLI integration tests against a temporary Jupyverse server:
-
-```bash
-uv run --group test pytest tests/test_server_cli.py -v
-```
-
-The tests start a non-collaborative server on an available local port, serve files
-from a temporary directory, and shut the server down afterward.
