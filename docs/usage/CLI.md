@@ -1,40 +1,19 @@
-Once jpterm has been installed, it can be launched from the command line. You can show the help message like so:
+When jpterm is invoked with a command, it runs as a CLI in your terminal without taking control, inlining potential outputs below the command.
+
+Use the `show` command to display the (rich) content of a file:
 
 ```bash
-$ jpterm --help
+# Without a server:
+jpterm show path/to/file
 
- Usage: jpterm [OPTIONS]
-
-╭─ Options ─────────────────────────────────────────────────────────────────────╮
-│ --logo                                    Show the jpterm logo.               │
-│ --server                            TEXT  The URL to the Jupyter server.      │
-│ --collaborative/--no-collaborative        Collaborative mode (with a server). │
-│ --experimental/--no-experimental          Experimental mode (with Jupyverse). │
-│ --configfile                        TEXT  Read YAML configuration file.       │
-│ --set                               TEXT  Set configuration.                  │
-│ --help                                    Show this message and exit.         │
-╰───────────────────────────────────────────────────────────────────────────────╯
+# With a server:
+jpterm --server http://127.0.0.1:8000 show path/to/file
 ```
 
-The easiest way to launch jpterm is simply by entering `jpterm` and hitting *Enter*. Jpterm will run locally on your machine, without needing a Jupyter server.
+By "rich content" we mean that for instance, a Python file will be rendered with Python syntax highlighting, a Jupyter notebook will be rendered with a nice view of cells, etc.
 
-Jpterm can also be a client to a Jupyter server, just like when you use JupyterLab. While JupyterLab is a Web client that runs in the browser, jpterm runs in the terminal. The two main Jupyter servers are [jupyter-server](https://github.com/jupyter-server/jupyter_server) and [jupyverse](https://github.com/jupyter-server/jupyverse). You can install and launch them like so:
-
-```bash
-# Install jupyter-server:
-pip install "jupyterlab>=4"
-pip install jupyter-collaboration
-# Launch it:
-jupyter lab --ServerApp.token='' --ServerApp.password='' --ServerApp.disable_check_xsrf=True --no-browser --port=8000
-
-# Or install jupyverse:
-pip install "jupyverse[jupyterlab, noauth]"
-# Launch it:
-jupyverse
-```
-
-Then pass the URL of the Jupyter server to jpterm through the `--server` option:
+If you pass `--json` then the content will not be represented as a rich output but as JSON. This can be useful for passing the output to another tool:
 
 ```bash
-jpterm --server http://127.0.0.1:8000
+jpterm show path/to/notebook --json | jq -r '.cells[0].source'
 ```

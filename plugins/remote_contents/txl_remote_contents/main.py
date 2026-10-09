@@ -5,15 +5,32 @@ from typing import Any, Dict, List, Optional, Union
 from urllib import parse
 
 import httpx
-from anyio import create_task_group, sleep_forever
+from anyio import Event, create_task_group, sleep_forever
 from fps import Module
 from httpx_ws import aconnect_ws
-from pycrdt import Doc, Provider
+from pycrdt import Doc, Provider, YMessageType, YSyncMessageType
 from pycrdt.websocket.websocket import HttpxWebsocket
 
 from txl.base import Contents
 
 ydocs = {ep.name: ep.load() for ep in entry_points(group="jupyter_ydoc")}
+
+
+class SyncedWebsocket(HttpxWebsocket):
+    """Signal after the provider has applied the initial sync response."""
+
+    def __init__(self, websocket, path, synced):
+        super().__init__(websocket, path)
+        self.synced = synced
+        self.received_sync = False
+
+    async def __anext__(self):
+        if self.received_sync:
+            self.synced.set()
+        message = await super().__anext__()
+        if message[:2] == bytes([YMessageType.SYNC, YSyncMessageType.SYNC_STEP2]):
+            self.received_sync = True
+        return message
 
 
 class Entry:
@@ -72,6 +89,7 @@ class RemoteContents(Contents):
                     cookies=self.cookies,
                 )
             self.cookies.update(r.cookies)
+            r.raise_for_status()
             model = r.json()
             if model["type"] == "directory":
                 dir_list = [Entry(entry) for entry in model["content"]]
@@ -101,12 +119,15 @@ class RemoteContents(Contents):
                     cookies=self.cookies,
                 )
             self.cookies.update(response.cookies)
+            response.raise_for_status()
             r = response.json()
             room_id = f"{r['format']}:{r['type']}:{r['fileId']}"
             session_id = r["sessionId"]
             ydoc = Doc()
             jupyter_ydoc = ydocs[type](ydoc)
-            self.task_group.start_soon(self.websocket_provider, room_id, ydoc, session_id)
+            synced = Event()
+            self.task_group.start_soon(self.websocket_provider, room_id, ydoc, session_id, synced)
+            await synced.wait()
             self.document_id[jupyter_ydoc] = room_id
             return jupyter_ydoc
 
@@ -142,13 +163,18 @@ class RemoteContents(Contents):
             )
         self.cookies.update(r.cookies)
 
-    async def websocket_provider(self, room_id, ydoc, session_id=None):
+    async def websocket_provider(self, room_id, ydoc, session_id=None, synced=None):
         ws_url = f"{self.ws_url}/api/collaboration/room/{room_id}"
         params = None if session_id is None else {"sessionId": session_id}
         async with aconnect_ws(
             ws_url, cookies=self.cookies, params=params
         ) as websocket:
-            async with Provider(ydoc, HttpxWebsocket(websocket, room_id)):
+            channel = (
+                HttpxWebsocket(websocket, room_id)
+                if synced is None
+                else SyncedWebsocket(websocket, room_id, synced)
+            )
+            async with Provider(ydoc, channel):
                 await sleep_forever()
 
 

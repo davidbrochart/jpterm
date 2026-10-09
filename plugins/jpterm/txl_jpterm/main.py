@@ -1,3 +1,4 @@
+from anyio import Event
 from fps import Module
 from textual._context import active_app
 from textual.app import App
@@ -19,20 +20,30 @@ class Jpterm(App):
         ("q", "quit", "Quit"),
     ]
     show_browser = var(True)
+    cli: bool = False
 
     def __init__(self, header, footer, main_area, *args, **kwargs):
         self.header = header
         self.footer = footer
         self.main_area = main_area
+        self.shell_ready = Event()
         super().__init__(*args, **kwargs)
 
     def start(self, launcher, file_browser) -> None:
+        self.launcher = launcher
+        self.file_browser = file_browser
+        self.shell_ready.set()
+
+    async def on_mount(self) -> None:
+        if self.cli:
+            return
+        await self.shell_ready.wait()
         active_app.set(self)
-        self.mount(self.header)
-        container = Container(file_browser, self.main_area)
-        self.mount(container)
-        self.mount(self.footer)
-        self.main_area.show(launcher, "Launcher", mount=False)
+        await self.mount(self.header)
+        container = Container(self.file_browser, self.main_area)
+        await self.mount(container)
+        await self.mount(self.footer)
+        self.main_area.show(self.launcher, "Launcher", mount=False)
 
     def watch_show_browser(self, show_browser: bool) -> None:
         self.set_class(show_browser, "-show-browser")

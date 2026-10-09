@@ -27,21 +27,36 @@ class TextEditor(Editor, Container, metaclass=TextEditorMeta):
         self.contents = contents
         self.main_area = main_area
         self.task_group = task_group
-        self.change_target = StapledObjectStream(
-            *create_memory_object_stream[Any](max_buffer_size=math.inf)
-        )
-        self.change_events = StapledObjectStream(
-            *create_memory_object_stream[Any](max_buffer_size=math.inf)
-        )
 
     async def open(self, path: str) -> None:
         self.path = path
         self.ytext = await self.contents.get(path, type="file")
         self.editor = TextInput(ytext=self.ytext._ysource, path=path)
+        if self.read_only:
+            self.editor.read_only = True
+            self.editor.highlight_cursor_line = False
+            self.editor.show_cursor = False
+            self.editor.styles.height = "auto"
+            self.editor.styles.max_height = None
+            self.editor.styles.scrollbar_size_vertical = 0
+            self.editor.styles.border = ("none", "transparent")
+            self.editor.styles.padding = 0
+            # TextArea treats a terminating newline as an extra editable row.
+            # A read-only printout already terminates its final rendered line.
+            text = self.editor.text
+            if text.endswith("\n"):
+                self.editor.load_text(text[:-2] if text.endswith("\r\n") else text[:-1])
         self.task_group.start_soon(self.editor.start)
         self.mount(self.editor)
-        self.ytext.observe(self.on_change)
-        self.task_group.start_soon(self.observe_changes)
+        if not self.read_only:
+            self.change_target = StapledObjectStream(
+                *create_memory_object_stream[Any](max_buffer_size=math.inf)
+            )
+            self.change_events = StapledObjectStream(
+                *create_memory_object_stream[Any](max_buffer_size=math.inf)
+            )
+            self.ytext.observe(self.on_change)
+            self.task_group.start_soon(self.observe_changes)
 
     async def close(self) -> None:
         await self.editor.stop()
@@ -65,6 +80,8 @@ class TextEditor(Editor, Container, metaclass=TextEditorMeta):
                 self.main_area.set_dirty(self)
 
     async def on_key(self, event: Event) -> None:
+        if self.read_only:
+            return
         if event.key == Keys.ControlS:
             await self.contents.save(self.path, self.ytext)
             self.main_area.clear_dirty(self)
