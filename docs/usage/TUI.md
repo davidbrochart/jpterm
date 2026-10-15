@@ -6,7 +6,6 @@ $ jpterm --help
  Usage: jpterm [OPTIONS] [COMMAND] [ARGS]...
 
 ╭─ Options ──────────────────────────────────────────────────────────────────────────────────────╮
-│ --logo                                    Show the jpterm logo.                                │
 │ --server                            TEXT  The URL to the Jupyter server.                       │
 │ --backend                           TEXT  The name of the event loop to use (asyncio or trio). │
 │ --collaborative/--no-collaborative        Collaborative mode (with a server).                  │
@@ -15,6 +14,7 @@ $ jpterm --help
 │ --help                                    Show this message and exit.                          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ─────────────────────────────────────────────────────────────────────────────────────╮
+│ logo             Show the jpterm logo.                                                         │
 │ show             Show document PATH inline using its registered editor.                        │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```

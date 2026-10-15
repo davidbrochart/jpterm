@@ -4,14 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "txl_local_terminals"
-version = "0.3.8"
+version = "0.3.9"
 description = "TXL plugin for local terminals"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = "MIT"
 keywords = []
-classifiers = [ "Development Status :: 4 - Beta", "Programming Language :: Python", "Programming Language :: Python :: 3.10", "Programming Language :: Python :: 3.11", "Programming Language :: Python :: 3.12", "Programming Language :: Python :: 3.13", "Programming Language :: Python :: Implementation :: CPython", "Programming Language :: Python :: Implementation :: PyPy",]
-dependencies = [ "txl ==0.3.3", "pywinpty;platform_system=='Windows'", "anyio >=4.14.2,<5",]
+classifiers = [ "Development Status :: 4 - Beta", "Programming Language :: Python", "Programming Language :: Python :: 3.11", "Programming Language :: Python :: 3.12", "Programming Language :: Python :: 3.13", "Programming Language :: Python :: 3.14", "Programming Language :: Python :: 3.15", "Programming Language :: Python :: Implementation :: CPython", "Programming Language :: Python :: Implementation :: PyPy",]
+dependencies = [ "txl ==0.3.4", "pywinpty;platform_system=='Windows'", "anyio >=4.14.2,<5",]
 [[project.authors]]
 name = "David Brochart"
 email = "david.brochart@gmail.com"

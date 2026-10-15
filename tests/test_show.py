@@ -34,7 +34,7 @@ def test_backend_selection_uses_registered_modules():
     with patch("jpterm.cli.modules", registered), patch("jpterm.cli.disabled", disabled):
         for server in ("", "http://server", ""):
             jpterm_main({
-                "logo": False, "server": server, "collaborative": False,
+                "server": server, "collaborative": False,
                 "experimental": False, "set_": [],
             })
             prefix = "local_" if server else "remote_"
@@ -330,6 +330,21 @@ def test_json_and_inline():
         code, output = invoke(["show", "example.ipynb"])
         assert code == 0
         assert load.call_args.args[-1]
+
+
+def test_logo_command():
+    with patch("txl.cli.run") as run, patch("jpterm.show.load_document") as load:
+        code, output = invoke(["logo"])
+    assert code == 0
+    assert "jpterm" in output
+    assert "╭─────╮" in output
+    run.assert_not_called()
+    load.assert_not_called()
+
+
+def test_logo_flag_removed():
+    code, _ = invoke(["--logo"])
+    assert code == 2
 
 
 def test_tui_default():

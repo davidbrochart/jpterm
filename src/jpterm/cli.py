@@ -12,12 +12,6 @@ from .show import show
 
 
 def jpterm_main(kwargs):
-    logo = kwargs.pop("logo")
-    if logo:
-        rich_print("[orange1 on black]\u256d" + "\u2500" * 5 + "\u256e")
-        rich_print("jpterm[r] ")
-        rich_print("[orange1 on black]\u2570" + "\u2500" * 5 + "\u256f")
-        sys.exit(0)
     server = kwargs.pop("server")
     collaborative = kwargs.pop("collaborative")
     experimental = kwargs.pop("experimental")
@@ -40,11 +34,18 @@ def jpterm_main(kwargs):
     return kwargs
 
 
+@click.command()
+def logo():
+    """Show the jpterm logo."""
+    rich_print("[orange1 on black]\u256d" + "\u2500" * 5 + "\u256e")
+    rich_print("jpterm[r] ")
+    rich_print("[orange1 on black]\u2570" + "\u2500" * 5 + "\u256f")
+
+
 def main():
     _ensure_unicode_streams()
     set_main(jpterm_main)
     decorators = [
-        click.option("--logo", is_flag=True, default=False, help="Show the jpterm logo."),
         click.option("--server", default="", help="The URL to the Jupyter server."),
         click.option(
             "--backend",
@@ -82,6 +83,7 @@ def main():
     # Keep the existing TUI options on the root command.
     command.params.extend(click.command()(_main).params)
     command.add_command(show)
+    command.add_command(logo)
     command()
 
 

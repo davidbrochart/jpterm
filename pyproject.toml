@@ -4,20 +4,20 @@ build-backend = "uv_build"
 
 [project]
 name = "jpterm"
-version = "0.3.10"
+version = "0.3.11"
 description = "Jupyter in the terminal"
 readme = "README.md"
 license = { text = "MIT" }
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [ { name = "David Brochart", email = "david.brochart@gmail.com" }, ]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
@@ -27,26 +27,26 @@ keywords = [
 ]
 dependencies = [
     "rich-click >=1.6.0",
-    "txl >=0.3.3,<0.4.0",
-    "txl_cell >=0.3.7,<0.4.0",
-    "txl_console >=0.3.7,<0.4.0",
-    "txl_editors >=0.3.7,<0.4.0",
-    "txl_file_browser >=0.3.7,<0.4.0",
-    "txl_image_viewer >=0.3.7,<0.4.0",
-    "txl_jpterm >=0.3.8,<0.4.0",
-    "txl_kernel >=0.3.9,<0.4.0",
-    "txl_local_contents >=0.3.7,<0.4.0",
-    "txl_local_terminals >=0.3.8,<0.4.0",
-    "txl_local_kernels >=0.3.7,<0.4.0",
-    "txl_notebook_editor >=0.3.7,<0.4.0",
-    "txl_remote_contents >=0.3.7,<0.4.0",
-    "txl_remote_terminals >=0.3.7,<0.4.0",
-    "txl_remote_kernels >=0.3.7,<0.4.0",
-    "txl_text_editor >=0.3.7,<0.4.0",
-    "txl_markdown_viewer >=0.3.7,<0.4.0",
-    "txl_terminal >=0.3.7,<0.4.0",
-    "txl_launcher >=0.3.7,<0.4.0",
-    "txl_widgets >=0.3.7,<0.4.0",
+    "txl >=0.3.4,<0.4.0",
+    "txl_cell >=0.3.8,<0.4.0",
+    "txl_console >=0.3.8,<0.4.0",
+    "txl_editors >=0.3.8,<0.4.0",
+    "txl_file_browser >=0.3.8,<0.4.0",
+    "txl_image_viewer >=0.3.8,<0.4.0",
+    "txl_jpterm >=0.3.9,<0.4.0",
+    "txl_kernel >=0.3.10,<0.4.0",
+    "txl_local_contents >=0.3.8,<0.4.0",
+    "txl_local_terminals >=0.3.9,<0.4.0",
+    "txl_local_kernels >=0.3.8,<0.4.0",
+    "txl_notebook_editor >=0.3.8,<0.4.0",
+    "txl_remote_contents >=0.3.8,<0.4.0",
+    "txl_remote_terminals >=0.3.8,<0.4.0",
+    "txl_remote_kernels >=0.3.8,<0.4.0",
+    "txl_text_editor >=0.3.8,<0.4.0",
+    "txl_markdown_viewer >=0.3.8,<0.4.0",
+    "txl_terminal >=0.3.8,<0.4.0",
+    "txl_launcher >=0.3.8,<0.4.0",
+    "txl_widgets >=0.3.8,<0.4.0",
 ]
 
 [dependency-groups]
@@ -68,6 +68,7 @@ Homepage = "https://github.com/davidbrochart/jpterm"
 
 [tool.uv.workspace]
 members = ["plugins/*", "txl"]
+exclude = ["plugins/notebook_viewer", "plugins/text_viewer"]
 
 [tool.uv.sources]
 jpterm = { workspace = true }
