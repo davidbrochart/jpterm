@@ -17,7 +17,9 @@ class TextInput(TextArea):
             language = None
         elif language == "ipython":
             language = "python"
-        super().__init__(text, language=language, theme="monokai")
+        super().__init__(text, theme="monokai")
+        if language in self.available_languages:
+            self.language = language
 
     async def start(self):
         self.send_change_events, self.receive_change_events = create_memory_object_stream()

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 from urllib import parse
 
-import httpx
+import httpx2
 from anyio import create_task_group, sleep
 from fps import Module
 from pycrdt import Map
@@ -37,12 +37,12 @@ class RemoteKernelspecs(Kernelspecs):
         parsed_url = parse.urlparse(url)
         self.base_url = parse.urljoin(url, parsed_url.path).rstrip("/")
         self.query_params = parse.parse_qs(parsed_url.query)
-        self.cookies = httpx.Cookies()
+        self.cookies = httpx2.Cookies()
 
     async def get(self) -> dict[str, Any]:
         url = f"{self.base_url}/api/kernelspecs"
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx2.AsyncClient() as client:
                 r = await client.get(
                     url,
                     params={**self.query_params},
@@ -51,7 +51,7 @@ class RemoteKernelspecs(Kernelspecs):
                 d = r.json()
                 self.cookies.update(r.cookies)
                 return d
-        except httpx.ConnectError:
+        except httpx2.ConnectError:
             raise RuntimeError(f"Could not connect to a Jupyter server at {url}")
 
 

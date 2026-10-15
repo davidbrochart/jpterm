@@ -4,9 +4,8 @@ import uuid
 from typing import Any, Dict
 from urllib import parse
 
-import httpx
+import httpx2
 from anyio import Lock, sleep
-from httpx_ws import aconnect_ws
 from txl_kernel.driver import KernelMixin
 from txl_kernel.message import date_to_str
 
@@ -36,7 +35,7 @@ class KernelDriver(KernelMixin):
         parsed_url = parse.urlparse(url)
         self.base_url = parse.urljoin(url, parsed_url.path).rstrip("/")
         self.query_params = parse.parse_qs(parsed_url.query)
-        self.cookies = httpx.Cookies()
+        self.cookies = httpx2.Cookies()
         i = self.base_url.find(":")
         self.ws_url = ("wss" if self.base_url[i - 1] == "s" else "ws") + self.base_url[i:]
         self.start_task = task_group.create_task(self.start())
@@ -49,7 +48,7 @@ class KernelDriver(KernelMixin):
 
     async def start(self):
         i = str(uuid.uuid4())
-        async with httpx.AsyncClient() as client:
+        async with httpx2.AsyncClient() as client:
             body = {
                 "kernel": {"name": self.kernel_name},
                 "name": i,
@@ -72,10 +71,9 @@ class KernelDriver(KernelMixin):
             )
         if r.status_code != 200 or self.kernel_id != r.json()["id"]:
             return
-        async with aconnect_ws(
+        async with httpx2.AsyncClient(cookies=self.cookies) as client, client.websocket(
             f"{self.ws_url}/api/kernels/{self.kernel_id}/channels",
             params={"session_id": self.session_id},
-            cookies=self.cookies,
             subprotocols=["v1.kernel.websocket.jupyter.org"],
         ) as self.websocket:
             recv_task = self.task_group.create_task(self._recv())

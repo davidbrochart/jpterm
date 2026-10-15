@@ -53,3 +53,6 @@ jobs:
 
       - name: Run jpterm
         run: uv run jpterm --help
+
+      - name: Run tests
+        run: uv run --group test pytest tests -v --color=yes

@@ -36,7 +36,7 @@ class _Editors(Editors, Container, metaclass=EditorsMeta):
                 self.ext_editor_factories[ext] = []
             self.ext_editor_factories[ext].append(editor_factory)
 
-    async def on_open(self, path: str) -> None:
+    def create_editor(self, path: str) -> Editor:
         path = Path(path)
         extension = path.suffix
         for ext, editor_factories in self.ext_editor_factories.items():
@@ -47,8 +47,11 @@ class _Editors(Editors, Container, metaclass=EditorsMeta):
             if None not in self.ext_editor_factories:
                 raise RuntimeError(f"Could not find an editor for file extension {extension}")
             preferred_editor_factory = self.ext_editor_factories[None][0]
-        preferred_editor = preferred_editor_factory()
-        self.main_area.show(preferred_editor, path.name)
+        return preferred_editor_factory()
+
+    async def on_open(self, path: str) -> None:
+        preferred_editor = self.create_editor(path)
+        self.main_area.show(preferred_editor, Path(path).name)
         bindings = preferred_editor.get_bindings()
         if bindings:
             self.footer.update_bindings(bindings)
