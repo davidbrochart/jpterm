@@ -4,10 +4,9 @@ from importlib.metadata import entry_points
 from typing import Any, Dict, List, Optional, Union
 from urllib import parse
 
-import httpx
+import httpx2
 from anyio import Event, create_task_group, sleep_forever
 from fps import Module
-from httpx_ws import aconnect_ws
 from pycrdt import Doc, Provider, YMessageType, YSyncMessageType
 from pycrdt.websocket.websocket import HttpxWebsocket
 
@@ -19,9 +18,9 @@ ydocs = {ep.name: ep.load() for ep in entry_points(group="jupyter_ydoc")}
 class SyncedWebsocket(HttpxWebsocket):
     """Signal after the provider has applied the initial sync response."""
 
-    def __init__(self, websocket, path, synced):
+    def __init__(self, websocket, path, synced=None):
         super().__init__(websocket, path)
-        self.synced = synced
+        self.synced = Event() if synced is None else synced
         self.received_sync = False
 
     async def __anext__(self):
@@ -54,13 +53,13 @@ class Entry:
 class RemoteContents(Contents):
     base_url: str
     query_params: Dict[str, List[str]]
-    cookies: httpx.Cookies
+    cookies: httpx2.Cookies
 
     def __init__(
         self,
         base_url: str,
         query_params: Dict[str, List[str]],
-        cookies: httpx.Cookies,
+        cookies: httpx2.Cookies,
         collaborative: bool,
         task_group,
     ) -> None:
@@ -82,7 +81,7 @@ class RemoteContents(Contents):
     ) -> Union[List, Doc]:
         path = "" if path == "." else path
         if is_dir or not self.collaborative:
-            async with httpx.AsyncClient() as client:
+            async with httpx2.AsyncClient() as client:
                 r = await client.get(
                     f"{self.base_url}/api/contents/{path}",
                     params={**{"content": 1}, **self.query_params},
@@ -111,7 +110,7 @@ class RemoteContents(Contents):
             else:
                 format = "text"
             doc_type = type  # if type == "notebook" else "file"
-            async with httpx.AsyncClient() as client:
+            async with httpx2.AsyncClient() as client:
                 response = await client.put(
                     f"{self.base_url}/api/collaboration/session/{path}",
                     json={"format": format, "type": doc_type},
@@ -154,7 +153,7 @@ class RemoteContents(Contents):
             "path": path,
             "type": typ,
         }
-        async with httpx.AsyncClient() as client:
+        async with httpx2.AsyncClient() as client:
             r = await client.put(
                 f"{self.base_url}/api/contents/{path}",
                 json=content,
@@ -166,14 +165,10 @@ class RemoteContents(Contents):
     async def websocket_provider(self, room_id, ydoc, session_id=None, synced=None):
         ws_url = f"{self.ws_url}/api/collaboration/room/{room_id}"
         params = None if session_id is None else {"sessionId": session_id}
-        async with aconnect_ws(
-            ws_url, cookies=self.cookies, params=params
+        async with httpx2.AsyncClient(cookies=self.cookies) as client, client.websocket(
+            ws_url, params=params
         ) as websocket:
-            channel = (
-                HttpxWebsocket(websocket, room_id)
-                if synced is None
-                else SyncedWebsocket(websocket, room_id, synced)
-            )
+            channel = SyncedWebsocket(websocket, room_id, synced)
             async with Provider(ydoc, channel):
                 await sleep_forever()
 
@@ -188,7 +183,7 @@ class RemoteContentsModule(Module):
         parsed_url = parse.urlparse(self.url)
         base_url = parse.urljoin(self.url, parsed_url.path).rstrip("/")
         query_params = parse.parse_qs(parsed_url.query)
-        cookies = httpx.Cookies()
+        cookies = httpx2.Cookies()
         async with create_task_group() as tg:
             contents = RemoteContents(base_url, query_params, cookies, self.collaborative, tg)
             self.put(contents, Contents)

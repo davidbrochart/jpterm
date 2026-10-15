@@ -32,7 +32,7 @@ class TextEditor(Editor, Container, metaclass=TextEditorMeta):
         self.path = path
         self.ytext = await self.contents.get(path, type="file")
         self.editor = TextInput(ytext=self.ytext._ysource, path=path)
-        if self.read_only:
+        if self.app.cli:
             self.editor.read_only = True
             self.editor.highlight_cursor_line = False
             self.editor.show_cursor = False
@@ -48,7 +48,7 @@ class TextEditor(Editor, Container, metaclass=TextEditorMeta):
                 self.editor.load_text(text[:-2] if text.endswith("\r\n") else text[:-1])
         self.task_group.start_soon(self.editor.start)
         self.mount(self.editor)
-        if not self.read_only:
+        if not self.app.cli:
             self.change_target = StapledObjectStream(
                 *create_memory_object_stream[Any](max_buffer_size=math.inf)
             )
@@ -80,7 +80,7 @@ class TextEditor(Editor, Container, metaclass=TextEditorMeta):
                 self.main_area.set_dirty(self)
 
     async def on_key(self, event: Event) -> None:
-        if self.read_only:
+        if self.app.cli:
             return
         if event.key == Keys.ControlS:
             await self.contents.save(self.path, self.ytext)

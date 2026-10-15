@@ -9,7 +9,7 @@ import sys
 import time
 from types import SimpleNamespace
 
-import httpx
+import httpx2
 import pytest
 
 
@@ -76,7 +76,7 @@ def jupyverse_server(tmp_path_factory):
         try:
             deadline = time.monotonic() + 20
             ready = False
-            with httpx.Client(trust_env=False, timeout=0.5) as client:
+            with httpx2.Client(trust_env=False, timeout=0.5) as client:
                 while time.monotonic() < deadline:
                     if server.process.poll() is not None:
                         break
@@ -85,7 +85,7 @@ def jupyverse_server(tmp_path_factory):
                         if response.status_code == 200:
                             ready = True
                             break
-                    except httpx.HTTPError:
+                    except httpx2.HTTPError:
                         pass
                     time.sleep(0.1)
             if not ready:
@@ -138,7 +138,7 @@ def test_show_notebook(run_cli, jupyverse_server):
         assert output.count(line) == 1
     assert output.count("saved_server_output") == 1
     assert "In [7]" in output
-    with httpx.Client(trust_env=False) as client:
+    with httpx2.Client(trust_env=False) as client:
         response = client.get(f"{jupyverse_server.url}/api/kernels")
         response.raise_for_status()
         assert response.json() == []

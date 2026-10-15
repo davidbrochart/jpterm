@@ -4,10 +4,10 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
 import anyio
-import httpx
+import httpx2
 from click.testing import CliRunner
 from fps import Module, get_root_module
-from jpterm.cli import main
+from jpterm.cli import jpterm_main, main
 from jpterm.show import load_document
 from pycrdt import YMessageType, YSyncMessageType
 from rich.console import Console
@@ -24,6 +24,22 @@ from txl_text_editor.main import TextEditor, TextEditorModule
 from txl.app import AppModule
 from txl.base import CellFactory, Contents, Editors, Kernels, Kernelspecs, Launcher
 from txl.base import MainArea as MainAreaService
+
+
+def test_backend_selection_uses_registered_modules():
+    registered = dict.fromkeys([
+        "local_contents", "remote_contents", "local_extra", "remote_extra", "custom_disabled",
+    ])
+    disabled = ["custom_disabled"]
+    with patch("jpterm.cli.modules", registered), patch("jpterm.cli.disabled", disabled):
+        for server in ("", "http://server", ""):
+            jpterm_main({
+                "logo": False, "server": server, "collaborative": False,
+                "experimental": False, "set_": [],
+            })
+            prefix = "local_" if server else "remote_"
+            expected = {name for name in registered if name.startswith(prefix)}
+            assert set(disabled) == expected | {"custom_disabled"}
 
 
 def test_ctrl_q_exits_application_and_stops_plugins():
@@ -64,7 +80,7 @@ def test_ctrl_q_exits_application_and_stops_plugins():
 def test_inline_uses_text_editor_for_text_file():
     lines = [f"text_line_{index:02}" for index in range(50)]
     app, contents = render_file("\n".join(lines), "example.txt", TextEditorModule, TextEditor)
-    assert app.read_only
+    assert app.cli
     contents.get.assert_awaited_once_with("example.txt", type="file")
     for line in lines:
         assert app.output.count(line) == 1
@@ -92,7 +108,7 @@ def test_inline_renders_markdown_to_end():
         + "\n\n## Last heading\n\n| Name | Value |\n| --- | --- |\n| final_row | 42 |\n"
     )
     app, _ = render_file(source, "example.md", MarkdownViewerModule, MarkdownViewer)
-    assert app.read_only
+    assert app.cli
     for text in ("First heading", "Paragraph 29", "Last heading", "final_row", "42"):
         assert app.output.count(text) == 1
 
@@ -117,8 +133,7 @@ def render_file(source, path, module_type, editor_type):
             return await super().run_async(**kwargs)
 
         def exit(self, *args, **kwargs):
-            editor = self.query_one(editor_type)
-            self.read_only = editor.read_only
+            self.query_one(editor_type)
             output = StringIO()
             Console(file=output, width=80).print(kwargs.pop("message"))
             self.output = output.getvalue()
@@ -236,16 +251,16 @@ def test_collaborative_get_waits_for_sync():
         provider_started = anyio.Event()
         allow_sync = anyio.Event()
         returned = anyio.Event()
-        response = httpx.Response(
+        response = httpx2.Response(
             200,
-            request=httpx.Request("PUT", "http://server/api/collaboration/session/test"),
+            request=httpx2.Request("PUT", "http://server/api/collaboration/session/test"),
             json={"format": "json", "type": "notebook", "fileId": "test", "sessionId": "session"},
         )
         client = AsyncMock()
         client.put.return_value = response
         client.__aenter__.return_value = client
         async with anyio.create_task_group() as tasks:
-            contents = RemoteContents("http://server", {}, httpx.Cookies(), True, tasks)
+            contents = RemoteContents("http://server", {}, httpx2.Cookies(), True, tasks)
 
             async def provider(room, document, session, synced):
                 provider_started.set()
@@ -258,7 +273,7 @@ def test_collaborative_get_waits_for_sync():
                 await contents.get("test", type="notebook")
                 returned.set()
 
-            with patch("txl_remote_contents.main.httpx.AsyncClient", return_value=client):
+            with patch("txl_remote_contents.main.httpx2.AsyncClient", return_value=client):
                 tasks.start_soon(load)
                 await provider_started.wait()
                 assert not returned.is_set()

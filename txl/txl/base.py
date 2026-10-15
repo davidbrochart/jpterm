@@ -15,8 +15,6 @@ class FileBrowser(ABC):
 
 
 class Editor(ABC):
-    read_only: bool = False
-
     @abstractmethod
     async def open(self, path: str) -> None:
         ...

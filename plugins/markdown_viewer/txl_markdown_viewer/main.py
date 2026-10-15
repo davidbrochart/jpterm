@@ -23,15 +23,15 @@ class MarkdownViewer(Editor, Container, metaclass=MarkdownViewerMeta):
         self.ytext = await self.contents.get(path, type="file")
         self.focus()
         await self._update_viewer()
-        if not self.read_only:
+        if not self.app.cli:
             self.ytext.observe(self.on_change)
 
     async def _update_viewer(self):
         md = self.ytext.source
         if self.viewer is not None:
             await self.viewer.remove()
-        self.viewer = TextualMarkdownViewer(show_table_of_contents=not self.read_only)
-        if self.read_only:
+        self.viewer = TextualMarkdownViewer(show_table_of_contents=not self.app.cli)
+        if self.app.cli:
             self.viewer.styles.height = "auto"
             self.viewer.styles.overflow_y = "hidden"
             self.viewer.styles.scrollbar_size_vertical = 0

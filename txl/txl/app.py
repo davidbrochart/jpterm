@@ -8,8 +8,8 @@ from fps.cli._cli import main
 from textual._context import active_app
 from textual.app import App
 
-logging.getLogger("httpx").setLevel(logging.CRITICAL)
-logging.getLogger("httpcore").setLevel(logging.CRITICAL)
+logging.getLogger("httpx2").setLevel(logging.CRITICAL)
+logging.getLogger("httpcore2").setLevel(logging.CRITICAL)
 
 modules = {
     ep.name: ep.load() for ep in entry_points(group="txl.modules")

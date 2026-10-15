@@ -13,8 +13,8 @@ from txl.app import AppModule
 from txl.base import Contents, Editors
 
 
-async def load_document(path, settings, timeout, inline=False):
-    config = {"type": AppModule, "config": {"cli": True, "inline": inline}}
+async def load_document(path, settings, timeout, render=False):
+    config = {"type": AppModule, "config": {"cli": True, "inline": render}}
     for setting in settings:
         if "=" not in setting:
             raise ValueError(f"No '=' while setting a module parameter: {setting}")
@@ -28,12 +28,11 @@ async def load_document(path, settings, timeout, inline=False):
     module._global_start_timeout = timeout
     with anyio.fail_after(timeout):
         async with module:
-            if inline:
+            if render:
                 await module.app_ready.wait()
                 app = module.app
                 editors = await module.get(Editors)
                 editor = editors.create_editor(path)
-                editor.read_only = True
                 editor.styles.height = "auto"
                 editor.styles.overflow_y = "hidden"
                 editor.styles.scrollbar_size_vertical = 0
@@ -79,14 +78,9 @@ def show(ctx, path, as_json, timeout):
     Use --json for structured output.
     """
     options = ctx.obj
-    if options["collaborative"] and not options["server"]:
-        raise click.UsageError("--collaborative requires --server for show.")
     try:
-        from .cli import jpterm_main
-
-        configured = jpterm_main(dict(options))
         source = anyio.run(
-            load_document, path, configured["set_"], timeout, not as_json,
+            load_document, path, options["set_"], timeout, not as_json,
             backend=options["backend"],
         )
         if as_json:

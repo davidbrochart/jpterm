@@ -2,10 +2,9 @@ import math
 from typing import Any, Dict, List
 from urllib import parse
 
-import httpx
+import httpx2
 from anyio import Event, create_memory_object_stream, create_task_group, sleep
 from fps import Module
-from httpx_ws import aconnect_ws
 from textual.widget import Widget
 from textual.widgets._header import HeaderTitle
 
@@ -22,7 +21,7 @@ class RemoteTerminals(Terminals, Widget, metaclass=TerminalsMeta):
         self,
         base_url: str,
         query_params: Dict[str, List[str]],
-        cookies: httpx.Cookies,
+        cookies: httpx2.Cookies,
         header: Header,
         terminal: TerminalFactory,
         task_group,
@@ -45,7 +44,7 @@ class RemoteTerminals(Terminals, Widget, metaclass=TerminalsMeta):
         super().__init__()
 
     async def open(self):
-        async with httpx.AsyncClient() as client:
+        async with httpx2.AsyncClient() as client:
             response = await client.post(
                 f"{self.base_url}/api/terminals",
                 json={"cwd": ""},
@@ -66,8 +65,8 @@ class RemoteTerminals(Terminals, Widget, metaclass=TerminalsMeta):
             terminal.focus()
             self.mount(terminal)
             await terminal.size_set.wait()
-            async with aconnect_ws(
-                f"{self.ws_url}/terminals/websocket/{name}", cookies=self.cookies
+            async with httpx2.AsyncClient(cookies=self.cookies) as client, client.websocket(
+                f"{self.ws_url}/terminals/websocket/{name}"
             ) as self.websocket:
                 self.task_group.start_soon(self._recv)
                 self.send_task = self.task_group.create_task(self._send())
@@ -104,7 +103,7 @@ class RemoteTerminalsModule(Module):
         parsed_url = parse.urlparse(self.url)
         base_url = parse.urljoin(self.url, parsed_url.path).rstrip("/")
         query_params = parse.parse_qs(parsed_url.query)
-        cookies = httpx.Cookies()
+        cookies = httpx2.Cookies()
 
         async with create_task_group() as self.tg:
             def terminals_factory():
