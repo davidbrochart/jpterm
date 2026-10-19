@@ -228,7 +228,8 @@ def test_write_server_text(run_cli, jupyverse_server, from_stdin):
     source = "server write π\nsecond line\n"
     arguments = [path, "--stdin"] if from_stdin else [path, "--source", source]
     run_cli(*arguments, command="write", input=source if from_stdin else None)
-    assert json.loads(run_cli(path, "--json").stdout) == source
+    # Jupyverse writes text using the server platform's native line endings.
+    assert json.loads(run_cli(path, "--json").stdout) == source.replace("\n", os.linesep)
     assert not (jupyverse_server.client_root / path).exists()
     run_cli(path, "--source", "", command="write")
     assert json.loads(run_cli(path, "--json").stdout) == ""
