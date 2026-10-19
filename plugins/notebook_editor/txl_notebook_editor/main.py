@@ -140,13 +140,24 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         await self.contents.save(path, ynb)
         return path
 
-    async def open(self, path: str | None = None) -> None:
+    async def open(
+        self, path: str | None = None, *, cell_id: str | None = None, show_cell_ids: bool = False
+    ) -> None:
         if path is None:
             kernel_name = await self.select_kernel()
             path = await self.create_empty_notebook(kernel_name)
             self.main_area.set_label(path)
         self.path = path
         self.ynb = await self.contents.get(self.path, type="notebook", format="json")
+        self.cell_index = None
+        self.show_cell_ids = show_cell_ids
+        if cell_id is not None:
+            self.cell_index = next(
+                (i for i, cell in enumerate(self.ynb.source["cells"])
+                 if cell.get("id") == cell_id), None
+            )
+            if self.cell_index is None:
+                raise ValueError(f"Cell ID not found: {cell_id}")
         self.update()
         if not self.app.cli:
             self.nb_change_target = StapledObjectStream(
@@ -166,9 +177,11 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
             if kernel_name:
                 self.kernel = self.kernels(kernel_name)
                 self.kernel.kernel.busy.connect(self.watch_busy)
-        for i_cell in range(self.ynb.cell_number):
+        indices = range(self.ynb.cell_number) if self.cell_index is None else [self.cell_index]
+        for i_cell in indices:
             cell = self.cell_factory(
-                self.ynb.ycells[i_cell], self.language, self.kernel
+                self.ynb.ycells[i_cell], self.language, self.kernel,
+                **({"show_cell_id": True} if self.show_cell_ids else {}),
             )
             if self.app.cli:
                 cell.source.read_only = True

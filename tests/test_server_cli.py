@@ -37,6 +37,8 @@ def jupyverse_server(tmp_path_factory):
             }
         },
         "cells": [
+            {"id": "other-cell", "cell_type": "markdown", "metadata": {},
+             "source": "unselected_cell_content"},
             {
                 "id": "server-cell",
                 "cell_type": "code",
@@ -50,6 +52,7 @@ def jupyverse_server(tmp_path_factory):
         ],
     }
     (server_root / "remote.ipynb").write_text(json.dumps(server.notebook), encoding="utf-8")
+    (server_root / "writable.ipynb").write_text(json.dumps(server.notebook), encoding="utf-8")
     server.text = "SERVER LICENSE\n\nOnly available from the server.\n"
     # Write exact bytes so Windows does not translate LF into CRLF.
     (server_root / "LICENSE").write_bytes(server.text.encode("utf-8"))
@@ -104,7 +107,7 @@ def jupyverse_server(tmp_path_factory):
 @pytest.fixture
 def run_cli(jupyverse_server):
 
-    def run(*arguments, expected_code=0):
+    def run(*arguments, expected_code=0, command="show", input=None):
         environment = dict(os.environ, PYTHONIOENCODING="utf-8", NO_COLOR="1", COLUMNS="80")
         result = subprocess.run(
             [
@@ -113,7 +116,7 @@ def run_cli(jupyverse_server):
                 "from jpterm.cli import main; main()",
                 "--server",
                 jupyverse_server.url,
-                "show",
+                command,
                 *arguments,
             ],
             cwd=jupyverse_server.client_root,
@@ -121,6 +124,7 @@ def run_cli(jupyverse_server):
             capture_output=True,
             text=True,
             encoding="utf-8",
+            input=input,
             timeout=20,
         )
         assert result.returncode == expected_code, result.stdout + result.stderr
@@ -131,9 +135,15 @@ def run_cli(jupyverse_server):
     return run
 
 
-def test_show_notebook(run_cli, jupyverse_server):
-    result = run_cli("remote.ipynb")
+@pytest.mark.parametrize("show_cell_ids", [False, True])
+def test_show_notebook(run_cli, jupyverse_server, show_cell_ids):
+    arguments = ["remote.ipynb"]
+    if show_cell_ids:
+        arguments.append("--show-cell-ids")
+    result = run_cli(*arguments)
     output = result.stdout + result.stderr
+    assert ("In [7]: server-cell" in output) == show_cell_ids
+    assert ("In []: other-cell" in output) == show_cell_ids
     for line in jupyverse_server.source_lines:
         assert output.count(line) == 1
     assert output.count("saved_server_output") == 1
@@ -152,10 +162,40 @@ def test_show_json(run_cli, jupyverse_server, path):
     elif path == "LICENSE_CRLF":
         assert source == jupyverse_server.crlf_text
     else:
-        cell = source["cells"][0]
+        cell = source["cells"][1]
         assert cell["id"] == "server-cell"
-        assert cell["source"] == jupyverse_server.notebook["cells"][0]["source"]
+        assert cell["source"] == jupyverse_server.notebook["cells"][1]["source"]
         assert cell["execution_count"] == 7
+
+
+@pytest.mark.parametrize("as_json", [False, True])
+def test_show_cell(run_cli, jupyverse_server, as_json):
+    arguments = ["remote.ipynb", "--cell", "server-cell"]
+    if as_json:
+        arguments.append("--json")
+    result = run_cli(*arguments)
+    if as_json:
+        notebook = json.loads(run_cli("remote.ipynb", "--json").stdout)
+        assert json.loads(result.stdout) == notebook["cells"][1]
+    else:
+        output = result.stdout + result.stderr
+        assert "unselected_cell_content" not in output
+        assert output.count("saved_server_output") == 1
+        for line in jupyverse_server.source_lines:
+            assert output.count(line) == 1
+
+
+@pytest.mark.parametrize("as_json", [False, True])
+@pytest.mark.parametrize("path, message", [
+    ("remote.ipynb", "Cell ID not found: missing"),
+    ("LICENSE", "--cell requires a notebook"),
+])
+def test_invalid_cell_selection(run_cli, as_json, path, message):
+    arguments = [path, "--cell", "missing"]
+    if as_json:
+        arguments.append("--json")
+    result = run_cli(*arguments, expected_code=1)
+    assert message in result.stderr
 
 
 def test_show_plain_text(run_cli, jupyverse_server):
@@ -175,3 +215,27 @@ def test_show_markdown(run_cli, jupyverse_server):
 def test_missing_file(run_cli, jupyverse_server):
     result = run_cli("missing.ipynb", expected_code=1)
     assert "404" in result.stderr
+
+
+@pytest.mark.parametrize("from_stdin", [False, True])
+def test_write_server_text(run_cli, jupyverse_server, from_stdin):
+    path = f"written-{from_stdin}.txt"
+    source = "server write π\nsecond line\n"
+    arguments = [path, "--stdin"] if from_stdin else [path, "--source", source]
+    run_cli(*arguments, command="write", input=source if from_stdin else None)
+    assert json.loads(run_cli(path, "--json").stdout) == source
+    assert not (jupyverse_server.client_root / path).exists()
+    run_cli(path, "--source", "", command="write")
+    assert json.loads(run_cli(path, "--json").stdout) == ""
+
+
+def test_write_server_cell(run_cli):
+    path = "writable.ipynb"
+    before = json.loads(run_cli(path, "--json").stdout)
+    run_cli(path, "--cell", "server-cell", "--source", "print(42)", command="write")
+    after = json.loads(run_cli(path, "--json").stdout)
+    before["cells"][1].update(source="print(42)", outputs=[], execution_count=None)
+    assert after == before
+    result = run_cli(path, "--cell", "missing", "--source", "bad", command="write", expected_code=1)
+    assert "Cell ID not found" in result.stderr
+    assert json.loads(run_cli(path, "--json").stdout) == after

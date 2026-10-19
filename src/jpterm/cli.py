@@ -9,6 +9,7 @@ from txl.app import disabled, modules
 from txl.cli import set_main, txl_main
 
 from .show import show
+from .write import write
 
 
 def jpterm_main(kwargs):
@@ -78,11 +79,14 @@ def main():
         else:
             if kwargs["collaborative"] and not kwargs["server"]:
                 raise click.UsageError("--collaborative requires --server for CLI commands.")
+            if kwargs["collaborative"] and ctx.invoked_subcommand == "write":
+                raise click.UsageError("write does not support --collaborative yet.")
             ctx.obj = jpterm_main(kwargs)
 
     # Keep the existing TUI options on the root command.
     command.params.extend(click.command()(_main).params)
     command.add_command(show)
+    command.add_command(write)
     command.add_command(logo)
     command()
 
