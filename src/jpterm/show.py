@@ -5,27 +5,20 @@ from pathlib import PurePosixPath
 
 import anyio
 import rich_click as click
-from fps import get_root_module
 from textual import events
 from textual.geometry import Size
 
-from txl.app import AppModule
 from txl.base import Contents, Editors
 
+from .app import create_app
 
-async def load_document(path, settings, timeout, render=False):
-    config = {"type": AppModule, "config": {"cli": True, "inline": render}}
-    for setting in settings:
-        if "=" not in setting:
-            raise ValueError(f"No '=' while setting a module parameter: {setting}")
-        key, value = setting.split("=", 1)
-        node = config
-        parts = key.split(".")
-        for name in parts[:-1]:
-            node = node.setdefault("modules", {}).setdefault(name, {})
-        node.setdefault("config", {})[parts[-1]] = value
-    module = get_root_module({"app": config})
-    module._global_start_timeout = timeout
+
+async def load_document(path, settings, timeout, render=False, cell_id=None, show_cell_ids=False):
+    if cell_id is not None and PurePosixPath(path).suffix != ".ipynb":
+        raise ValueError("--cell requires a notebook (.ipynb).")
+    if show_cell_ids and PurePosixPath(path).suffix != ".ipynb":
+        raise ValueError("--show-cell-ids requires a notebook (.ipynb).")
+    module = create_app(settings, timeout, inline=render)
     with anyio.fail_after(timeout):
         async with module:
             if render:
@@ -41,7 +34,10 @@ async def load_document(path, settings, timeout, render=False):
                 app.screen.styles.padding = 0
                 app.screen.styles.scrollbar_size_vertical = 0
                 await app.screen.mount(editor)
-                await editor.open(path)
+                if cell_id is None and not show_cell_ids:
+                    await editor.open(path)
+                else:
+                    await editor.open(path, cell_id=cell_id, show_cell_ids=show_cell_ids)
 
                 def show_full_height():
                     height = max(1, editor.virtual_size.height + editor.styles.gutter.height)
@@ -62,16 +58,24 @@ async def load_document(path, settings, timeout, render=False):
                 kind = "notebook" if PurePosixPath(path).suffix == ".ipynb" else "file"
                 document = await contents.get(path, type=kind)
                 source = document.source
+                if cell_id is not None:
+                    source = next(
+                        (cell for cell in source["cells"] if cell.get("id") == cell_id), None
+                    )
+                    if source is None:
+                        raise ValueError(f"Cell ID not found: {cell_id}")
         return source
 
 
 @click.command()
 @click.argument("path")
 @click.option("--json", "as_json", is_flag=True, help="Print the document source as JSON.")
+@click.option("--cell", "cell_id", help="Show only the notebook cell with this ID.")
+@click.option("--show-cell-ids", is_flag=True, help="Display cell IDs after their prompts.")
 @click.option("--timeout", type=click.FloatRange(min=0, min_open=True), default=30.0,
               show_default=True, help="Maximum time to load and synchronize, in seconds.")
 @click.pass_context
-def show(ctx, path, as_json, timeout):
+def show(ctx, path, as_json, cell_id, show_cell_ids, timeout):
     """Show document PATH inline using its registered editor.
 
     Display the full document and return immediately. This command does not execute cells.
@@ -80,7 +84,7 @@ def show(ctx, path, as_json, timeout):
     options = ctx.obj
     try:
         source = anyio.run(
-            load_document, path, options["set_"], timeout, not as_json,
+            load_document, path, options["set_"], timeout, not as_json, cell_id, show_cell_ids,
             backend=options["backend"],
         )
         if as_json:

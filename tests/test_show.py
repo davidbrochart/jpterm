@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import anyio
 import httpx2
+import pytest
 from click.testing import CliRunner
 from fps import Module, get_root_module
 from jpterm.cli import jpterm_main, main
@@ -183,10 +184,15 @@ def test_cli_does_not_start_application_shell():
     anyio.run(check)
 
 
-def test_inline_uses_notebook_editor_without_starting_kernel():
+@pytest.mark.parametrize("cell_id", [None, "cell-12"])
+@pytest.mark.parametrize("show_cell_ids", [False, True])
+def test_inline_uses_notebook_editor_without_starting_kernel(cell_id, show_cell_ids):
     sources = [f"source_{index:02}" for index in range(30)]
     sources[0] = "\n".join((f"long_line_{index:02}" for index in range(40)))
-    notebook = {"cells": [], "metadata": {"kernelspec": {"name": "python3"}}}
+    notebook = {
+        "cells": [{"id": f"cell-{i}"} for i in range(len(sources))],
+        "metadata": {"kernelspec": {"name": "python3"}},
+    }
     document = SimpleNamespace(
         source=notebook, ycells=sources, cell_number=len(sources), observe=lambda callback: None
     )
@@ -211,8 +217,9 @@ def test_inline_uses_notebook_editor_without_starting_kernel():
 
     app = TestApp()
 
-    def factory(cell, language, kernel):
+    def factory(cell, language, kernel, **kwargs):
         assert kernel is None
+        assert kwargs == ({"show_cell_id": True} if show_cell_ids else {})
         used_cells.append(cell)
         widget = Static(cell)
         widget.source = widget
@@ -232,12 +239,17 @@ def test_inline_uses_notebook_editor_without_starting_kernel():
             self.put(_Editors(Static(), Static(), main_area), Editors)
 
     with patch("txl.app.modules", {"test": TestModule, "notebook_editor": NotebookEditorModule}):
-        anyio.run(load_document, "example.ipynb", [], 1, True)
+        anyio.run(load_document, "example.ipynb", [], 1, True, cell_id, show_cell_ids)
     assert app.inline_requested
-    assert used_cells == sources
+    expected = sources if cell_id is None else [sources[12]]
+    assert used_cells == expected
     assert app.rendered
-    assert app.final_height > 40
-    for source in sources:
+    if cell_id is None:
+        assert app.final_height > 40
+    else:
+        assert "source_11" not in app.output
+        assert "source_13" not in app.output
+    for source in expected:
         for line in source.splitlines():
             assert app.output.count(line) == 1
     kernels.assert_not_called()
@@ -326,10 +338,10 @@ def test_json_and_inline():
         code, output = invoke(["show", "example.ipynb", "--json"])
         assert code == 0
         assert json.loads(output) == notebook
-        assert not load.call_args.args[-1]
+        assert not load.call_args.args[-3]
         code, output = invoke(["show", "example.ipynb"])
         assert code == 0
-        assert load.call_args.args[-1]
+        assert load.call_args.args[-3]
 
 
 def test_logo_command():

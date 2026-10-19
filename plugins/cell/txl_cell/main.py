@@ -7,6 +7,7 @@ from typing import Any
 from anyio import create_memory_object_stream, create_task_group, sleep
 from fps import Module
 from pycrdt import Doc, Map, MapEvent, Text
+from rich.markup import escape
 from rich.text import Text as RichText
 from textual.app import ComposeResult
 from textual.containers import Container
@@ -63,6 +64,7 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
         task_group,
         show_execution_count: bool = True,
         show_border: bool = True,
+        show_cell_id: bool = False,
     ) -> None:
         super().__init__()
         self.ycell = ycell
@@ -73,6 +75,7 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
         self.task_group = task_group
         self.show_execution_count = show_execution_count
         self.show_border = show_border
+        self.show_cell_id = show_cell_id
         self.outputs = []
         self.update(mount=False)
         self.ycell.observe_deep(self.on_change)
@@ -180,7 +183,10 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
 
     def get_execution_count(self, value):
         execution_count = " " if value is None else str(value).removesuffix(".0")
-        return r"[green]In \[[#66ff00]" + execution_count + r"[/#66ff00]]:[/green]"
+        prompt = r"[green]In \[[#66ff00]" + execution_count + r"[/#66ff00]]:[/green]"
+        if self.show_cell_id:
+            prompt += " " + escape(self.ycell.get("id") or "(missing)")
+        return prompt
 
     def compose(self) -> ComposeResult:
         if self.show_execution_count:

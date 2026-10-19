@@ -161,6 +161,7 @@ class RemoteContents(Contents):
                 cookies=self.cookies,
             )
         self.cookies.update(r.cookies)
+        r.raise_for_status()
 
     async def websocket_provider(self, room_id, ydoc, session_id=None, synced=None):
         ws_url = f"{self.ws_url}/api/collaboration/room/{room_id}"
