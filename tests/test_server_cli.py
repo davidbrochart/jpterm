@@ -11,6 +11,7 @@ from types import SimpleNamespace
 
 import httpx2
 import pytest
+from rich.text import Text
 
 
 @pytest.fixture(scope="module")
@@ -75,6 +76,7 @@ def jupyverse_server(tmp_path_factory):
             cwd=server_root,
             stdout=log,
             stderr=subprocess.STDOUT,
+            env=dict(os.environ, PYTHONUTF8="1"),
         )
         try:
             deadline = time.monotonic() + 20
@@ -92,7 +94,8 @@ def jupyverse_server(tmp_path_factory):
                         pass
                     time.sleep(0.1)
             if not ready:
-                pytest.fail(f"Jupyverse did not become ready:\n{server.log_path.read_text()}")
+                server_log = server.log_path.read_text(encoding="utf-8")
+                pytest.fail(f"Jupyverse did not become ready:\n{server_log}")
             yield server
         finally:
             if server.process.poll() is None:
@@ -127,6 +130,8 @@ def run_cli(jupyverse_server):
             input=input,
             timeout=20,
         )
+        result.stdout = Text.from_ansi(result.stdout).plain
+        result.stderr = Text.from_ansi(result.stderr).plain
         assert result.returncode == expected_code, result.stdout + result.stderr
         assert "WRONG_LOCAL_CONTENT" not in result.stdout + result.stderr
         assert "Traceback" not in result.stderr

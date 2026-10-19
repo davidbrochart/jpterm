@@ -11,6 +11,7 @@ import pytest
 from fps import Module
 from jpterm.write import write_document
 from jupyter_ydoc import YNotebook
+from rich.text import Text
 from textual.app import App
 from txl_remote_contents.main import RemoteContents
 
@@ -82,12 +83,16 @@ def test_unknown_cell_does_not_save(notebook, write_with_contents):
 
 @pytest.fixture
 def run_write(tmp_path):
-    def run(*arguments, input=None):
-        return subprocess.run(
+    def run(*arguments, input=None, env=None):
+        result = subprocess.run(
             [sys.executable, "-c", "from jpterm.cli import main; main()", *arguments],
             input=input, capture_output=True, text=True, encoding="utf-8", cwd=tmp_path,
-            env=dict(os.environ, PYTHONIOENCODING="utf-8", NO_COLOR="1"), timeout=20,
+            env={**os.environ, "PYTHONIOENCODING": "utf-8", "NO_COLOR": "1", **(env or {})},
+            timeout=20,
         )
+        result.stdout = Text.from_ansi(result.stdout).plain
+        result.stderr = Text.from_ansi(result.stderr).plain
+        return result
     return run
 
 
@@ -110,12 +115,23 @@ def test_write_stdin(run_write, tmp_path):
     assert (tmp_path / "script.py").read_text(encoding="utf-8") == source
 
 
+def test_unicode_file_with_non_utf8_locale(run_write, tmp_path):
+    source = "Unicode text: π\n"
+    env = {"PYTHONUTF8": "0", "PYTHONCOERCECLOCALE": "0", "LC_ALL": "C"}
+    result = run_write("write", "file.txt", "--stdin", input=source, env=env)
+    assert result.returncode == 0, result.stderr
+    assert (tmp_path / "file.txt").read_text(encoding="utf-8") == source
+    result = run_write("show", "file.txt", "--json", env=env)
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout) == source
+
+
 def test_write_local_notebook(run_write, tmp_path, notebook):
     path = tmp_path / "test.ipynb"
     path.write_text(json.dumps(notebook.source), encoding="utf-8")
     result = run_write("write", "test.ipynb", "--cell", "code", "--source", "print(42)")
     assert result.returncode == 0, result.stderr
-    cell = json.loads(path.read_text())["cells"][0]
+    cell = json.loads(path.read_text(encoding="utf-8"))["cells"][0]
     assert cell["source"] == "print(42)"
     assert cell["outputs"] == []
     assert cell["execution_count"] is None

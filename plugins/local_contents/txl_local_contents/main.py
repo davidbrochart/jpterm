@@ -27,11 +27,11 @@ class LocalContents(Contents):
         if await p.is_file():
             jupyter_ydoc = ydocs[type]()
             if type == "file":
-                jupyter_ydoc.source = await p.read_text()
+                jupyter_ydoc.source = await p.read_text(encoding="utf-8")
             elif type == "blob":
                 jupyter_ydoc.source = await p.read_bytes()
             elif type == "notebook":
-                jupyter_ydoc.source = json.loads(await p.read_text())
+                jupyter_ydoc.source = json.loads(await p.read_text(encoding="utf-8"))
         return jupyter_ydoc
 
     async def save(
@@ -42,11 +42,11 @@ class LocalContents(Contents):
         p = Path(path)
         source = jupyter_ydoc.source
         if isinstance(source, dict):
-            await p.write_text(json.dumps(source, indent=2))
+            await p.write_text(json.dumps(source, indent=2), encoding="utf-8")
         elif isinstance(source, bytes):
             await p.write_bytes(source)
         else:
-            await p.write_text(source)
+            await p.write_text(source, encoding="utf-8")
 
 
 class LocalContentsModule(Module):
