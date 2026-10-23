@@ -21,6 +21,8 @@ class LocalContents(Contents):
         format: str | None = None,
     ) -> Union[List, Doc]:
         p = Path(path)
+        if not await p.exists():
+            raise FileNotFoundError(f"File not found: {path}")
         assert (await p.is_dir()) == is_dir
         if await p.is_dir():
             return sorted(list(scandir(path)), key=lambda entry: (not entry.is_dir(), entry.name))

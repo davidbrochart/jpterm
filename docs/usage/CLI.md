@@ -52,3 +52,23 @@ Provide exactly one of `--source` or `--stdin`; `--source ''` clears the content
 When a code cell's source changes, its saved outputs and execution count are cleared.
 Other cells are preserved, and no cells are executed. Writing a whole notebook without
 `--cell` is not supported.
+
+For a server with real-time collaboration enabled, add `--collaborative` before
+the command to read and write the live shared document:
+
+```bash
+jpterm --server http://127.0.0.1:8000 --collaborative show notebook.ipynb --show-cell-ids
+jpterm --server http://127.0.0.1:8000 --collaborative write notebook.ipynb --cell CELL_ID --source 'print(42)'
+cat script.py | jpterm --server http://127.0.0.1:8000 --collaborative write script.py --stdin
+```
+
+Collaborative commands wait for the initial synchronization before reading or
+editing. Writes update the shared CRDT. Saving to disk follows
+the server's autosave policy.
+
+For Jupyverse, install the collaboration plugins in the server environment:
+
+```bash
+pip install 'jupyverse[jupyterlab,noauth,collaboration]'
+jupyverse --timeout 10
+```

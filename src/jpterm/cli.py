@@ -79,8 +79,6 @@ def main():
         else:
             if kwargs["collaborative"] and not kwargs["server"]:
                 raise click.UsageError("--collaborative requires --server for CLI commands.")
-            if kwargs["collaborative"] and ctx.invoked_subcommand == "write":
-                raise click.UsageError("write does not support --collaborative yet.")
             ctx.obj = jpterm_main(kwargs)
 
     # Keep the existing TUI options on the root command.

@@ -7,7 +7,8 @@ import anyio
 import httpx2
 import pytest
 from httpx2.websockets import ASGIWebSocketTransport
-from pycrdt import Doc, Text, handle_sync_message
+from pycrdt import Doc, Text, YMessageType, YSyncMessageType, handle_sync_message
+from pycrdt.websocket.websocket import HttpxWebsocket
 from txl_remote_contents.main import RemoteContents
 from txl_remote_kernels.driver import KernelDriver
 from txl_remote_terminals.main import RemoteTerminals
@@ -28,7 +29,7 @@ def test_contents_websocket_sync(monkeypatch):
 
     async def app(scope, receive, send):
         assert scope["path"] == "/api/collaboration/room/test-room"
-        assert scope["query_string"] == b"sessionId=test-session"
+        assert scope["query_string"] == b"token=test-token&sessionId=test-session"
         assert b"session-cookie=yes" in dict(scope["headers"])[b"cookie"]
         assert (await receive())["type"] == "websocket.connect"
         await send({"type": "websocket.accept"})
@@ -45,20 +46,73 @@ def test_contents_websocket_sync(monkeypatch):
     async def check():
         client_doc = Doc()
         client_doc["source"] = Text()
-        synced = anyio.Event()
-        finished = anyio.Event()
-        monkeypatch.setattr("txl_remote_contents.main.sleep_forever", finished.wait)
         with anyio.fail_after(3):
             async with anyio.create_task_group() as tasks:
                 contents = RemoteContents(
-                    "http://server", {}, httpx2.Cookies({"session-cookie": "yes"}), True, tasks,
+                    "http://server", {"token": ["test-token"]},
+                    httpx2.Cookies({"session-cookie": "yes"}), True, tasks,
                 )
-                tasks.start_soon(
-                    contents.websocket_provider, "test-room", client_doc, "test-session", synced,
+                provider = await tasks.start(
+                    contents.websocket_provider, "test-room", client_doc, "test-session"
                 )
-                await synced.wait()
+                await provider.synced.wait()
                 assert str(client_doc["source"]) == "Synchronized through HTTPX2"
-                finished.set()
+                await contents.aclose()
+
+    anyio.run(check)
+
+
+def test_contents_shutdown_drains_pending_updates(monkeypatch):
+    server_doc = Doc()
+    server_doc["source"] = Text("original")
+
+    async def check():
+        send_started = anyio.Event()
+        allow_send = anyio.Event()
+        closed = anyio.Event()
+        slow = False
+
+        class SlowWebsocket(HttpxWebsocket):
+            async def send(self, message):
+                if slow and message[:2] == bytes([YMessageType.SYNC, YSyncMessageType.SYNC_UPDATE]):
+                    send_started.set()
+                    await allow_send.wait()
+                await super().send(message)
+
+        async def app(scope, receive, send):
+            await receive()
+            await send({"type": "websocket.accept"})
+            while True:
+                event = await receive()
+                if event["type"] == "websocket.disconnect":
+                    return
+                reply = handle_sync_message(event["bytes"][1:], server_doc)
+                if reply is not None:
+                    await send({"type": "websocket.send", "bytes": reply})
+
+        monkeypatch.setattr(httpx2, "AsyncClient", client_factory(app))
+        monkeypatch.setattr("txl_remote_contents.main.HttpxWebsocket", SlowWebsocket)
+        client_doc = Doc()
+        client_doc["source"] = Text()
+        with anyio.fail_after(5):
+            async with anyio.create_task_group() as tasks:
+                contents = RemoteContents("http://server", {}, httpx2.Cookies(), True, tasks)
+                provider = await tasks.start(contents.websocket_provider, "room", client_doc)
+                await provider.synced.wait()
+                slow = True
+                client_doc["source"].clear()
+                client_doc["source"] += "changed π"
+
+                async def close():
+                    await contents.aclose()
+                    closed.set()
+
+                tasks.start_soon(close)
+                await send_started.wait()
+                assert not closed.is_set()
+                allow_send.set()
+                await closed.wait()
+                assert str(server_doc["source"]) == "changed π"
 
     anyio.run(check)
 

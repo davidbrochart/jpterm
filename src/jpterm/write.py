@@ -11,7 +11,7 @@ from txl.base import Contents
 from .app import create_app
 
 
-async def write_document(path, source, cell_id, settings, timeout):
+async def write_document(path, source, cell_id, settings, timeout, collaborative=False):
     notebook = PurePosixPath(path).suffix == ".ipynb"
     if notebook and cell_id is None:
         raise ValueError("Writing a notebook requires --cell CELL_ID.")
@@ -23,24 +23,36 @@ async def write_document(path, source, cell_id, settings, timeout):
             contents = await module.get(Contents)
             if notebook:
                 document = await contents.get(path, type="notebook")
-                notebook_source = document.source
-                cell = next(
-                    (cell for cell in notebook_source["cells"] if cell.get("id") == cell_id), None
+                index = next(
+                    (i for i, cell in enumerate(document.source["cells"])
+                     if cell.get("id") == cell_id), None
                 )
-                if cell is None:
+                if index is None:
                     raise ValueError(f"Cell ID not found: {cell_id}")
-                if cell["source"] == source:
+                cell = document.ycells[index]
+                if str(cell["source"]) == source:
                     return
-                cell["source"] = source
-                if cell["cell_type"] == "code":
-                    cell["outputs"] = []
-                    cell["execution_count"] = None
-                document.source = notebook_source
+                with document.ydoc.transaction():
+                    document.set_cell(index, source=source)
+                    if cell["cell_type"] == "code":
+                        cell["outputs"].clear()
+                        cell["execution_count"] = None
+                    document.dirty = True
             else:
-                factory = next(iter(entry_points(group="jupyter_ydoc", name="file"))).load()
-                document = factory()
-                document.source = source
-            await contents.save(path, document)
+                try:
+                    document = await contents.get(path, type="file", format="text")
+                except FileNotFoundError:
+                    if collaborative:
+                        raise
+                    factory = next(iter(entry_points(group="jupyter_ydoc", name="file"))).load()
+                    document = factory()
+                if collaborative and document.source == source:
+                    return
+                with document.ydoc.transaction():
+                    document.source = source
+                    document.dirty = True
+            if not collaborative:
+                await contents.save(path, document)
 
 
 @click.command()
@@ -65,6 +77,7 @@ def write(ctx, path, cell_id, source, from_stdin, timeout):
     try:
         anyio.run(
             write_document, path, source, cell_id, options["set_"], timeout,
+            ctx.parent.params["collaborative"],
             backend=options["backend"],
         )
     except Exception as exc:
