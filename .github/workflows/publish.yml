@@ -1,8 +1,12 @@
 name: publish
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+      - "[0-9]+.[0-9]+.[0-9]+.post[0-9]+"
+      - "[0-9]+.[0-9]+.[0-9]+[a-b][0-9]+"
+      - "[0-9]+.[0-9]+.[0-9]+rc[0-9]+"
 
 jobs:
   build:
@@ -34,3 +38,23 @@ jobs:
         path: dist
     - name: Upload packages
       uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        skip-existing: true
+
+  github-release:
+    name: Create GitHub release
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v7
+    - id: changelog
+      uses: agronholm/release-notes@v1
+      with:
+        path: CHANGELOG.md
+        version_pattern: ^\#\# ([0-9][^*]*)\n
+    - uses: ncipollo/release-action@v1
+      with:
+        body: ${{ steps.changelog.outputs.changelog }}
+        prerelease: ${{ contains(github.ref_name, 'a') || contains(github.ref_name, 'b') || contains(github.ref_name, 'rc') }}

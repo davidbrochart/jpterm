@@ -2,6 +2,23 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 0.3.12
+
+- Add `jpterm write` to replace text file contents or a notebook cell's source.
+- Support collaborative CLI reads and writes through a Jupyter server.
+
+This release also releases:
+
+- `txl_cell` 0.3.9
+- `txl_console` 0.3.9
+- `txl_kernel` 0.3.11
+- `txl_local_contents` 0.3.9
+- `txl_local_kernels` 0.3.9
+- `txl_notebook_editor` 0.3.9
+- `txl_remote_contents` 0.3.9
+- `txl_remote_kernels` 0.3.9
+- `txl_widgets` 0.3.9
+
 ## 0.2.3
 
 ([Full Changelog](https://github.com/davidbrochart/jpterm/compare/v0.2.2...ae0ab58aa584c0b3bad16ffed12584ea74b823ec))
