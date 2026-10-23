@@ -10,7 +10,7 @@ import httpx2
 import pytest
 from fps import Module
 from jpterm.write import write_document
-from jupyter_ydoc import YNotebook
+from jupyter_ydoc import YFile, YNotebook
 from rich.text import Text
 from textual.app import App
 from txl_remote_contents.main import RemoteContents
@@ -81,6 +81,14 @@ def test_unknown_cell_does_not_save(notebook, write_with_contents):
     contents.save.assert_not_awaited()
 
 
+@pytest.mark.parametrize("error", [PermissionError("denied"), RuntimeError("connection failed")])
+def test_text_load_errors_do_not_save(write_with_contents, error):
+    contents = SimpleNamespace(get=AsyncMock(side_effect=error), save=AsyncMock())
+    with pytest.raises(type(error), match=str(error)):
+        write_with_contents(contents, "file.txt", "new source")
+    contents.save.assert_not_awaited()
+
+
 @pytest.fixture
 def run_write(tmp_path):
     def run(*arguments, input=None, env=None):
@@ -142,8 +150,7 @@ def test_write_local_notebook(run_write, tmp_path, notebook):
     (["write", "file.txt", "--source", "text", "--stdin"], "Provide exactly one"),
     (["write", "file.txt", "--cell", "code", "--source", "text"], "requires a notebook"),
     (["write", "test.ipynb", "--source", "text"], "requires --cell"),
-    (["--server", "http://server", "--collaborative", "write", "file.txt",
-      "--source", "text"], "does not support --collaborative"),
+    (["--collaborative", "write", "file.txt", "--source", "text"], "requires --server"),
 ])
 def test_invalid_write(run_write, tmp_path, arguments, message):
     result = run_write(*arguments)
@@ -166,3 +173,31 @@ def test_remote_save_reports_http_error():
                 await contents.save("file.txt", SimpleNamespace(source="text"))
 
     anyio.run(check)
+
+
+def test_collaborative_save_uses_shared_document():
+    async def check():
+        document = YFile()
+        document.source = "new content"
+        document.dirty = True
+        contents = RemoteContents("http://server", {}, httpx2.Cookies(), True, None)
+        contents.document_id[document] = "room"
+        with patch("txl_remote_contents.main.httpx2.AsyncClient") as client:
+            await contents.save("file.txt", document)
+            assert document.dirty
+            client.assert_not_called()
+
+    anyio.run(check)
+
+
+def test_write_cell_preserves_unchanged_text(notebook, write_with_contents):
+    text = notebook.ycells[0]["source"]
+    text.clear()
+    text += "π😀 hello world"
+    events = []
+    subscription = text.observe(lambda event: events.append(event.delta))
+    contents = SimpleNamespace(get=AsyncMock(return_value=notebook), save=AsyncMock())
+    write_with_contents(contents, "test.ipynb", "π😀 hello there", "code")
+    assert str(text) == "π😀 hello there"
+    assert events[0][0] == {"retain": len("π😀 hello ".encode("utf-8"))}
+    text.unobserve(subscription)

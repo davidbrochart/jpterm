@@ -1,4 +1,4 @@
-"""CLI integration checks against a real, non-collaborative Jupyverse server."""
+"""CLI integration checks against a real Jupyverse server, including RTC."""
 
 import json
 import os
@@ -9,9 +9,11 @@ import sys
 import time
 from types import SimpleNamespace
 
+import anyio
 import httpx2
 import pytest
 from rich.text import Text
+from txl_remote_contents.main import RemoteContents
 
 
 @pytest.fixture(scope="module")
@@ -54,6 +56,8 @@ def jupyverse_server(tmp_path_factory):
     }
     (server_root / "remote.ipynb").write_text(json.dumps(server.notebook), encoding="utf-8")
     (server_root / "writable.ipynb").write_text(json.dumps(server.notebook), encoding="utf-8")
+    (server_root / "rtc.ipynb").write_text(json.dumps(server.notebook), encoding="utf-8")
+    (server_root / "rtc.txt").write_text("Original shared text", encoding="utf-8")
     server.text = "SERVER LICENSE\n\nOnly available from the server.\n"
     # Write exact bytes so Windows does not translate LF into CRLF.
     (server_root / "LICENSE").write_bytes(server.text.encode("utf-8"))
@@ -110,7 +114,7 @@ def jupyverse_server(tmp_path_factory):
 @pytest.fixture
 def run_cli(jupyverse_server):
 
-    def run(*arguments, expected_code=0, command="show", input=None):
+    def run(*arguments, expected_code=0, command="show", input=None, collaborative=False):
         environment = dict(os.environ, PYTHONIOENCODING="utf-8", NO_COLOR="1", COLUMNS="80")
         result = subprocess.run(
             [
@@ -119,6 +123,7 @@ def run_cli(jupyverse_server):
                 "from jpterm.cli import main; main()",
                 "--server",
                 jupyverse_server.url,
+                *(["--collaborative"] if collaborative else []),
                 command,
                 *arguments,
             ],
@@ -219,7 +224,7 @@ def test_show_markdown(run_cli, jupyverse_server):
 
 def test_missing_file(run_cli, jupyverse_server):
     result = run_cli("missing.ipynb", expected_code=1)
-    assert "404" in result.stderr
+    assert "File not found: missing.ipynb" in result.stderr
 
 
 @pytest.mark.parametrize("from_stdin", [False, True])
@@ -245,3 +250,58 @@ def test_write_server_cell(run_cli):
     result = run_cli(path, "--cell", "missing", "--source", "bad", command="write", expected_code=1)
     assert "Cell ID not found" in result.stderr
     assert json.loads(run_cli(path, "--json").stdout) == after
+
+
+@pytest.mark.parametrize("path", ["remote.ipynb", "LICENSE"])
+@pytest.mark.parametrize("as_json", [False, True])
+def test_collaborative_show(run_cli, path, as_json):
+    arguments = [path, *(["--json"] if as_json else [])]
+    expected = run_cli(*arguments)
+    actual = run_cli(*arguments, collaborative=True)
+    if as_json:
+        assert json.loads(actual.stdout) == json.loads(expected.stdout)
+    else:
+        assert actual.stdout + actual.stderr == expected.stdout + expected.stderr
+
+
+def test_collaborative_write_text(run_cli):
+    source = "Shared text π\nsecond line"
+    run_cli("rtc.txt", "--stdin", input=source, command="write", collaborative=True)
+    actual = json.loads(run_cli("rtc.txt", "--json", collaborative=True).stdout)
+    assert actual.replace("\r\n", "\n") == source
+
+
+def test_collaborative_write_reaches_connected_peer(run_cli, jupyverse_server):
+    async def check():
+        with anyio.fail_after(20):
+            async with anyio.create_task_group() as tasks:
+                contents = RemoteContents(
+                    jupyverse_server.url, {}, httpx2.Cookies(), True, tasks
+                )
+                document = await contents.get("rtc.ipynb", type="notebook")
+                peer_source = document.ycells[0]["source"]
+                target_source = document.ycells[1]["source"]
+                changed = anyio.Event()
+                subscription = target_source.observe(lambda event: changed.set())
+                peer_source.clear()
+                peer_source += "Edited by another client"
+
+                def write():
+                    run_cli(
+                        "rtc.ipynb", "--cell", "server-cell", "--source", "print(42)",
+                        command="write", collaborative=True,
+                    )
+
+                await anyio.to_thread.run_sync(write)
+                await changed.wait()
+                target_source.unobserve(subscription)
+                assert str(peer_source) == "Edited by another client"
+                assert str(target_source) == "print(42)"
+                assert document.source["cells"][1]["outputs"] == []
+                assert document.source["cells"][1]["execution_count"] is None
+                await contents.aclose()
+
+    anyio.run(check)
+    source = json.loads(run_cli("rtc.ipynb", "--json", collaborative=True).stdout)
+    assert source["cells"][0]["source"] == "Edited by another client"
+    assert source["cells"][1]["source"] == "print(42)"

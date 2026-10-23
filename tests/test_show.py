@@ -10,7 +10,6 @@ from click.testing import CliRunner
 from fps import Module, get_root_module
 from jpterm.cli import jpterm_main, main
 from jpterm.show import load_document
-from pycrdt import YMessageType, YSyncMessageType
 from rich.console import Console
 from textual.app import App
 from textual.widgets import Static
@@ -19,7 +18,7 @@ from txl_jpterm.main import Jpterm
 from txl_jpterm.main_area import MainArea
 from txl_markdown_viewer.main import MarkdownViewer, MarkdownViewerModule
 from txl_notebook_editor.main import NotebookEditor, NotebookEditorModule
-from txl_remote_contents.main import RemoteContents, SyncedWebsocket, ydocs
+from txl_remote_contents.main import RemoteContents, ydocs
 from txl_text_editor.main import TextEditor, TextEditorModule
 
 from txl.app import AppModule
@@ -274,10 +273,9 @@ def test_collaborative_get_waits_for_sync():
         async with anyio.create_task_group() as tasks:
             contents = RemoteContents("http://server", {}, httpx2.Cookies(), True, tasks)
 
-            async def provider(room, document, session, synced):
+            async def provider(room, document, session, *, task_status):
                 provider_started.set()
-                await allow_sync.wait()
-                synced.set()
+                task_status.started(SimpleNamespace(synced=allow_sync))
 
             contents.websocket_provider = provider
 
@@ -370,21 +368,3 @@ def test_error():
     with patch("jpterm.show.load_document", AsyncMock(side_effect=ValueError("bad notebook"))):
         code, _ = invoke(["show", "bad.ipynb"])
         assert code == 1
-
-
-def test_sync_signal_follows_application():
-
-    async def check():
-        synced = anyio.Event()
-        websocket = AsyncMock()
-        websocket.receive_bytes.side_effect = [
-            bytes([YMessageType.SYNC, YSyncMessageType.SYNC_STEP2]),
-            b"next",
-        ]
-        channel = SyncedWebsocket(websocket, "room", synced)
-        await channel.__anext__()
-        assert not synced.is_set()
-        await channel.__anext__()
-        assert synced.is_set()
-
-    anyio.run(check)

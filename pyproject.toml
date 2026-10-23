@@ -52,7 +52,7 @@ dependencies = [
 [dependency-groups]
 test = [
     "pytest",
-    "jupyverse[jupyterlab,noauth]",
+    "jupyverse[jupyterlab,noauth,collaboration]",
 ]
 docs = [
     "mkdocs",

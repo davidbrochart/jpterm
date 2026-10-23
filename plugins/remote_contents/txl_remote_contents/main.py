@@ -5,31 +5,14 @@ from typing import Any, Dict, List, Optional, Union
 from urllib import parse
 
 import httpx2
-from anyio import Event, create_task_group, sleep_forever
+from anyio import TASK_STATUS_IGNORED, Event, create_task_group, sleep_forever
 from fps import Module
-from pycrdt import Doc, Provider, YMessageType, YSyncMessageType
+from pycrdt import Doc, Provider
 from pycrdt.websocket.websocket import HttpxWebsocket
 
 from txl.base import Contents
 
 ydocs = {ep.name: ep.load() for ep in entry_points(group="jupyter_ydoc")}
-
-
-class SyncedWebsocket(HttpxWebsocket):
-    """Signal after the provider has applied the initial sync response."""
-
-    def __init__(self, websocket, path, synced=None):
-        super().__init__(websocket, path)
-        self.synced = Event() if synced is None else synced
-        self.received_sync = False
-
-    async def __anext__(self):
-        if self.received_sync:
-            self.synced.set()
-        message = await super().__anext__()
-        if message[:2] == bytes([YMessageType.SYNC, YSyncMessageType.SYNC_STEP2]):
-            self.received_sync = True
-        return message
 
 
 class Entry:
@@ -71,6 +54,7 @@ class RemoteContents(Contents):
         i = base_url.find(":")
         self.ws_url = ("wss" if base_url[i - 1] == "s" else "ws") + base_url[i:]
         self.document_id = {}
+        self._connections = {}
 
     async def get(
         self,
@@ -88,6 +72,8 @@ class RemoteContents(Contents):
                     cookies=self.cookies,
                 )
             self.cookies.update(r.cookies)
+            if r.status_code == 404:
+                raise FileNotFoundError(f"File not found: {path}")
             r.raise_for_status()
             model = r.json()
             if model["type"] == "directory":
@@ -105,17 +91,18 @@ class RemoteContents(Contents):
         else:
             if format is not None:
                 pass
+            elif type == "notebook":
+                format = "json"
             elif type == "blob":
                 format = "base64"
             else:
                 format = "text"
-            doc_type = type  # if type == "notebook" else "file"
-            async with httpx2.AsyncClient() as client:
+            doc_type = type
+            async with httpx2.AsyncClient(cookies=self.cookies) as client:
                 response = await client.put(
                     f"{self.base_url}/api/collaboration/session/{path}",
                     json={"format": format, "type": doc_type},
                     params={**self.query_params},
-                    cookies=self.cookies,
                 )
             self.cookies.update(response.cookies)
             response.raise_for_status()
@@ -124,9 +111,10 @@ class RemoteContents(Contents):
             session_id = r["sessionId"]
             ydoc = Doc()
             jupyter_ydoc = ydocs[type](ydoc)
-            synced = Event()
-            self.task_group.start_soon(self.websocket_provider, room_id, ydoc, session_id, synced)
-            await synced.wait()
+            provider = await self.task_group.start(
+                self.websocket_provider, room_id, ydoc, session_id
+            )
+            await provider.synced.wait()
             self.document_id[jupyter_ydoc] = room_id
             return jupyter_ydoc
 
@@ -135,6 +123,10 @@ class RemoteContents(Contents):
         path: str,
         jupyter_ydoc: Doc,
     ) -> None:
+        if self.collaborative:
+            if jupyter_ydoc not in self.document_id:
+                raise ValueError("Open the document before saving it collaboratively.")
+            return
         source = jupyter_ydoc.source
         if isinstance(source, dict):
             cnt = source
@@ -163,15 +155,32 @@ class RemoteContents(Contents):
         self.cookies.update(r.cookies)
         r.raise_for_status()
 
-    async def websocket_provider(self, room_id, ydoc, session_id=None, synced=None):
+    async def websocket_provider(
+        self, room_id, ydoc, session_id=None, *, task_status=TASK_STATUS_IGNORED
+    ):
         ws_url = f"{self.ws_url}/api/collaboration/room/{room_id}"
-        params = None if session_id is None else {"sessionId": session_id}
-        async with httpx2.AsyncClient(cookies=self.cookies) as client, client.websocket(
-            ws_url, params=params
-        ) as websocket:
-            channel = SyncedWebsocket(websocket, room_id, synced)
-            async with Provider(ydoc, channel):
-                await sleep_forever()
+        params = {**self.query_params}
+        if session_id is not None:
+            params["sessionId"] = session_id
+        closing, closed = Event(), Event()
+        self._connections[ydoc] = closing, closed
+        try:
+            async with httpx2.AsyncClient(cookies=self.cookies) as client, client.websocket(
+                ws_url, params=params
+            ) as websocket:
+                async with Provider(ydoc, HttpxWebsocket(websocket, room_id)) as provider:
+                    task_status.started(provider)
+                    await closing.wait()
+        finally:
+            del self._connections[ydoc]
+            closed.set()
+
+    async def aclose(self):
+        connections = list(self._connections.values())
+        for closing, _ in connections:
+            closing.set()
+        for _, closed in connections:
+            await closed.wait()
 
 
 class RemoteContentsModule(Module):
@@ -187,6 +196,10 @@ class RemoteContentsModule(Module):
         cookies = httpx2.Cookies()
         async with create_task_group() as tg:
             contents = RemoteContents(base_url, query_params, cookies, self.collaborative, tg)
+            self.contents = contents
             self.put(contents, Contents)
             self.done()
             await sleep_forever()
+
+    async def stop(self) -> None:
+        await self.contents.aclose()
