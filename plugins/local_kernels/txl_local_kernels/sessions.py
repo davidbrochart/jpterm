@@ -36,6 +36,13 @@ def session_process(record):
     return None
 
 
+def process_alive(process):
+    try:
+        return process.is_running() and process.status() != psutil.STATUS_ZOMBIE
+    except psutil.NoSuchProcess:
+        return False
+
+
 def list_sessions():
     records = []
     for path in sorted(runtime_directory().glob("*.session.json")):
@@ -123,10 +130,19 @@ class LocalSession:
             return False
         process = session_process(record)
         if process is not None:
-            # Check creation time again inside psutil before signaling a PID.
-            process.kill()
+            # Windows venv launchers can run the interpreter in a child process.
+            # psutil verifies process identity before signaling each captured PID.
+            try:
+                children = process.children(recursive=True)
+            except psutil.NoSuchProcess:
+                children = []
+            for target in [process, *reversed(children)]:
+                try:
+                    target.kill()
+                except psutil.NoSuchProcess:
+                    pass
             with anyio.fail_after(self.timeout):
-                while session_process(record) is not None:
+                while any(process_alive(target) for target in [process, *children]):
                     await anyio.sleep(0.05)
         _children[:] = [child for child in _children if child.poll() is None]
         self.record_path.unlink(missing_ok=True)

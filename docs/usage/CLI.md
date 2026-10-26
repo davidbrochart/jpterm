@@ -98,7 +98,7 @@ Remote listing shows notebook sessions, including those started by other clients
 Paths are relative to the server's root. Remote `stop` deletes the matching
 notebook session and lets the server manage kernel shutdown. Both backends
 support `--json` for listing; remote entries include kernel and session IDs,
-while local entries include the kernel PID.
+while local entries include the kernel or launcher PID.
 
 With `--server`, execution reuses the notebook's session, creating
 one with the notebook's kernelspec (or `--kernel NAME`) when needed. The kernel

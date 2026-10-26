@@ -114,6 +114,13 @@ def run_local(tmp_path, *arguments):
     )
 
 
+def assert_session_process(session, info):
+    # On Windows, a virtualenv launcher may be the recorded process while the
+    # notebook executes inside its child interpreter.
+    process = psutil.Process(session["pid"])
+    assert info["pid"] in {process.pid, *(child.pid for child in process.children(recursive=True))}
+
+
 def assert_kernel_stopped(info):
     assert not Path(info["connection"]).exists()
     try:
@@ -167,7 +174,7 @@ def test_local_execution_preserves_kernel_on_failure(tmp_path, local_notebook, t
         assert result.returncode == 1, result.stdout + result.stderr
         sessions = json.loads(kernel_command(tmp_path, "list", "--json").stdout)
         assert len(sessions) == 1
-        assert sessions[0]["pid"] == info["pid"]
+        assert_session_process(sessions[0], info)
     else:
         assert "ValueError: cell failed" in result.stderr
         notebook = json.loads(result.stdout)
@@ -220,7 +227,7 @@ def test_local_cells_share_state_and_can_be_stopped(tmp_path, local_notebook):
     assert result.returncode == 0, result.stderr
     sessions = json.loads(result.stdout)
     assert len(sessions) == 1
-    assert sessions[0]["pid"] == info["pid"]
+    assert_session_process(sessions[0], info)
     assert sessions[0]["alive"]
     assert "key" not in sessions[0]
     if os.name == "posix":
@@ -383,7 +390,7 @@ def test_tui_attaches_by_notebook_path_and_respects_ownership(tmp_path, local_no
         assert_kernel_stopped(info)
     else:
         assert len(sessions) == 1
-        assert sessions[0]["pid"] == info["pid"]
+        assert_session_process(sessions[0], info)
         assert sessions[0]["alive"]
         result = run_local(tmp_path, str(path), "--cell", "read", "--json")
         assert result.returncode == 0, result.stdout + result.stderr

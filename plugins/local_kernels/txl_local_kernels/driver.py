@@ -100,6 +100,8 @@ class KernelDriver(KernelMixin):
             await process.wait()
         for task in self.channel_tasks:
             task.cancel()
+        for task in self.channel_tasks:
+            await task.wait()
         for channel in ("shell_channel", "control_channel", "iopub_channel"):
             socket = getattr(self, channel, None)
             if socket is not None:
