@@ -158,7 +158,9 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
             )
             if self.cell_index is None:
                 raise ValueError(f"Cell ID not found: {cell_id}")
-        self.update()
+        mounts = self.update()
+        for mount in mounts:
+            await mount
         if not self.app.cli:
             self.nb_change_target = StapledObjectStream(
                 *anyio.create_memory_object_stream[Any](max_buffer_size=math.inf)
@@ -170,6 +172,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
             self.task_group.create_task(self.observe_nb_changes())
 
     def update(self):
+        mounts = []
         ipynb = self.ynb.source
         self.language = ipynb.get("metadata", {}).get("kernelspec", {}).get("language", None)
         if self.kernel is None and not self.app.cli:
@@ -189,10 +192,11 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                 cell.source.show_cursor = False
                 cell.source.styles.max_height = None
                 cell.source.styles.scrollbar_size_vertical = 0
-            self.mount(cell)
+            mounts.append(self.mount(cell))
             self.cells.append(cell)
         if self.cells and not self.app.cli:
             self.cells[self.cell_i].select()
+        return mounts
 
     def on_change(self, target, events):
         self.nb_change_target.send_nowait(target)

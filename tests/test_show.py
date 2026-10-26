@@ -185,7 +185,8 @@ def test_cli_does_not_start_application_shell():
 
 @pytest.mark.parametrize("cell_id", [None, "cell-12"])
 @pytest.mark.parametrize("show_cell_ids", [False, True])
-def test_inline_uses_notebook_editor_without_starting_kernel(cell_id, show_cell_ids):
+@pytest.mark.parametrize("slow_mount", [False, True])
+def test_inline_uses_notebook_editor_without_starting_kernel(cell_id, show_cell_ids, slow_mount):
     sources = [f"source_{index:02}" for index in range(30)]
     sources[0] = "\n".join((f"long_line_{index:02}" for index in range(40)))
     notebook = {
@@ -216,11 +217,16 @@ def test_inline_uses_notebook_editor_without_starting_kernel(cell_id, show_cell_
 
     app = TestApp()
 
+    class CellWidget(Static):
+        async def on_mount(self):
+            if slow_mount:
+                await anyio.sleep(0.05)
+
     def factory(cell, language, kernel, **kwargs):
         assert kernel is None
         assert kwargs == ({"show_cell_id": True} if show_cell_ids else {})
         used_cells.append(cell)
-        widget = Static(cell)
+        widget = CellWidget(cell)
         widget.source = widget
         widget.select = lambda: None
         return widget
