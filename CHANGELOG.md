@@ -10,7 +10,7 @@
 - Share local notebook kernels between the TUI and CLI, with ownership-based cleanup on TUI exit.
 - Add `Ctrl+W` to close TUI tabs, with confirmation for unsaved changes.
 - Clean up editor observers and background tasks when tabs close.
-- Fix kernel shutdown races and handle Windows Python launcher processes.
+- Fix kernel startup and shutdown races, and handle Windows Python launcher processes.
 
 This release also releases:
 

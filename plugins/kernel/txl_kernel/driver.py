@@ -63,7 +63,6 @@ class KernelMixin:
                 msg_id=str(self.msg_cnt),
             )
             self.msg_cnt += 1
-            await self.send_message(msg, self.shell_channel, change_date_to_str=True)
             msg_id = msg["header"]["msg_id"]
             self.execute_requests[msg_id] = {
                 "iopub": StapledObjectStream(
@@ -73,6 +72,7 @@ class KernelMixin:
                     *create_memory_object_stream[Any](max_buffer_size=math.inf)
                 ),
             }
+            await self.send_message(msg, self.shell_channel, change_date_to_str=True)
             with move_on_after(new_timeout) as scope:
                 msg = await self.execute_requests[msg_id]["shell"].receive()
             if scope.cancelled_caught:
@@ -83,6 +83,7 @@ class KernelMixin:
                 with move_on_after(0.2) as scope:
                     msg = await self.execute_requests[msg_id]["iopub"].receive()
                 if not scope.cancelled_caught:
+                    del self.execute_requests[msg_id]
                     break
             del self.execute_requests[msg_id]
             new_timeout = deadline_to_timeout(deadline)

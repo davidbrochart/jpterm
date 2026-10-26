@@ -5,8 +5,32 @@ from unittest.mock import Mock, patch
 
 import anyio
 import psutil
+from txl_kernel.driver import KernelMixin
 from txl_local_kernels.driver import KernelDriver
 from txl_local_kernels.sessions import LocalSession, process_alive
+
+
+def test_readiness_handles_reply_before_send_returns():
+    class ImmediateKernel(KernelMixin):
+        def __init__(self):
+            self.msg_cnt = 0
+            self.session_id = "immediate-kernel"
+            self.shell_channel = None
+            self.execute_requests = {}
+
+        async def send_message(self, msg, channel, **kwargs):
+            # Model the receiver dispatching a reply while send is still awaiting I/O.
+            routes = self.execute_requests.get(msg["header"]["msg_id"])
+            if routes is not None:
+                routes["shell"].send_nowait({"header": {"msg_type": "kernel_info_reply"}})
+                routes["iopub"].send_nowait({"header": {"msg_type": "status"}})
+
+    async def check():
+        kernel = ImmediateKernel()
+        await kernel.wait_for_ready(timeout=0.1)
+        assert kernel.execute_requests == {}
+
+    anyio.run(check)
 
 
 def test_stop_waits_for_channel_readers_before_closing_sockets():
