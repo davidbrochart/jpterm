@@ -78,6 +78,18 @@ async def launch_kernel(
     kernel_cwd: str | None,
     capture_output: bool,
 ) -> Process:
+    cmd = kernel_command(kernelspec_path, connection_file_path)
+    if capture_output:
+        stdout = subprocess.DEVNULL
+        stderr = subprocess.STDOUT
+    else:
+        stdout = None
+        stderr = None
+    process = await open_process(cmd, stdout=stdout, stderr=stderr, cwd=kernel_cwd or None)
+    return process
+
+
+def kernel_command(kernelspec_path: str, connection_file_path: str) -> list[str]:
     with open(kernelspec_path) as f:
         kernelspec = json.load(f)
     cmd = [s.format(connection_file=connection_file_path) for s in kernelspec["argv"]]
@@ -87,16 +99,7 @@ async def launch_kernel(
         "python%i.%i" % sys.version_info[:2],
     }:
         cmd[0] = sys.executable
-    if capture_output:
-        stdout = subprocess.DEVNULL
-        stderr = subprocess.STDOUT
-    else:
-        stdout = None
-        stderr = None
-    if not kernel_cwd:
-        kernel_cwd = None
-    process = await open_process(cmd, stdout=stdout, stderr=stderr, cwd=kernel_cwd)
-    return process
+    return cmd
 
 def create_socket(channel: str, cfg: cfg_t, identity: Optional[bytes] = None) -> Socket:
     ip = cfg["ip"]

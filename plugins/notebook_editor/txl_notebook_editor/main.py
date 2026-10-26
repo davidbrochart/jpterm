@@ -81,6 +81,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         self.main_area = main_area
         self.experimental = experimental
         self.kernel = None
+        self._observe_task = None
         self.cells = []
         self.cell_i = 0
         self.cell_copy = None
@@ -158,7 +159,9 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
             )
             if self.cell_index is None:
                 raise ValueError(f"Cell ID not found: {cell_id}")
-        self.update()
+        mounts = self.update()
+        for mount in mounts:
+            await mount
         if not self.app.cli:
             self.nb_change_target = StapledObjectStream(
                 *anyio.create_memory_object_stream[Any](max_buffer_size=math.inf)
@@ -167,15 +170,23 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                 *anyio.create_memory_object_stream[Any](max_buffer_size=math.inf)
             )
             self.ynb.observe(self.on_change)
-            self.task_group.create_task(self.observe_nb_changes())
+            self._observe_task = self.task_group.create_task(self.observe_nb_changes())
+
+    def on_unmount(self):
+        if self._observe_task is not None:
+            self.ynb.unobserve()
+            self._observe_task.cancel()
+        if self.kernel is not None:
+            self.kernel.kernel.busy.disconnect(self.watch_busy)
 
     def update(self):
+        mounts = []
         ipynb = self.ynb.source
         self.language = ipynb.get("metadata", {}).get("kernelspec", {}).get("language", None)
         if self.kernel is None and not self.app.cli:
             kernel_name = ipynb.get("metadata", {}).get("kernelspec", {}).get("name")
             if kernel_name:
-                self.kernel = self.kernels(kernel_name)
+                self.kernel = self.kernels(kernel_name, path=self.path)
                 self.kernel.kernel.busy.connect(self.watch_busy)
         indices = range(self.ynb.cell_number) if self.cell_index is None else [self.cell_index]
         for i_cell in indices:
@@ -189,10 +200,11 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                 cell.source.show_cursor = False
                 cell.source.styles.max_height = None
                 cell.source.styles.scrollbar_size_vertical = 0
-            self.mount(cell)
+            mounts.append(self.mount(cell))
             self.cells.append(cell)
         if self.cells and not self.app.cli:
             self.cells[self.cell_i].select()
+        return mounts
 
     def on_change(self, target, events):
         self.nb_change_target.send_nowait(target)
@@ -213,7 +225,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                     if self.kernel is None:
                         kernel_name = kernelspec.get("name")
                         if kernel_name:
-                            self.kernel = self.kernels(kernel_name)
+                            self.kernel = self.kernels(kernel_name, path=self.path)
                             self.kernel.kernel.busy.connect(self.watch_busy)
             elif target == "state":
                 if "dirty" in events.keys:

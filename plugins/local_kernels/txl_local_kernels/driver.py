@@ -24,13 +24,18 @@ class KernelDriver(KernelMixin):
         write_connection_file: bool = True,
         capture_kernel_output: bool = True,
         comm_handlers=[],
+        launch: bool = True,
+        owned_session=None,
     ) -> None:
         super().__init__(task_group)
         self.task_group = task_group
         self.capture_kernel_output = capture_kernel_output
-        self.kernelspec_path = kernelspec_path or find_kernelspec(kernel_name)
+        self.launch = launch
+        self.owned_session = owned_session
+        self.owned_session_record = owned_session.read() if owned_session is not None else None
+        self.kernelspec_path = kernelspec_path or (find_kernelspec(kernel_name) if launch else "")
         self.kernel_cwd = kernel_cwd
-        if not self.kernelspec_path:
+        if launch and not self.kernelspec_path:
             raise RuntimeError("Could not find a kernel, maybe you forgot to install one?")
         if write_connection_file:
             self.connection_file_path, self.connection_cfg = _write_connection_file(connection_file)
@@ -61,12 +66,13 @@ class KernelDriver(KernelMixin):
         self.listen_channels()
 
     async def start(self, startup_timeout: float = float("inf"), connect: bool = True) -> None:
-        self.kernel_process = await launch_kernel(
-            self.kernelspec_path,
-            self.connection_file_path,
-            self.kernel_cwd,
-            self.capture_kernel_output,
-        )
+        if self.launch:
+            self.kernel_process = await launch_kernel(
+                self.kernelspec_path,
+                self.connection_file_path,
+                self.kernel_cwd,
+                self.capture_kernel_output,
+            )
         if connect:
             await self.connect(startup_timeout)
         self.started.set()
@@ -87,11 +93,26 @@ class KernelDriver(KernelMixin):
         self.channel_tasks.append(self.task_group.create_task(self._recv_shell()))
 
     async def stop(self) -> None:
-        self.kernel_process.kill()
-        await self.kernel_process.wait()
-        os.remove(self.connection_file_path)
+        process = getattr(self, "kernel_process", None)
+        if process is not None:
+            if process.returncode is None:
+                process.kill()
+            await process.wait()
         for task in self.channel_tasks:
             task.cancel()
+        for task in self.channel_tasks:
+            await task.wait()
+        for channel in ("shell_channel", "control_channel", "iopub_channel"):
+            socket = getattr(self, channel, None)
+            if socket is not None:
+                socket.close(linger=0)
+        if self.launch and os.path.exists(self.connection_file_path):
+            os.remove(self.connection_file_path)
+        if self.owned_session is not None:
+            await self.owned_session.stop(expected_record=self.owned_session_record)
+            self.owned_session = None
+        if self in kernel_drivers:
+            kernel_drivers.remove(self)
 
     async def _recv_iopub(self):
         while True:

@@ -2,11 +2,13 @@ from anyio import Event
 from fps import Module
 from textual._context import active_app
 from textual.app import App
+from textual.binding import Binding
 from textual.containers import Container
 from textual.reactive import var
 
 from txl.base import Editors, FileBrowser, Footer, Header, Launcher, MainArea
 
+from .close_tab import ConfirmCloseTab
 from .footer import Footer as _Footer
 from .header import Header as _Header
 from .main_area import MainArea as _MainArea
@@ -18,6 +20,7 @@ class Jpterm(App):
         ("f", "toggle_files", "Toggle Files"),
         ("l", "open_launcher", "Open Launcher"),
         ("q", "quit", "Quit"),
+        Binding("ctrl+w", "close_tab", "Close Tab", priority=True),
     ]
     show_browser = var(True)
     cli: bool = False
@@ -53,6 +56,22 @@ class Jpterm(App):
 
     def action_open_launcher(self) -> None:
         self.main_area.show(self.launcher, "Launcher")
+
+    async def action_close_tab(self) -> None:
+        if self.cli or isinstance(self.screen, ConfirmCloseTab):
+            return
+        widget = self.main_area.shown
+        if widget not in self.main_area.widget_to_tab:
+            return
+        tab, dirty = self.main_area.widget_to_tab[widget]
+        if dirty:
+            async def confirm(discard):
+                if discard:
+                    await self.main_area.close(widget)
+
+            self.push_screen(ConfirmCloseTab(tab.label_text.removeprefix("+ ")), confirm)
+        else:
+            await self.main_area.close(widget)
 
 
 class JptermModule(Module):

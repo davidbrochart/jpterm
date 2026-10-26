@@ -27,6 +27,9 @@ class TextEditor(Editor, Container, metaclass=TextEditorMeta):
         self.contents = contents
         self.main_area = main_area
         self.task_group = task_group
+        self.editor = None
+        self._observe_task = None
+        self._closed = False
 
     async def open(self, path: str) -> None:
         self.path = path
@@ -56,10 +59,20 @@ class TextEditor(Editor, Container, metaclass=TextEditorMeta):
                 *create_memory_object_stream[Any](max_buffer_size=math.inf)
             )
             self.ytext.observe(self.on_change)
-            self.task_group.start_soon(self.observe_changes)
+            self._observe_task = self.task_group.create_task(self.observe_changes())
 
     async def close(self) -> None:
-        await self.editor.stop()
+        if self._closed:
+            return
+        self._closed = True
+        if self._observe_task is not None:
+            self.ytext.unobserve()
+            self._observe_task.cancel()
+        if self.editor is not None:
+            await self.editor.stop()
+
+    async def on_unmount(self):
+        await self.close()
 
     def on_change(self, target, events):
         self.change_target.send_nowait(target)

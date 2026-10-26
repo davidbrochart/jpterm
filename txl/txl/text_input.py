@@ -9,6 +9,9 @@ class TextInput(TextArea):
 
     def __init__(self, ytext: Text, path=None, language=None):
         self.ytext = ytext
+        self._subscription = None
+        self._stopped = False
+        self.send_change_events = None
         text = str(ytext)
         if language is None:
             if path is not None:
@@ -22,12 +25,26 @@ class TextInput(TextArea):
             self.language = language
 
     async def start(self):
+        if self._stopped:
+            return
         self.send_change_events, self.receive_change_events = create_memory_object_stream()
-        self.ytext.observe(self.on_change)
-        await self.observe_changes()
+        self._subscription = self.ytext.observe(self.on_change)
+        try:
+            await self.observe_changes()
+        finally:
+            await self.stop()
 
     async def stop(self):
-        await self.send_change_events.aclose()
+        self._stopped = True
+        if self._subscription is not None:
+            self.ytext.unobserve(self._subscription)
+            self._subscription = None
+        if self.send_change_events is not None:
+            stream, self.send_change_events = self.send_change_events, None
+            await stream.aclose()
+
+    async def on_unmount(self):
+        await self.stop()
 
     def delete(
         self,

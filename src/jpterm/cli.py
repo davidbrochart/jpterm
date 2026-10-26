@@ -8,6 +8,8 @@ from rich import print as rich_print
 from txl.app import disabled, modules
 from txl.cli import set_main, txl_main
 
+from .execute import execute
+from .kernel import kernel
 from .show import show
 from .write import write
 
@@ -85,6 +87,8 @@ def main():
     command.params.extend(click.command()(_main).params)
     command.add_command(show)
     command.add_command(write)
+    command.add_command(execute)
+    command.add_command(kernel)
     command.add_command(logo)
     command()
 
