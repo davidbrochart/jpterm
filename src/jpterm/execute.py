@@ -65,7 +65,9 @@ async def execute_notebook(path, cell_id, settings, timeout, kernel_name=None, r
 @click.argument("path")
 @click.option("--cell", "cell_id", help="Execute only this code cell (requires --server).")
 @click.option("--kernel", "kernel_name", help="Kernel name when starting a new kernel.")
-@click.option("--json", "as_json", is_flag=True, help="Print the notebook or selected cell as JSON.")
+@click.option(
+    "--json", "as_json", is_flag=True, help="Print the notebook or selected cell as JSON."
+)
 @click.option("--timeout", type=click.FloatRange(min=0, min_open=True), default=30.0,
               show_default=True, help="Maximum time to load, execute and save, in seconds.")
 @click.pass_context

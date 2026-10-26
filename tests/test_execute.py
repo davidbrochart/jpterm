@@ -11,20 +11,23 @@ import pytest
 from fps import Module
 from jpterm.execute import execute_notebook
 from jupyter_ydoc import YNotebook
+from rich.text import Text
 from textual.app import App
 
 from txl.base import Contents, Kernels
 
 
-def test_execute_cell_requires_server(tmp_path):
+@pytest.mark.parametrize("force_color", ["0", "1"])
+def test_execute_cell_requires_server(tmp_path, force_color):
     result = subprocess.run(
         [sys.executable, "-c", "from jpterm.cli import main; main()",
          "execute", "notebook.ipynb", "--cell", "code"],
-        cwd=tmp_path, capture_output=True, text=True, timeout=10,
-        env={**os.environ, "PYTHONIOENCODING": "utf-8", "NO_COLOR": "1"},
+        cwd=tmp_path, capture_output=True, text=True, encoding="utf-8", timeout=10,
+        env={**os.environ, "PYTHONIOENCODING": "utf-8", "NO_COLOR": "1",
+             "FORCE_COLOR": force_color},
     )
     assert result.returncode == 2
-    assert "--cell requires --server" in result.stderr
+    assert "--cell requires --server" in Text.from_ansi(result.stderr).plain
     assert not list(tmp_path.iterdir())
 
 
@@ -54,7 +57,10 @@ def test_save_once_after_execution(fail):
     class TestModule(Module):
         async def start(self):
             self.put(contents, Contents)
-            self.put(lambda *args, **kwargs: SimpleNamespace(execute=execute, aclose=AsyncMock()), Kernels)
+            self.put(
+                lambda *args, **kwargs: SimpleNamespace(execute=execute, aclose=AsyncMock()),
+                Kernels,
+            )
             self.put(App(), App)
 
     with patch("txl.app.modules", {"test": TestModule}):
