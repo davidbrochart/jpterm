@@ -2,6 +2,39 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 0.3.13
+
+- Add `jpterm execute` to run a whole notebook or a selected cell, locally or on a Jupyter server.
+- Preserve local kernel state between CLI calls using detached notebook sessions.
+- Add `jpterm kernel start`, `list`, and `stop` for local and remote notebook kernels.
+- Share local notebook kernels between the TUI and CLI, with ownership-based cleanup on TUI exit.
+- Add `Ctrl+W` to close TUI tabs, with confirmation for unsaved changes.
+- Clean up editor observers and background tasks when tabs close.
+- Fix kernel shutdown races and handle Windows Python launcher processes.
+
+This release also releases:
+
+- `txl` 0.3.5
+- `txl_cell` 0.3.10
+- `txl_console` 0.3.10
+- `txl_editors` 0.3.9
+- `txl_file_browser` 0.3.9
+- `txl_image_viewer` 0.3.9
+- `txl_jpterm` 0.3.10
+- `txl_kernel` 0.3.12
+- `txl_launcher` 0.3.9
+- `txl_local_contents` 0.3.10
+- `txl_local_kernels` 0.3.10
+- `txl_local_terminals` 0.3.10
+- `txl_markdown_viewer` 0.3.9
+- `txl_notebook_editor` 0.3.10
+- `txl_remote_contents` 0.3.10
+- `txl_remote_kernels` 0.3.10
+- `txl_remote_terminals` 0.3.9
+- `txl_terminal` 0.3.9
+- `txl_text_editor` 0.3.9
+- `txl_widgets` 0.3.10
+
 ## 0.3.12
 
 - Add `jpterm write` to replace text file contents or a notebook cell's source.
