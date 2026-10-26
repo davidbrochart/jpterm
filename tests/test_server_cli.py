@@ -57,6 +57,37 @@ def jupyverse_server(tmp_path_factory):
     (server_root / "remote.ipynb").write_text(json.dumps(server.notebook), encoding="utf-8")
     (server_root / "writable.ipynb").write_text(json.dumps(server.notebook), encoding="utf-8")
     (server_root / "rtc.ipynb").write_text(json.dumps(server.notebook), encoding="utf-8")
+    executable_notebook = {
+        "nbformat": 4, "nbformat_minor": 5,
+        "metadata": {"kernelspec": {
+            "name": "python3", "display_name": "Python 3", "language": "python",
+        }},
+        "cells": [
+            {"id": cell_id, "cell_type": "code", "metadata": {}, "source": source,
+             "outputs": [], "execution_count": None}
+            for cell_id, source in [
+                ("define", "cli_value = 41"),
+                ("read", "print(cli_value + 1)"),
+                ("error", "raise ValueError('cell failed')"),
+            ]
+        ],
+    }
+    (server_root / "execute.ipynb").write_text(
+        json.dumps(executable_notebook), encoding="utf-8"
+    )
+    for name, fail in [("execute-all.ipynb", False), ("execute-stop.ipynb", True)]:
+        whole_notebook = json.loads(json.dumps(executable_notebook))
+        whole_notebook["cells"].insert(1, {
+            "id": "markdown", "cell_type": "markdown", "metadata": {},
+            "source": "# Skipped during execution",
+        })
+        if not fail:
+            whole_notebook["cells"].pop()
+        whole_notebook["cells"].append({
+            "id": "last", "cell_type": "code", "metadata": {},
+            "source": "print(cli_value + 2)", "outputs": [], "execution_count": None,
+        })
+        (server_root / name).write_text(json.dumps(whole_notebook), encoding="utf-8")
     (server_root / "rtc.txt").write_text("Original shared text", encoding="utf-8")
     server.text = "SERVER LICENSE\n\nOnly available from the server.\n"
     # Write exact bytes so Windows does not translate LF into CRLF.
@@ -114,7 +145,8 @@ def jupyverse_server(tmp_path_factory):
 @pytest.fixture
 def run_cli(jupyverse_server):
 
-    def run(*arguments, expected_code=0, command="show", input=None, collaborative=False):
+    def run(*arguments, expected_code=0, command="show", input=None, collaborative=False,
+            cell_error=False):
         environment = dict(os.environ, PYTHONIOENCODING="utf-8", NO_COLOR="1", COLUMNS="80")
         result = subprocess.run(
             [
@@ -139,7 +171,8 @@ def run_cli(jupyverse_server):
         result.stderr = Text.from_ansi(result.stderr).plain
         assert result.returncode == expected_code, result.stdout + result.stderr
         assert "WRONG_LOCAL_CONTENT" not in result.stdout + result.stderr
-        assert "Traceback" not in result.stderr
+        if not cell_error:
+            assert "Traceback" not in result.stderr
         return result
 
     return run
@@ -250,6 +283,70 @@ def test_write_server_cell(run_cli):
     result = run_cli(path, "--cell", "missing", "--source", "bad", command="write", expected_code=1)
     assert "Cell ID not found" in result.stderr
     assert json.loads(run_cli(path, "--json").stdout) == after
+
+
+def test_execute_reuses_notebook_session(run_cli, jupyverse_server):
+    run_cli("execute.ipynb", "--cell", "define", command="execute")
+    result = run_cli("execute.ipynb", "--cell", "read", "--json", command="execute")
+    cell = json.loads(result.stdout)
+    assert cell == json.loads(run_cli("execute.ipynb", "--cell", "read", "--json").stdout)
+    assert cell["execution_count"] == 2
+    assert "".join(cell["outputs"][0]["text"]) == "42\n"
+    rendered = run_cli("execute.ipynb", "--cell", "read", command="execute")
+    shown = run_cli("execute.ipynb", "--cell", "read")
+    assert rendered.stdout + rendered.stderr == shown.stdout + shown.stderr
+    saved = json.loads(run_cli("execute.ipynb", "--cell", "read", "--json").stdout)
+    cell["execution_count"] = 3
+    assert saved == cell
+    result = run_cli(
+        "execute.ipynb", "--cell", "error", command="execute", expected_code=1,
+        cell_error=True
+    )
+    assert "ValueError: cell failed" in result.stderr
+    saved = json.loads(run_cli("execute.ipynb", "--cell", "error", "--json").stdout)
+    assert saved["outputs"][0]["output_type"] == "error"
+    with httpx2.Client(trust_env=False) as client:
+        response = client.get(f"{jupyverse_server.url}/api/sessions")
+        response.raise_for_status()
+        sessions = [s for s in response.json() if s["path"] == "execute.ipynb"]
+        assert len(sessions) == 1
+        # Clean up only this test's session after checking that it remains alive.
+        client.delete(f"{jupyverse_server.url}/api/sessions/{sessions[0]['id']}").raise_for_status()
+
+
+@pytest.mark.parametrize("fail", [False, True])
+def test_execute_whole_notebook(run_cli, jupyverse_server, fail):
+    path = "execute-stop.ipynb" if fail else "execute-all.ipynb"
+    result = run_cli(path, "--json", command="execute", expected_code=int(fail))
+    notebook = json.loads(result.stdout)
+    assert notebook == json.loads(run_cli(path, "--json").stdout)
+    cells = notebook["cells"]
+    assert cells[0]["execution_count"] == 1
+    assert cells[1]["cell_type"] == "markdown"
+    assert cells[2]["execution_count"] == 2
+    assert "".join(cells[2]["outputs"][0]["text"]) == "42\n"
+    if fail:
+        assert "ValueError: cell failed" in result.stderr
+        assert cells[3]["outputs"][0]["output_type"] == "error"
+        assert cells[-1]["execution_count"] is None
+        assert cells[-1]["outputs"] == []
+    else:
+        assert cells[-1]["execution_count"] == 3
+        assert "".join(cells[-1]["outputs"][0]["text"]) == "43\n"
+    with httpx2.Client(trust_env=False) as client:
+        sessions = client.get(f"{jupyverse_server.url}/api/sessions").json()
+        session = next(session for session in sessions if session["path"] == path)
+        client.delete(f"{jupyverse_server.url}/api/sessions/{session['id']}").raise_for_status()
+
+
+@pytest.mark.parametrize("path, cell_id, message", [
+    ("remote.ipynb", "missing", "Cell ID not found"),
+    ("remote.ipynb", "other-cell", "Cell is not a code cell"),
+    ("LICENSE", "code", "requires a notebook"),
+])
+def test_invalid_execute(run_cli, path, cell_id, message):
+    result = run_cli(path, "--cell", cell_id, command="execute", expected_code=1)
+    assert message in result.stderr
 
 
 @pytest.mark.parametrize("path", ["remote.ipynb", "LICENSE"])

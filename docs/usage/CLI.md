@@ -53,6 +53,27 @@ When a code cell's source changes, its saved outputs and execution count are cle
 Other cells are preserved, and no cells are executed. Writing a whole notebook without
 `--cell` is not supported.
 
+Use `execute` to run a whole notebook locally or on a Jupyter server.
+With a server, add `--cell CELL_ID` to run only one code cell:
+
+```bash
+jpterm execute notebook.ipynb
+jpterm --server http://127.0.0.1:8000 show notebook.ipynb --show-cell-ids
+jpterm --server http://127.0.0.1:8000 execute notebook.ipynb
+jpterm --server http://127.0.0.1:8000 execute notebook.ipynb --cell CELL_ID
+jpterm --server http://127.0.0.1:8000 execute notebook.ipynb --cell CELL_ID --json
+```
+
+Local execution uses a fresh kernel in the notebook's directory and shuts it
+down afterward. State is shared between cells during the run, but does not
+persist between commands. `--cell` requires `--server`.
+
+With `--server`, execution reuses the notebook's session, creating
+one with the notebook's kernelspec (or `--kernel NAME`) when needed. The kernel
+stays running so variables and imports persist between calls. Without `--cell`,
+code cells execute in notebook order.
+Execution stops at the first cell error and returns a nonzero exit status.
+
 For a server with real-time collaboration enabled, add `--collaborative` before
 the command to read and write the live shared document:
 

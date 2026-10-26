@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from anyio import create_task_group, sleep
+from anyio import CancelScope, create_task_group, sleep
 from fps import Module
 from pycrdt import Map
 
@@ -15,11 +15,17 @@ from .kernelspec import kernelspec_dirs
 class LocalKernels(Kernels):
     comm_handlers = []
 
-    def __init__(self, kernel_name: str | None = None):
-        self.kernel = KernelDriver(self.task_group, kernel_name, comm_handlers=self.comm_handlers)
+    def __init__(self, kernel_name: str | None = None, kernel_cwd: str = ""):
+        self.kernel = KernelDriver(
+            self.task_group, kernel_name, kernel_cwd=kernel_cwd,
+            comm_handlers=self.comm_handlers,
+        )
 
     async def execute(self, ycell: Map):
         await self.kernel.execute(ycell)
+
+    async def aclose(self):
+        await self.kernel.stop()
 
 
 class LocalKernelspecs(Kernelspecs):
@@ -46,8 +52,10 @@ class LocalKernelsModule(Module):
             await sleep(float("inf"))
 
     async def stop(self) -> None:
-        for kernel_driver in kernel_drivers:
-            self.tg.start_soon(kernel_driver.stop)
+        with CancelScope(shield=True):
+            for kernel_driver in list(kernel_drivers):
+                if kernel_driver.task_group is self.tg:
+                    await kernel_driver.stop()
         self.tg.cancel_scope.cancel()
 
 

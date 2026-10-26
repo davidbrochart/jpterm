@@ -20,9 +20,10 @@ class RemoteKernels(Kernels):
         self,
         url: str,
         kernel_name: str | None,
+        path: str | None = None,
     ):
         self.kernel = KernelDriver(
-            self.task_group, url, kernel_name, comm_handlers=self.comm_handlers
+            self.task_group, url, kernel_name, comm_handlers=self.comm_handlers, path=path
         )
 
     async def execute(self, ycell: Map):
@@ -76,7 +77,6 @@ class RemoteKernelsModule(Module):
 
     async def stop(self) -> None:
         self.tg.cancel_scope.cancel()
-
 
 class RemoteKernelspecsModule(Module):
     def __init__(self, name: str, url: str = "http://127.0.0.1:8000"):

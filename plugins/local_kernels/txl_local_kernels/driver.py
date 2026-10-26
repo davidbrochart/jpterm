@@ -87,11 +87,21 @@ class KernelDriver(KernelMixin):
         self.channel_tasks.append(self.task_group.create_task(self._recv_shell()))
 
     async def stop(self) -> None:
-        self.kernel_process.kill()
-        await self.kernel_process.wait()
-        os.remove(self.connection_file_path)
+        process = getattr(self, "kernel_process", None)
+        if process is not None:
+            if process.returncode is None:
+                process.kill()
+            await process.wait()
         for task in self.channel_tasks:
             task.cancel()
+        for channel in ("shell_channel", "control_channel", "iopub_channel"):
+            socket = getattr(self, channel, None)
+            if socket is not None:
+                socket.close(linger=0)
+        if os.path.exists(self.connection_file_path):
+            os.remove(self.connection_file_path)
+        if self in kernel_drivers:
+            kernel_drivers.remove(self)
 
     async def _recv_iopub(self):
         while True:

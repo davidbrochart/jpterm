@@ -28,9 +28,11 @@ class KernelDriver(KernelMixin):
         url: str,
         kernel_name: str | None = "",
         comm_handlers=[],
+        path: str | None = None,
     ) -> None:
         super().__init__(task_group)
         self.task_group = task_group
+        self.path = path
         self.kernel_name = kernel_name
         parsed_url = parse.urlparse(url)
         self.base_url = parse.urljoin(url, parsed_url.path).rstrip("/")
@@ -49,31 +51,45 @@ class KernelDriver(KernelMixin):
     async def start(self):
         i = str(uuid.uuid4())
         async with httpx2.AsyncClient() as client:
-            body = {
-                "kernel": {"name": self.kernel_name},
-                "name": i,
-                "path": i,
-                "type": "notebook",
-            }
-            r = await client.post(
-                f"{self.base_url}/api/sessions",
-                json=body,
-                params={**self.query_params},
-                cookies=self.cookies,
-            )
-            d = r.json()
-            self.cookies.update(r.cookies)
-            self.session_id = d["id"]
-            self.kernel_id = d["kernel"]["id"]
+            session = None
+            if self.path is not None:
+                r = await client.get(
+                    f"{self.base_url}/api/sessions",
+                    params=self.query_params, cookies=self.cookies,
+                )
+                r.raise_for_status()
+                self.cookies.update(r.cookies)
+                session = next(
+                    (item for item in r.json() if item["path"] == self.path
+                     and item["type"] == "notebook"), None
+                )
+            if session is None:
+                body = {
+                    "kernel": {"name": self.kernel_name},
+                    "name": self.path.rsplit("/", 1)[-1] if self.path else i,
+                    "path": self.path if self.path is not None else i,
+                    "type": "notebook",
+                }
+                r = await client.post(
+                    f"{self.base_url}/api/sessions", json=body,
+                    params=self.query_params, cookies=self.cookies,
+                )
+                r.raise_for_status()
+                self.cookies.update(r.cookies)
+                session = r.json()
+            # The channels client identity must be unique even when reusing a session.
+            self.session_id = i
+            self.kernel_id = session["kernel"]["id"]
             r = await client.get(
                 f"{self.base_url}/api/kernels/{self.kernel_id}",
+                params=self.query_params,
                 cookies=self.cookies,
             )
         if r.status_code != 200 or self.kernel_id != r.json()["id"]:
             return
         async with httpx2.AsyncClient(cookies=self.cookies) as client, client.websocket(
             f"{self.ws_url}/api/kernels/{self.kernel_id}/channels",
-            params={"session_id": self.session_id},
+            params={**self.query_params, "session_id": self.session_id},
             subprotocols=["v1.kernel.websocket.jupyter.org"],
         ) as self.websocket:
             recv_task = self.task_group.create_task(self._recv())
