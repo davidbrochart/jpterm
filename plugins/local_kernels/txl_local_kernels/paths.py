@@ -81,7 +81,7 @@ def jupyter_data_dir():
 
 def jupyter_runtime_dir():
     if "JUPYTER_RUNTIME_DIR" in os.environ:
-        return os.environ("JUPYTER_RUNTIME_DIR")
+        return os.environ["JUPYTER_RUNTIME_DIR"]
     return os.path.join(jupyter_data_dir(), "runtime")
 
 

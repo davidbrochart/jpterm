@@ -53,20 +53,52 @@ When a code cell's source changes, its saved outputs and execution count are cle
 Other cells are preserved, and no cells are executed. Writing a whole notebook without
 `--cell` is not supported.
 
-Use `execute` to run a whole notebook locally or on a Jupyter server.
-With a server, add `--cell CELL_ID` to run only one code cell:
+Use `execute` to run a notebook locally or on a Jupyter server.
+Add `--cell CELL_ID` to run only one code cell:
 
 ```bash
 jpterm execute notebook.ipynb
-jpterm --server http://127.0.0.1:8000 show notebook.ipynb --show-cell-ids
+jpterm execute notebook.ipynb --cell CELL_ID
 jpterm --server http://127.0.0.1:8000 execute notebook.ipynb
 jpterm --server http://127.0.0.1:8000 execute notebook.ipynb --cell CELL_ID
 jpterm --server http://127.0.0.1:8000 execute notebook.ipynb --cell CELL_ID --json
 ```
 
-Local execution uses a fresh kernel in the notebook's directory and shuts it
-down afterward. State is shared between cells during the run, but does not
-persist between commands. `--cell` requires `--server`.
+Local execution starts a detached kernel in the notebook's directory and reuses
+it on later calls. Each notebook's resolved absolute path identifies its kernel.
+The local TUI also reuses this session. It leaves an existing kernel running on
+exit, and shuts down kernels it started itself.
+Avoid simultaneous jpterm calls for the same notebook; execution and notebook
+saves are not coordinated between CLI processes.
+
+Manage detached local kernels with:
+
+```bash
+jpterm kernel start notebook.ipynb
+jpterm kernel list
+jpterm kernel list --json
+jpterm kernel stop notebook.ipynb
+```
+
+Add `--server` to manage notebook kernels on a Jupyter server:
+
+```bash
+jpterm --server http://127.0.0.1:8000 kernel start notebook.ipynb
+jpterm --server http://127.0.0.1:8000 kernel list
+jpterm --server http://127.0.0.1:8000 kernel list --json
+jpterm --server http://127.0.0.1:8000 kernel stop notebook.ipynb
+```
+
+`kernel start` uses the notebook's kernelspec (or `--kernel NAME` for a new
+kernel) and waits until the kernel is ready. It reuses an existing live kernel
+without executing cells or saving the notebook. `execute` still starts a kernel
+automatically when needed.
+
+Remote listing shows notebook sessions, including those started by other clients.
+Paths are relative to the server's root. Remote `stop` deletes the matching
+notebook session and lets the server manage kernel shutdown. Both backends
+support `--json` for listing; remote entries include kernel and session IDs,
+while local entries include the kernel PID.
 
 With `--server`, execution reuses the notebook's session, creating
 one with the notebook's kernelspec (or `--kernel NAME`) when needed. The kernel

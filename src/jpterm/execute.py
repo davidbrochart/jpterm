@@ -1,6 +1,6 @@
 """Execute notebook cells through the configured kernel and contents services."""
 
-from pathlib import Path, PurePosixPath
+from pathlib import PurePosixPath
 
 import anyio
 import rich_click as click
@@ -8,12 +8,11 @@ import rich_click as click
 from txl.base import Contents, Kernels
 
 from .app import create_app
+from .kernel import create_notebook_kernel
 from .show import show
 
 
 async def execute_notebook(path, cell_id, settings, timeout, kernel_name=None, remote=False):
-    if cell_id is not None and not remote:
-        raise ValueError("--cell requires --server for execution.")
     if PurePosixPath(path).suffix != ".ipynb":
         raise ValueError("Execution requires a notebook (.ipynb).")
     module = create_app(settings, timeout)
@@ -35,14 +34,8 @@ async def execute_notebook(path, cell_id, settings, timeout, kernel_name=None, r
                 cells = [cell]
             if not cells:
                 return []
-            kernel_name = kernel_name or document.source.get("metadata", {}).get(
-                "kernelspec", {}
-            ).get("name")
             kernels = await module.get(Kernels)
-            if remote:
-                kernel = kernels(kernel_name, path=str(PurePosixPath(path)).lstrip("/"))
-            else:
-                kernel = kernels(kernel_name, kernel_cwd=str(Path(path).resolve().parent))
+            kernel = create_notebook_kernel(path, document, kernels, kernel_name, remote)
             try:
                 for cell in cells:
                     await kernel.execute(cell)
@@ -63,7 +56,7 @@ async def execute_notebook(path, cell_id, settings, timeout, kernel_name=None, r
 
 @click.command()
 @click.argument("path")
-@click.option("--cell", "cell_id", help="Execute only this code cell (requires --server).")
+@click.option("--cell", "cell_id", help="Execute only the code cell with this ID.")
 @click.option("--kernel", "kernel_name", help="Kernel name when starting a new kernel.")
 @click.option(
     "--json", "as_json", is_flag=True, help="Print the notebook or selected cell as JSON."
@@ -74,14 +67,12 @@ async def execute_notebook(path, cell_id, settings, timeout, kernel_name=None, r
 def execute(ctx, path, cell_id, kernel_name, as_json, timeout):
     """Execute a notebook locally or using its session on a Jupyter server.
 
-    Local execution uses a fresh kernel that shuts down after the command.
-    With --server, the session and kernel remain available for later calls.
+    Local execution reuses a detached kernel for this notebook.
+    With --server, execution reuses the notebook's server session.
     Without --cell, run code cells in order, stopping at the first cell error.
     Cell errors are saved and produce a nonzero exit status.
     """
     remote = bool(ctx.parent.params["server"])
-    if cell_id is not None and not remote:
-        raise click.UsageError("--cell requires --server for execution.")
     options = ctx.obj
     try:
         errors = anyio.run(

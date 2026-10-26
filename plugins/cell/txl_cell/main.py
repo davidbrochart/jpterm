@@ -77,8 +77,10 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
         self.show_border = show_border
         self.show_cell_id = show_cell_id
         self.outputs = []
+        self._view_tasks = []
+        self._model_subscriptions = []
         self.update(mount=False)
-        self.ycell.observe_deep(self.on_change)
+        self._cell_subscription = self.ycell.observe_deep(self.on_change)
         self.styles.height = "auto"
         self.cell_change_events = StapledObjectStream(
             *create_memory_object_stream[Any](max_buffer_size=math.inf)
@@ -86,8 +88,16 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
         self.widget_change_events = StapledObjectStream(
             *create_memory_object_stream[Any](max_buffer_size=math.inf)
         )
-        task_group.create_task(self.observe_cell_changes())
-        task_group.create_task(self.observe_widget_changes())
+        self._view_tasks.append(task_group.create_task(self.observe_cell_changes()))
+        self._view_tasks.append(task_group.create_task(self.observe_widget_changes()))
+
+    async def on_unmount(self):
+        self.ycell.unobserve(self._cell_subscription)
+        for text, subscription in self._model_subscriptions:
+            text.unobserve(subscription)
+        await self.source.stop()
+        for task in self._view_tasks:
+            task.cancel()
 
     def on_click(self):
         self.clicked = True
@@ -159,13 +169,16 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
                                             # this is a widget
                                             is_widget = True
                                             room_id = f"ywidget:{inserted.guid}"
-                                            self.task_group.create_task(
+                                            self._view_tasks.append(self.task_group.create_task(
                                                 self.contents.websocket_provider(room_id, inserted),
-                                            )
+                                            ))
                                             inserted["_model_name"] = model_name = Text()
-                                            model_name.observe(partial(
+                                            subscription = model_name.observe(partial(
                                                 self.on_widget_change, inserted
                                             ))
+                                            self._model_subscriptions.append(
+                                                (model_name, subscription)
+                                            )
                                         else:
                                             #output = json.loads(str(inserted))
                                             output = inserted
@@ -222,7 +235,7 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
             language=language,
             show_border=self.show_border,
         )
-        self.task_group.create_task(self.source.start())
+        self._view_tasks.append(self.task_group.create_task(self.source.start()))
         if mount:
             self.mount(self.source)
 
@@ -238,9 +251,12 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
             guid = output["guid"]
             ywidget_doc = Doc()
             room_id = f"ywidget:{guid}"
-            self.task_group.create_task(self.contents.websocket_provider(room_id, ywidget_doc))
+            self._view_tasks.append(self.task_group.create_task(
+                self.contents.websocket_provider(room_id, ywidget_doc)
+            ))
             ywidget_doc["_model_name"] = model_name = Text()
-            model_name.observe(partial(self.on_widget_change, ywidget_doc))
+            subscription = model_name.observe(partial(self.on_widget_change, ywidget_doc))
+            self._model_subscriptions.append((model_name, subscription))
             return
 
         output_type = output["output_type"]

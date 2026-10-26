@@ -75,6 +75,8 @@ def jupyverse_server(tmp_path_factory):
     (server_root / "execute.ipynb").write_text(
         json.dumps(executable_notebook), encoding="utf-8"
     )
+    for name in ("managed.ipynb", "other-managed.ipynb"):
+        (server_root / name).write_text(json.dumps(executable_notebook), encoding="utf-8")
     for name, fail in [("execute-all.ipynb", False), ("execute-stop.ipynb", True)]:
         whole_notebook = json.loads(json.dumps(executable_notebook))
         whole_notebook["cells"].insert(1, {
@@ -312,6 +314,55 @@ def test_execute_reuses_notebook_session(run_cli, jupyverse_server):
         assert len(sessions) == 1
         # Clean up only this test's session after checking that it remains alive.
         client.delete(f"{jupyverse_server.url}/api/sessions/{sessions[0]['id']}").raise_for_status()
+
+
+def test_manage_remote_notebook_kernels(run_cli, jupyverse_server):
+    for path in ("managed.ipynb", "other-managed.ipynb"):
+        run_cli(path, "--cell", "define", "--json", command="execute")
+    sessions = json.loads(run_cli("list", "--json", command="kernel").stdout)
+    assert {session["path"] for session in sessions} == {"managed.ipynb", "other-managed.ipynb"}
+    target = next(session for session in sessions if session["path"] == "managed.ipynb")
+    assert target["kernel_name"] == "python3"
+    assert target["alive"]
+    text = run_cli("list", command="kernel").stdout
+    assert "managed.ipynb" in text
+    assert target["kernel_id"] in text
+    result = run_cli("stop", "missing.ipynb", command="kernel", expected_code=1)
+    assert "No remote kernel session" in result.stderr
+    assert json.loads(run_cli("list", "--json", command="kernel").stdout) == sessions
+    run_cli("stop", "./managed.ipynb", command="kernel")
+    remaining = json.loads(run_cli("list", "--json", command="kernel").stdout)
+    assert [session["path"] for session in remaining] == ["other-managed.ipynb"]
+    with httpx2.Client(trust_env=False) as client:
+        response = client.get(f"{jupyverse_server.url}/api/kernels")
+        response.raise_for_status()
+        assert target["kernel_id"] not in {kernel["id"] for kernel in response.json()}
+    result = run_cli("managed.ipynb", "--cell", "define", "--json", command="execute")
+    assert json.loads(result.stdout)["execution_count"] == 1
+    for path in ("managed.ipynb", "other-managed.ipynb"):
+        run_cli("stop", path, command="kernel")
+    assert json.loads(run_cli("list", "--json", command="kernel").stdout) == []
+
+
+def test_remote_kernel_start_is_ready_and_preserves_notebook(run_cli):
+    path = "managed.ipynb"
+    before = run_cli(path, "--json").stdout
+    result = run_cli("start", path, "--kernel", "python3", command="kernel")
+    assert result.stdout == ""
+    assert json.loads(run_cli(path, "--json").stdout) == json.loads(before)
+    sessions = json.loads(run_cli("list", "--json", command="kernel").stdout)
+    assert len(sessions) == 1
+    assert sessions[0]["path"] == path
+    assert sessions[0]["alive"]
+    result = run_cli(path, "--cell", "define", "--json", command="execute")
+    assert json.loads(result.stdout)["execution_count"] == 1
+    before = run_cli(path, "--json").stdout
+    run_cli("start", path, command="kernel")
+    assert json.loads(run_cli(path, "--json").stdout) == json.loads(before)
+    assert json.loads(run_cli("list", "--json", command="kernel").stdout) == sessions
+    result = run_cli(path, "--cell", "read", "--json", command="execute")
+    assert json.loads(result.stdout)["execution_count"] == 2
+    run_cli("stop", path, command="kernel")
 
 
 @pytest.mark.parametrize("fail", [False, True])

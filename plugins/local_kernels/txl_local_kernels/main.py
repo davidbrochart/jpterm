@@ -10,15 +10,28 @@ from txl.base import Kernels, Kernelspecs
 
 from .driver import KernelDriver, kernel_drivers
 from .kernelspec import kernelspec_dirs
+from .sessions import LocalSession
 
 
 class LocalKernels(Kernels):
     comm_handlers = []
 
-    def __init__(self, kernel_name: str | None = None, kernel_cwd: str = ""):
+    def __init__(
+        self, kernel_name: str | None = None, kernel_cwd: str = "", connection_file: str = "",
+        path: str | None = None,
+    ):
+        owned_session = None
+        if path is not None and not connection_file:
+            session = LocalSession(path)
+            connection_file = session.connection_file(kernel_name)
+            if session.launched:
+                owned_session = session
         self.kernel = KernelDriver(
             self.task_group, kernel_name, kernel_cwd=kernel_cwd,
             comm_handlers=self.comm_handlers,
+            connection_file=connection_file, write_connection_file=not connection_file,
+            launch=not connection_file,
+            owned_session=owned_session,
         )
 
     async def execute(self, ycell: Map):

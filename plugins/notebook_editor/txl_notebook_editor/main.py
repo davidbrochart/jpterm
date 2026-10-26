@@ -81,6 +81,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         self.main_area = main_area
         self.experimental = experimental
         self.kernel = None
+        self._observe_task = None
         self.cells = []
         self.cell_i = 0
         self.cell_copy = None
@@ -169,7 +170,14 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                 *anyio.create_memory_object_stream[Any](max_buffer_size=math.inf)
             )
             self.ynb.observe(self.on_change)
-            self.task_group.create_task(self.observe_nb_changes())
+            self._observe_task = self.task_group.create_task(self.observe_nb_changes())
+
+    def on_unmount(self):
+        if self._observe_task is not None:
+            self.ynb.unobserve()
+            self._observe_task.cancel()
+        if self.kernel is not None:
+            self.kernel.kernel.busy.disconnect(self.watch_busy)
 
     def update(self):
         mounts = []
@@ -178,7 +186,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         if self.kernel is None and not self.app.cli:
             kernel_name = ipynb.get("metadata", {}).get("kernelspec", {}).get("name")
             if kernel_name:
-                self.kernel = self.kernels(kernel_name)
+                self.kernel = self.kernels(kernel_name, path=self.path)
                 self.kernel.kernel.busy.connect(self.watch_busy)
         indices = range(self.ynb.cell_number) if self.cell_index is None else [self.cell_index]
         for i_cell in indices:
@@ -217,7 +225,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                     if self.kernel is None:
                         kernel_name = kernelspec.get("name")
                         if kernel_name:
-                            self.kernel = self.kernels(kernel_name)
+                            self.kernel = self.kernels(kernel_name, path=self.path)
                             self.kernel.kernel.busy.connect(self.watch_busy)
             elif target == "state":
                 if "dirty" in events.keys:
