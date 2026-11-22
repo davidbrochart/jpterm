@@ -68,6 +68,7 @@ async def test_tui_uses_pane_cwd_and_returns_to_prompt(tmp_path, monkeypatch, ex
         await pilot.pause()
         global_footer = next(footer for footer in app.query(Footer) if footer is not view.footer)
         assert global_footer.display and view.footer.display
+        await wait_for(lambda: "q" in {key.key for key in view.footer.query(FooterKey)})
         local_keys = {key.key for key in view.footer.query(FooterKey)}
         global_keys = {key.key for key in global_footer.query(FooterKey)}
         assert "q" in local_keys and "alt+v" not in local_keys

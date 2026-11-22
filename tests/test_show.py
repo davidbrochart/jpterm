@@ -356,7 +356,7 @@ def test_json_and_inline():
 
 
 def test_logo_command():
-    with patch("txl.cli.run") as run, patch("jpterm.show.load_document") as load:
+    with patch("txl.app.run") as run, patch("jpterm.show.load_document") as load:
         code, output = invoke(["logo"])
     assert code == 0
     assert "jpterm" in output
@@ -371,7 +371,7 @@ def test_logo_flag_removed():
 
 
 def test_tui_default():
-    with patch("txl.cli.run") as run:
+    with patch("txl.app.run") as run:
         code, _ = invoke([])
         assert code == 0
         run.assert_called_once()
@@ -397,14 +397,14 @@ def test_rendered_layout_can_be_returned_without_terminal_output(capsys):
 
 
 def test_tui_options_come_from_the_shared_parser():
-    with patch("txl.cli.run") as run:
+    with patch("txl.app.run") as run:
         code, _ = invoke(["--backend", "trio", "--set", "launcher.enabled=false"])
     assert code == 0
     run.assert_called_once_with({"backend": "trio", "set_": ["launcher.enabled=false"]})
 
 
 def test_tui_startup_errors_do_not_print_a_traceback():
-    with patch("txl.cli.run", side_effect=ValueError("invalid configuration")):
+    with patch("txl.app.run", side_effect=ValueError("invalid configuration")):
         code, output = invoke([])
     assert code == 1
     assert "invalid configuration" in output

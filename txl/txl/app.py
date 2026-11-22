@@ -8,8 +8,7 @@ from anytext import alias_textual
 from anytext._context import active_app
 from anytext.app import App
 from anytext.pilot import Pilot
-from fps import Module
-from fps.cli._cli import main
+from fps import Module, get_root_module
 
 logging.getLogger("httpx2").setLevel(logging.CRITICAL)
 logging.getLogger("httpcore2").setLevel(logging.CRITICAL)
@@ -79,4 +78,25 @@ class AppModule(Module):
 
 
 def run(kwargs) -> None:
-    main.callback("txl.app:AppModule", None, **kwargs)
+    """Configure and run the root module without invoking a CLI parser."""
+    options = dict(kwargs)
+    backend = options.pop("backend", "asyncio")
+    settings = options.pop("set_", ())
+    timeout = options.pop("timeout", None)
+    stop_timeout = options.pop("stop_timeout", 1)
+    if options:
+        raise TypeError(f"Unsupported startup options: {', '.join(options)}")
+    config = {"type": AppModule}
+    for setting in settings:
+        if "=" not in setting:
+            raise ValueError(f"No '=' while setting a module parameter: {setting}")
+        key, value = setting.split("=", 1)
+        node = config
+        path = key.split(".")
+        for name in path[:-1]:
+            node = node.setdefault("modules", {}).setdefault(name, {})
+        node.setdefault("config", {})[path[-1]] = value
+    module = get_root_module({"root_module": config})
+    module._global_start_timeout = timeout
+    module._stop_timeout = stop_timeout
+    module.run(backend=backend)

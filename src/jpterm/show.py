@@ -59,13 +59,14 @@ async def load_document(
         else:
             await editor.open(path, cell_id=cell_id, show_cell_ids=show_cell_ids)
 
-        await app.screen.wait_for_refresh()
+        # Drain child-widget messages before measuring their final layout.
+        await pilot.pause()
         while True:
             height = max(1, editor.virtual_size.height + editor.styles.gutter.height)
             if app.size.height == app.screen.size.height == height:
                 break
             await pilot.resize_terminal(app.size.width, height)
-            await app.screen.wait_for_refresh()
+            await pilot.pause()
         # Freeze the finished layout before the app shuts down.
         rendered = app.screen._compositor.__rich__()
         app.exit(message=None if return_renderable else rendered)

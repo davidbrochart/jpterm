@@ -108,7 +108,7 @@ def main():
         bound.apply_defaults()
         if callback is dispatch and not bound.arguments.get("tokens"):
             # FPS owns the TUI lifecycle and starts its event loop itself.
-            from txl.cli import run
+            from txl.app import run
 
             options = {
                 name: value
