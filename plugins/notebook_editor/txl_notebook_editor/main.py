@@ -4,16 +4,16 @@ from importlib.metadata import entry_points
 from typing import Any
 
 import anyio
+from anytext._context import active_app
+from anytext.app import App, ComposeResult, RenderResult
+from anytext.containers import VerticalScroll
+from anytext.events import Event
+from anytext.keys import Keys
+from anytext.reactive import Reactive
+from anytext.widget import Widget
+from anytext.widgets import Select
 from fps import Module
 from httpx2 import AsyncClient
-from textual._context import active_app
-from textual.app import App, ComposeResult, RenderResult
-from textual.containers import VerticalScroll
-from textual.events import Event
-from textual.keys import Keys
-from textual.reactive import Reactive
-from textual.widget import Widget
-from textual.widgets import Select
 
 from txl.base import (
     CellFactory,
@@ -89,7 +89,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         self.top_bar = TopBar()
 
     def compose(self) -> ComposeResult:
-        if not self.app.cli:
+        if not getattr(self.app, "cli", False):
             yield self.top_bar
 
     def watch_busy(self, busy):
@@ -162,7 +162,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         mounts = self.update()
         for mount in mounts:
             await mount
-        if not self.app.cli:
+        if not getattr(self.app, "cli", False):
             self.nb_change_target = StapledObjectStream(
                 *anyio.create_memory_object_stream[Any](max_buffer_size=math.inf)
             )
@@ -183,7 +183,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
         mounts = []
         ipynb = self.ynb.source
         self.language = ipynb.get("metadata", {}).get("kernelspec", {}).get("language", None)
-        if self.kernel is None and not self.app.cli:
+        if self.kernel is None and not getattr(self.app, "cli", False):
             kernel_name = ipynb.get("metadata", {}).get("kernelspec", {}).get("name")
             if kernel_name:
                 self.kernel = self.kernels(kernel_name, path=self.path)
@@ -194,7 +194,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                 self.ynb.ycells[i_cell], self.language, self.kernel,
                 **({"show_cell_id": True} if self.show_cell_ids else {}),
             )
-            if self.app.cli:
+            if getattr(self.app, "cli", False):
                 cell.source.read_only = True
                 cell.source.highlight_cursor_line = False
                 cell.source.show_cursor = False
@@ -202,7 +202,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                 cell.source.styles.scrollbar_size_vertical = 0
             mounts.append(self.mount(cell))
             self.cells.append(cell)
-        if self.cells and not self.app.cli:
+        if self.cells and not getattr(self.app, "cli", False):
             self.cells[self.cell_i].select()
         return mounts
 
@@ -273,7 +273,7 @@ class NotebookEditor(Editor, VerticalScroll, metaclass=NotebookEditorMeta):
                                 idx += 1
 
     async def on_key(self, event: Event) -> None:
-        if self.app.cli:
+        if getattr(self.app, "cli", False):
             return
         if event.key == Keys.Escape:
             self.edit_mode = False
@@ -451,7 +451,7 @@ class NotebookEditorModule(Module):
         main_area = await self.get(MainArea)
         app = await self.get(App)
 
-        _kernelspecs = {} if app.cli else await kernelspecs.get()
+        _kernelspecs = {} if getattr(app, "cli", False) else await kernelspecs.get()
 
         async with anyio.create_task_group() as self.tg:
             def notebook_editor_factory():

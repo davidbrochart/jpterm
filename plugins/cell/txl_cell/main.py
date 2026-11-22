@@ -5,19 +5,19 @@ from importlib.metadata import entry_points
 from typing import Any
 
 from anyio import create_memory_object_stream, create_task_group, sleep
+from anytext.app import ComposeResult
+from anytext.containers import Container
+from anytext.widgets import Static
 from fps import Module
 from pycrdt import Doc, Map, MapEvent, Text
 from rich.markup import escape
 from rich.text import Text as RichText
-from textual.app import ComposeResult
-from textual.containers import Container
-from textual.widgets import Static
 
 from txl.base import Cell, CellFactory, Contents, Kernel, Widgets
 from txl.stapled import StapledObjectStream
 from txl.text_input import TextInput
 
-YDOCS = {ep.name: ep.load() for ep in entry_points(group="ypywidgets")}
+WIDGET_ENTRY_POINTS = {ep.name: ep for ep in entry_points(group="ypywidgets")}
 
 
 class Source(TextInput):
@@ -112,8 +112,8 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
         while True:
             ydoc, event = await self.widget_change_events.receive()
             model_name = event.delta[0]["insert"]
-            model = YDOCS[f"{model_name}Model"](ydoc=ydoc)
-            widget = YDOCS[f"txl_{model_name}"](model)
+            model = WIDGET_ENTRY_POINTS[f"{model_name}Model"].load()(ydoc=ydoc)
+            widget = WIDGET_ENTRY_POINTS[f"txl_{model_name}"].load()(model)
             self.mount(widget)
             self.outputs.append(widget)
 
@@ -279,7 +279,8 @@ class _Cell(Cell, Container, metaclass=CellMeta, can_focus=True):
                 model_id = output["data"]["application/vnd.jupyter.ywidget-view+json"]["model_id"]
                 if model_id in self.widgets.widgets:
                     model = self.widgets.widgets[model_id]["model"]
-                    widget = YDOCS[f"txl_{model.__class__.__name__[:-5]}"](model)
+                    entry_point = WIDGET_ENTRY_POINTS[f"txl_{model.__class__.__name__[:-5]}"]
+                    widget = entry_point.load()(model)
             if not widget:
                 data = output["data"].get("text/plain", "")
                 renderable = execution_count

@@ -1,7 +1,7 @@
 from typing import Optional
 
-from textual.widget import Widget
-from textual.widgets import Tab, Tabs
+from anytext.widget import Widget
+from anytext.widgets import Tab, Tabs
 
 from txl.base import MainArea as AbstractMainArea
 
@@ -18,6 +18,7 @@ class MainArea(Widget, AbstractMainArea, metaclass=MainAreaMeta):
         self.tabs = None
         self.widget_to_tab = {}
         self.title = 0
+        self.launcher = None
 
     def show(self, widget: Widget, title: Optional[str] = None, mount: bool = True):
         if widget not in self.mounted:
@@ -43,7 +44,7 @@ class MainArea(Widget, AbstractMainArea, metaclass=MainAreaMeta):
         widget = self.shown if widget is None else widget
         if widget not in self.widget_to_tab:
             return
-        launcher = getattr(self.app, "launcher", None)
+        launcher = self.launcher
         if widget is launcher and len(self.mounted) == 1:
             return
         index = self.mounted.index(widget)

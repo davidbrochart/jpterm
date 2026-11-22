@@ -13,6 +13,13 @@ ydocs = {ep.name: ep.load() for ep in entry_points(group="jupyter_ydoc")}
 
 
 class LocalContents(Contents):
+    def __init__(self, root: str = "."):
+        self.root = Path(root)
+
+    def path(self, path: str):
+        candidate = Path(path)
+        return candidate if candidate.is_absolute() else self.root / candidate
+
     async def get(
         self,
         path: str,
@@ -20,12 +27,12 @@ class LocalContents(Contents):
         type: str = "file",
         format: str | None = None,
     ) -> Union[List, Doc]:
-        p = Path(path)
+        p = self.path(path)
         if not await p.exists():
             raise FileNotFoundError(f"File not found: {path}")
         assert (await p.is_dir()) == is_dir
         if await p.is_dir():
-            return sorted(list(scandir(path)), key=lambda entry: (not entry.is_dir(), entry.name))
+            return sorted(list(scandir(p)), key=lambda entry: (not entry.is_dir(), entry.name))
         if await p.is_file():
             jupyter_ydoc = ydocs[type]()
             if type == "file":
@@ -41,7 +48,7 @@ class LocalContents(Contents):
         path: str,
         jupyter_ydoc: Doc,
     ) -> None:
-        p = Path(path)
+        p = self.path(path)
         source = jupyter_ydoc.source
         if isinstance(source, dict):
             await p.write_text(json.dumps(source, indent=2), encoding="utf-8")
@@ -52,6 +59,10 @@ class LocalContents(Contents):
 
 
 class LocalContentsModule(Module):
+    def __init__(self, name: str, root: str = "."):
+        super().__init__(name)
+        self.root = root
+
     async def start(self) -> None:
-        contents = LocalContents()
+        contents = LocalContents(self.root)
         self.put(contents, Contents)

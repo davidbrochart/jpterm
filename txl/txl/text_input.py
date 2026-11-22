@@ -1,7 +1,7 @@
 from anyio import create_memory_object_stream
+from anytext.widgets import TextArea
 from pycrdt import Text
 from rich.syntax import Syntax
-from textual.widgets import TextArea
 
 
 class TextInput(TextArea):

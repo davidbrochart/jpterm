@@ -3,25 +3,37 @@ from unittest.mock import AsyncMock
 
 import anyio
 import pytest
+from anytext.app import App
+from anytext.widgets import Button, Static, Tab
 from jupyter_ydoc import YFile
-from textual.widgets import Button, Static, Tab
 from txl_jpterm.close_tab import ConfirmCloseTab
-from txl_jpterm.main import Jpterm
+from txl_jpterm.main import Jpterm, JptermView
 from txl_jpterm.main_area import MainArea
 from txl_text_editor.main import TextEditor
 
 
-def make_app():
+def make_app(embedded=False):
     area = MainArea()
     launcher = Button("Launcher", id="test-launcher")
-    app = Jpterm(Static(), Static(), area)
-    app.start(launcher, Static())
+    if embedded:
+        view = JptermView(Static(), Static(), area)
+        view.start(launcher, Static())
+
+        class Host(App):
+            def compose(self):
+                yield view
+
+        app = Host()
+    else:
+        app = Jpterm(Static(), Static(), area)
+        app.start(launcher, Static())
     return app, area, launcher
 
 
-def test_close_tabs_selects_neighbour_and_restores_launcher():
+@pytest.mark.parametrize("embedded", [False, True])
+def test_close_tabs_selects_neighbour_and_restores_launcher(embedded):
     async def check():
-        app, area, launcher = make_app()
+        app, area, launcher = make_app(embedded)
         first, second = Button("First"), Button("Second")
         async with app.run_test() as pilot:
             await pilot.pause()
@@ -63,10 +75,11 @@ def test_close_tabs_selects_neighbour_and_restores_launcher():
 
 @pytest.mark.parametrize("close_action", ["discard", "save"])
 @pytest.mark.parametrize("size", [(80, 24), (40, 18)])
-def test_close_modified_editor_requires_confirmation_and_cleans_up(close_action, size):
+@pytest.mark.parametrize("embedded", [False, True])
+def test_close_modified_editor_requires_confirmation_and_cleans_up(close_action, size, embedded):
     async def check():
         async with anyio.create_task_group() as tasks:
-            app, area, launcher = make_app()
+            app, area, launcher = make_app(embedded)
             document = YFile()
             document.source = "original"
             contents = SimpleNamespace(get=AsyncMock(return_value=document), save=AsyncMock())

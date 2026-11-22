@@ -1,4 +1,5 @@
 import json
+from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
@@ -6,13 +7,12 @@ from unittest.mock import AsyncMock, Mock, patch
 import anyio
 import httpx2
 import pytest
-from click.testing import CliRunner
+from anytext.app import App
+from anytext.widgets import Static
 from fps import Module, get_root_module
 from jpterm.cli import jpterm_main, main
 from jpterm.show import load_document
 from rich.console import Console
-from textual.app import App
-from textual.widgets import Static
 from txl_editors.main import _Editors
 from txl_jpterm.main import Jpterm
 from txl_jpterm.main_area import MainArea
@@ -121,7 +121,7 @@ def test_markdown_preserves_block_spacing():
     assert lines == ["", "", "Heading", "", "Paragraph", ""]
 
 
-def render_file(source, path, module_type, editor_type):
+def render_file(source, path, module_type, editor_type, **render_options):
     document = ydocs["file"]()
     document.source = source
     contents = SimpleNamespace(get=AsyncMock(return_value=document))
@@ -135,7 +135,9 @@ def render_file(source, path, module_type, editor_type):
         def exit(self, *args, **kwargs):
             self.query_one(editor_type)
             output = StringIO()
-            Console(file=output, width=80).print(kwargs.pop("message"))
+            message = kwargs.pop("message")
+            if message is not None:
+                Console(file=output, width=80).print(message)
             self.output = output.getvalue()
             return super().exit(*args, **kwargs)
 
@@ -150,7 +152,10 @@ def render_file(source, path, module_type, editor_type):
             self.put(_Editors(Static(), Static(), main_area), Editors)
 
     with patch("txl.app.modules", {"test": TestModule, "viewer": module_type}):
-        anyio.run(load_document, path, [], 5, True)
+        async def load():
+            return await load_document(path, [], 5, True, **render_options)
+
+        app.rendered = anyio.run(load)
     assert app.requested_headless
     return (app, contents)
 
@@ -210,7 +215,9 @@ def test_inline_uses_notebook_editor_without_starting_kernel(cell_id, show_cell_
         def exit(self, *args, **kwargs):
             self.rendered = self.query_one(NotebookEditor).size.height > 0
             output = StringIO()
-            Console(file=output, width=80).print(kwargs.pop("message"))
+            message = kwargs.pop("message")
+            if message is not None:
+                Console(file=output, width=80).print(message)
             self.output = output.getvalue()
             self.final_height = self.screen.size.height
             return super().exit(*args, **kwargs)
@@ -244,7 +251,7 @@ def test_inline_uses_notebook_editor_without_starting_kernel(cell_id, show_cell_
             self.put(_Editors(Static(), Static(), main_area), Editors)
 
     with patch("txl.app.modules", {"test": TestModule, "notebook_editor": NotebookEditorModule}):
-        anyio.run(load_document, "example.ipynb", [], 1, True, cell_id, show_cell_ids)
+        anyio.run(load_document, "example.ipynb", [], 5, True, cell_id, show_cell_ids)
     assert app.inline_requested
     expected = sources if cell_id is None else [sources[12]]
     assert used_cells == expected
@@ -315,15 +322,15 @@ def test_load_uses_injected_contents():
 
 
 def invoke(args):
-    with patch("sys.argv", ["jpterm", *args]):
-        with CliRunner().isolation() as output:
-            try:
-                main()
-            except SystemExit as exc:
-                code = exc.code
-            else:
-                code = 0
-        return (code, output[0].getvalue().decode() + output[1].getvalue().decode())
+    stdout, stderr = StringIO(), StringIO()
+    with patch("sys.argv", ["jpterm", *args]), redirect_stdout(stdout), redirect_stderr(stderr):
+        try:
+            main()
+        except SystemExit as exc:
+            code = exc.code
+        else:
+            code = 0
+    return code, stdout.getvalue() + stderr.getvalue()
 
 
 def test_json_and_inline():
@@ -349,7 +356,7 @@ def test_json_and_inline():
 
 
 def test_logo_command():
-    with patch("txl.cli.run") as run, patch("jpterm.show.load_document") as load:
+    with patch("txl.app.run") as run, patch("jpterm.show.load_document") as load:
         code, output = invoke(["logo"])
     assert code == 0
     assert "jpterm" in output
@@ -364,7 +371,7 @@ def test_logo_flag_removed():
 
 
 def test_tui_default():
-    with patch("txl.cli.run") as run:
+    with patch("txl.app.run") as run:
         code, _ = invoke([])
         assert code == 0
         run.assert_called_once()
@@ -374,3 +381,66 @@ def test_error():
     with patch("jpterm.show.load_document", AsyncMock(side_effect=ValueError("bad notebook"))):
         code, _ = invoke(["show", "bad.ipynb"])
         assert code == 1
+
+
+def test_rendered_layout_can_be_returned_without_terminal_output(capsys):
+    app, _ = render_file(
+        "print(42)\n", "example.py", TextEditorModule, TextEditor,
+        return_renderable=True, width=37,
+    )
+    assert app.output == ""
+    assert capsys.readouterr().out == ""
+    output = StringIO()
+    Console(file=output, width=37).print(app.rendered)
+    assert "print(42)" in output.getvalue()
+    assert all(len(line) <= 37 for line in output.getvalue().splitlines())
+
+
+def test_tui_options_come_from_the_shared_parser():
+    with patch("txl.app.run") as run:
+        code, _ = invoke(["--backend", "trio", "--set", "launcher.enabled=false"])
+    assert code == 0
+    run.assert_called_once_with({"backend": "trio", "set_": ["launcher.enabled=false"]})
+
+
+def test_tui_startup_errors_do_not_print_a_traceback():
+    with patch("txl.app.run", side_effect=ValueError("invalid configuration")):
+        code, output = invoke([])
+    assert code == 1
+    assert "invalid configuration" in output
+    assert "Traceback" not in output
+
+
+def test_logo_reverse_style_is_confined_to_cursor():
+    from jpterm.cli import logo
+
+    emit = AsyncMock()
+    with patch("jpterm.cli.runtime", return_value=SimpleNamespace(emit=emit)):
+        anyio.run(logo)
+    text = emit.call_args.args[0]
+    console = Console()
+    bottom = text.plain.rindex("╰")
+    assert all(not text.get_style_at_offset(console, offset).reverse
+               for offset in range(bottom, len(text)))
+    cursor = text.plain.index("\n", text.plain.index("jpterm")) - 1
+    assert text.get_style_at_offset(console, cursor).reverse
+
+
+def test_logo_colors_match_original_lines():
+    from jpterm.cli import logo
+
+    emit = AsyncMock()
+    with patch("jpterm.cli.runtime", return_value=SimpleNamespace(emit=emit)):
+        anyio.run(logo)
+    text = emit.call_args.args[0]
+    console = Console()
+    for offset in (0, text.plain.rindex("╰")):
+        style = text.get_style_at_offset(console, offset)
+        assert style.color.name == "orange1"
+        assert style.bgcolor.name == "black"
+    start = text.plain.index("jpterm")
+    for offset in range(start, start + len("jpterm")):
+        style = text.get_style_at_offset(console, offset)
+        assert style.color is None
+        assert style.bgcolor is None
+        assert not style.reverse

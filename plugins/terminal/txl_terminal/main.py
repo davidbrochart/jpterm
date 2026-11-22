@@ -2,15 +2,19 @@ from functools import partial
 
 import pyte
 from anyio import Event, create_task_group, sleep
+from anytext import events
+from anytext.widget import Widget
 from fps import Module
 from rich.console import RenderableType
 from rich.text import Text
-from textual import events
-from textual.widget import Widget
 
 from txl.base import MainArea, Terminal, TerminalFactory
 
-CTRL_KEYS = {
+TERMINAL_KEYS = {
+    "enter": "\r",
+    "tab": "\t",
+    "backspace": "\x7f",
+    "escape": "\x1b",
     "left": "\u001b[D",
     "right": "\u001b[C",
     "up": "\u001b[A",
@@ -58,9 +62,14 @@ class _Terminal(Terminal, Widget, metaclass=TerminalMeta, can_focus=True):
         self.size_set.set()
 
     async def on_key(self, event: events.Key) -> None:
-        char = CTRL_KEYS.get(event.key) or event.character
-        await self._send_queue.send(["stdin", char])
         event.stop()
+        char = event.character or TERMINAL_KEYS.get(event.key)
+        if char is None and len(event.key) == 6 and event.key.startswith("ctrl+"):
+            letter = event.key[-1]
+            if "a" <= letter <= "z":
+                char = chr(ord(letter) - ord("a") + 1)
+        if char is not None:
+            await self._send_queue.send(["stdin", char])
 
     async def _recv(self):
         await self.size_set.wait()

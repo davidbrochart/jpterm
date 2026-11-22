@@ -9,11 +9,11 @@ from unittest.mock import AsyncMock, patch
 import anyio
 import psutil
 import pytest
+from anytext.app import App
 from fps import Module
 from jpterm.execute import execute_notebook
 from jupyter_ydoc import YNotebook
 from rich.text import Text
-from textual.app import App
 from txl_cell.main import _Cell
 from txl_local_kernels.main import LocalKernels, LocalKernelsModule
 from txl_notebook_editor.main import NotebookEditor

@@ -1,11 +1,11 @@
 from functools import partial
 
+from anytext.app import ComposeResult
+from anytext.containers import Container
+from anytext.widgets import Static
 from fps import Module
 from rich.syntax import Syntax
 from rich.traceback import Traceback
-from textual.app import ComposeResult
-from textual.containers import Container
-from textual.widgets import Static
 
 from txl.base import Contents, Editor, Editors
 

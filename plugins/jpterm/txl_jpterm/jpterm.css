@@ -1,8 +1,15 @@
-Screen {
+JptermView {
+    width: 1fr;
+    height: 1fr;
     background: $surface-darken-1;
 }
 
-#browser-view {
+JptermView > .jpterm-body {
+    width: 1fr;
+    height: 1fr;
+}
+
+JptermView #browser-view {
     display: none;
     scrollbar-gutter: stable;
     overflow: auto;
@@ -11,11 +18,11 @@ Screen {
     dock: left;
 }
 
-Jpterm.-show-browser #browser-view {
+JptermView.-show-browser #browser-view {
     display: block;
     max-width: 50%;
 }
 
-#main-view {
+JptermView #main-view {
     min-width: 100%;
 }
