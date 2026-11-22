@@ -1,9 +1,9 @@
 from anyio import create_task_group, sleep
+from anytext._context import active_app
+from anytext.app import App
+from anytext.containers import Container
+from anytext.widgets import MarkdownViewer as AnytextMarkdownViewer
 from fps import Module
-from textual._context import active_app
-from textual.app import App
-from textual.containers import Container
-from textual.widgets import MarkdownViewer as TextualMarkdownViewer
 
 from txl.base import Contents, Editor, Editors
 
@@ -23,15 +23,17 @@ class MarkdownViewer(Editor, Container, metaclass=MarkdownViewerMeta):
         self.ytext = await self.contents.get(path, type="file")
         self.focus()
         await self._update_viewer()
-        if not self.app.cli:
+        if not getattr(self.app, "cli", False):
             self.ytext.observe(self.on_change)
 
     async def _update_viewer(self):
         md = self.ytext.source
         if self.viewer is not None:
             await self.viewer.remove()
-        self.viewer = TextualMarkdownViewer(show_table_of_contents=not self.app.cli)
-        if self.app.cli:
+        self.viewer = AnytextMarkdownViewer(
+            show_table_of_contents=not getattr(self.app, "cli", False)
+        )
+        if getattr(self.app, "cli", False):
             self.viewer.styles.height = "auto"
             self.viewer.styles.overflow_y = "hidden"
             self.viewer.styles.scrollbar_size_vertical = 0
@@ -40,7 +42,7 @@ class MarkdownViewer(Editor, Container, metaclass=MarkdownViewerMeta):
         await self.viewer.document.update(md)
 
     def on_change(self, target, event):
-        self.task_group.create_task(self._update_viewer())
+        self.call_later(self.task_group.start_soon, self._update_viewer)
 
 
 class MarkdownViewerModule(Module):

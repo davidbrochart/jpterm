@@ -8,11 +8,11 @@ from unittest.mock import AsyncMock, patch
 import anyio
 import httpx2
 import pytest
+from anytext.app import App
 from fps import Module
 from jpterm.write import write_document
 from jupyter_ydoc import YFile, YNotebook
 from rich.text import Text
-from textual.app import App
 from txl_remote_contents.main import RemoteContents
 
 from txl.base import Contents

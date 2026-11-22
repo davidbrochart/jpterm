@@ -2,13 +2,13 @@ from functools import partial
 from importlib.metadata import entry_points
 from typing import Any
 
+from anytext import on
+from anytext.containers import VerticalScroll
+from anytext.events import Event
+from anytext.keys import Keys
+from anytext.widgets import Select
 from fps import Module
 from pycrdt import ArrayEvent, Doc
-from textual import on
-from textual.containers import VerticalScroll
-from textual.events import Event
-from textual.keys import Keys
-from textual.widgets import Select
 
 from txl.base import CellFactory, Console, Kernels, Kernelspecs, Launcher, MainArea
 

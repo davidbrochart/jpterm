@@ -4,8 +4,8 @@ from functools import partial
 from typing import Any
 
 from anyio import create_memory_object_stream, create_task_group, to_thread
-from textual.widget import Widget
-from textual.widgets._header import HeaderTitle
+from anytext.widget import Widget
+from anytext.widgets._header import HeaderTitle
 from winpty import PTY
 
 from txl.base import Header, TerminalFactory, Terminals

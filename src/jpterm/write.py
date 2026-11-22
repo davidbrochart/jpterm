@@ -2,13 +2,15 @@
 
 from importlib.metadata import entry_points
 from pathlib import PurePosixPath
+from typing import Annotated
 
 import anyio
-import rich_click as click
+from cyclopts import Parameter
 
 from txl.base import Contents
 
 from .app import create_app
+from .command import CommandError, Timeout, operation_error, runtime
 
 
 async def write_document(path, source, cell_id, settings, timeout, collaborative=False):
@@ -24,8 +26,12 @@ async def write_document(path, source, cell_id, settings, timeout, collaborative
             if notebook:
                 document = await contents.get(path, type="notebook")
                 index = next(
-                    (i for i, cell in enumerate(document.source["cells"])
-                     if cell.get("id") == cell_id), None
+                    (
+                        i
+                        for i, cell in enumerate(document.source["cells"])
+                        if cell.get("id") == cell_id
+                    ),
+                    None,
                 )
                 if index is None:
                     raise ValueError(f"Cell ID not found: {cell_id}")
@@ -55,33 +61,34 @@ async def write_document(path, source, cell_id, settings, timeout, collaborative
                 await contents.save(path, document)
 
 
-@click.command()
-@click.argument("path")
-@click.option("--cell", "cell_id", help="Replace the source of the notebook cell with this ID.")
-@click.option("--source", help="Replacement text (use an empty string to clear it).")
-@click.option("--stdin", "from_stdin", is_flag=True, help="Read replacement text from stdin.")
-@click.option("--timeout", type=click.FloatRange(min=0, min_open=True), default=30.0,
-              show_default=True, help="Maximum time to load and save, in seconds.")
-@click.pass_context
-def write(ctx, path, cell_id, source, from_stdin, timeout):
+async def write(
+    path: str,
+    *,
+    cell_id: Annotated[
+        str | None, Parameter(name="--cell", help="Replace this notebook cell's source.")
+    ] = None,
+    source: Annotated[
+        str | None, Parameter(help="Replacement text (an empty string clears it).")
+    ] = None,
+    from_stdin: Annotated[
+        bool, Parameter(name="--stdin", help="Read replacement text from stdin.")
+    ] = False,
+    timeout: Timeout = 30.0,
+):
     """Write a text file or replace a notebook cell's source.
 
-    Provide exactly one of --source or --stdin. Changed code cells have their saved
-    outputs and execution count cleared. This command does not execute cells.
+    Provide exactly one of --source or --stdin. Changed code cells have their
+    saved outputs and execution count cleared. This command does not execute cells.
     """
     if (source is not None) == from_stdin:
-        raise click.UsageError("Provide exactly one of --source or --stdin.")
-    if from_stdin:
-        source = click.get_text_stream("stdin").read()
-    options = ctx.obj
+        raise CommandError("Provide exactly one of --source or --stdin.")
+    state = runtime()
     try:
-        anyio.run(
-            write_document, path, source, cell_id, options["set_"], timeout,
-            ctx.parent.params["collaborative"],
-            backend=options["backend"],
+        if from_stdin:
+            source = await state.read_stdin()
+        await write_document(
+            state.path(path), source, cell_id, state.settings, timeout, state.collaborative
         )
-    except Exception as exc:
-        while getattr(exc, "exceptions", None):
-            exc = exc.exceptions[0]
-        message = "Timed out writing document" if isinstance(exc, TimeoutError) else str(exc)
-        raise click.ClickException(message) from exc
+        state.notify(path)
+    except Exception as error:
+        raise operation_error(error, "writing document") from error

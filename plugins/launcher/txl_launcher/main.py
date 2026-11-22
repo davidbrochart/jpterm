@@ -1,8 +1,8 @@
+from anytext._context import active_app
+from anytext.app import App
+from anytext.widget import Widget
+from anytext.widgets import Button
 from fps import Module
-from textual._context import active_app
-from textual.app import App
-from textual.widget import Widget
-from textual.widgets import Button
 
 from txl.base import Launcher, MainArea
 
@@ -11,7 +11,7 @@ class LauncherMeta(type(Launcher), type(Widget)):
     pass
 
 
-class _Launcher(Launcher, Widget, metaclass=LauncherMeta):
+class _Launcher(Launcher, Widget, metaclass=LauncherMeta, can_focus=True):
     DEFAULT_CSS = """
     _Launcher {
         padding: 1;
@@ -35,7 +35,9 @@ class _Launcher(Launcher, Widget, metaclass=LauncherMeta):
         self.documents[id_] = document
         button = Button(id_, id=id_)
         if self._initialized:
-            self.mount(button)
+            # FPS services can register documents after the UI has mounted.
+            # Mount in the widget's message task, which owns Anytext's runtime.
+            self.call_later(self.mount, button)
         else:
             self.buttons.append(button)
 

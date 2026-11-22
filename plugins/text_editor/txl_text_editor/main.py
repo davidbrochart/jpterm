@@ -2,12 +2,12 @@ import math
 from typing import Any
 
 from anyio import create_memory_object_stream, create_task_group, sleep
+from anytext._context import active_app
+from anytext.app import App
+from anytext.containers import Container
+from anytext.events import Event
+from anytext.keys import Keys
 from fps import Module
-from textual._context import active_app
-from textual.app import App
-from textual.containers import Container
-from textual.events import Event
-from textual.keys import Keys
 
 from txl.base import Contents, Editor, Editors, MainArea
 from txl.stapled import StapledObjectStream
@@ -35,7 +35,7 @@ class TextEditor(Editor, Container, metaclass=TextEditorMeta):
         self.path = path
         self.ytext = await self.contents.get(path, type="file")
         self.editor = TextInput(ytext=self.ytext._ysource, path=path)
-        if self.app.cli:
+        if getattr(self.app, "cli", False):
             self.editor.read_only = True
             self.editor.highlight_cursor_line = False
             self.editor.show_cursor = False
@@ -51,7 +51,7 @@ class TextEditor(Editor, Container, metaclass=TextEditorMeta):
                 self.editor.load_text(text[:-2] if text.endswith("\r\n") else text[:-1])
         self.task_group.start_soon(self.editor.start)
         self.mount(self.editor)
-        if not self.app.cli:
+        if not getattr(self.app, "cli", False):
             self.change_target = StapledObjectStream(
                 *create_memory_object_stream[Any](max_buffer_size=math.inf)
             )
@@ -93,7 +93,7 @@ class TextEditor(Editor, Container, metaclass=TextEditorMeta):
                 self.main_area.set_dirty(self)
 
     async def on_key(self, event: Event) -> None:
-        if self.app.cli:
+        if getattr(self.app, "cli", False):
             return
         if event.key == Keys.ControlS:
             await self.contents.save(self.path, self.ytext)

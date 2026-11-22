@@ -1,8 +1,8 @@
 from pathlib import Path
 from typing import Callable, Dict, List
 
+from anytext.containers import Container
 from fps import Module
-from textual.containers import Container
 
 from txl.base import Editor, Editors, Footer, Header, MainArea
 

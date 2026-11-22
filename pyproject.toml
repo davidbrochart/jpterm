@@ -23,10 +23,10 @@ classifiers = [
 ]
 keywords = [
     "jupyter",
-    "textual",
+    "anytext",
 ]
 dependencies = [
-    "rich-click >=1.6.0",
+    "cyclopts >=5.4,<6",
     "txl >=0.3.5,<0.4.0",
     "txl_cell >=0.3.10,<0.4.0",
     "txl_console >=0.3.10,<0.4.0",
@@ -49,9 +49,14 @@ dependencies = [
     "txl_widgets >=0.3.10,<0.4.0",
 ]
 
+[project.optional-dependencies]
+anyshell = ["anyshell[anytext] >=0.6.0,<0.7"]
+
 [dependency-groups]
 test = [
     "pytest",
+    "anyshell[anytext] >=0.6.0,<0.7",
+    "trio>=0.31",
     "jupyverse[jupyterlab,noauth,collaboration]",
 ]
 docs = [
@@ -59,6 +64,9 @@ docs = [
     "mkdocs-material",
     "mkdocstrings-python",
 ]
+
+[project.entry-points."anyshell.commands"]
+jpterm = "jpterm.anyshell:register"
 
 [project.scripts]
 jpterm = "jpterm.cli:main"
@@ -110,6 +118,7 @@ select = [
 ]
 
 [tool.ruff]
+target-version = "py311"
 line-length = 100
 
 [tool.pytest.ini_options]

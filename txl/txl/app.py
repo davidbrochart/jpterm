@@ -1,15 +1,21 @@
 import logging
+from collections.abc import Awaitable, Callable
 from importlib.metadata import entry_points
 from shutil import get_terminal_size
 
 import anyio
+from anytext import alias_textual
+from anytext._context import active_app
+from anytext.app import App
+from anytext.pilot import Pilot
 from fps import Module
 from fps.cli._cli import main
-from textual._context import active_app
-from textual.app import App
 
 logging.getLogger("httpx2").setLevel(logging.CRITICAL)
 logging.getLogger("httpcore2").setLevel(logging.CRITICAL)
+
+# Plugins may still import Textual. Alias it before loading their entry points.
+alias_textual()
 
 modules = {
     ep.name: ep.load() for ep in entry_points(group="txl.modules")
@@ -19,24 +25,46 @@ disabled = []
 
 
 class AppModule(Module):
-    def __init__(self, name: str, cli: bool = False, inline: bool = False):
+    def __init__(
+        self,
+        name: str,
+        cli: bool = False,
+        inline: bool = False,
+        disabled_modules: list[str] | None = None,
+        host_app=None,
+        on_ready: Callable[[Pilot], Awaitable[None]] | None = None,
+    ):
         super().__init__(name)
         self.cli = cli
+        self.host_app = host_app
         self.inline = inline
+        self.on_ready = on_ready
         self.app_ready = anyio.Event()
         self.app_exited = anyio.Event()
+        excluded = disabled if disabled_modules is None else disabled_modules
         for name, module_class in modules.items():
-            if name not in disabled:
+            if name not in excluded:
                 self.add_module(module_class, name)
 
     async def start(self) -> None:
         self.done()
+        if self.host_app is not None:
+            # The host owns its terminal driver and application lifetime.
+            self.app = self.host_app
+            self.put(self.app, App)
+            active_app.set(self.app)
+            self.app_ready.set()
+            await anyio.sleep_forever()
+            return
         app = await self.get(App)
         self.app = app
         app.cli = self.cli
         active_app.set(app)
+
         async def ready(pilot):
             self.app_ready.set()
+            if self.on_ready is not None:
+                await self.on_ready(pilot)
 
         await app.run_async(
             headless=self.cli,

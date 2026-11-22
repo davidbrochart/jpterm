@@ -1,12 +1,12 @@
 from typing import Optional, Tuple
 
+from anytext import events
+from anytext.widgets import DataTable
 from fps import Module
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.text import Text
-from textual import events
-from textual.widgets import DataTable
 
 from txl.base import Contents, Editor, Editors, Kernels, Widgets
 

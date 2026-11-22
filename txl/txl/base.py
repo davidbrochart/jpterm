@@ -1,13 +1,17 @@
 from abc import ABC, abstractmethod
+from functools import cached_property
 from typing import Any, Callable, Dict, List, Optional, Union
 
+from anytext.binding import Binding
 from fps import Signal
 from pycrdt import Doc, Map
-from textual.binding import Binding
 
 
 class FileBrowser(ABC):
-    open_file_signal = Signal[str]()
+    @cached_property
+    def open_file_signal(self):
+        # Separate views must not retain or call each other's editor services.
+        return Signal[str]()
 
     @abstractmethod
     async def load_directory(self, node) -> None:

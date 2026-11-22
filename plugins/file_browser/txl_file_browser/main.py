@@ -4,12 +4,12 @@ import os.path
 from dataclasses import dataclass
 from typing import ClassVar
 
+from anytext._types import MessageTarget
+from anytext.message import Message
+from anytext.widgets._tree import TOGGLE_STYLE, Tree, TreeNode
 from fps import Module
 from rich.style import Style
 from rich.text import Text, TextType
-from textual._types import MessageTarget
-from textual.message import Message
-from textual.widgets._tree import TOGGLE_STYLE, Tree, TreeNode
 
 from txl.base import Contents, FileBrowser
 
@@ -156,7 +156,11 @@ class DirectoryTree(FileBrowser, Tree[DirEntry], metaclass=DirectoryTreeMeta):
 
 
 class FileBrowserModule(Module):
+    def __init__(self, name: str, path: str = "."):
+        super().__init__(name)
+        self.directory = path
+
     async def start(self) -> None:
         contents = await self.get(Contents)
-        file_browser = DirectoryTree(".", contents, id="browser-view")
+        file_browser = DirectoryTree(self.directory, contents, id="browser-view")
         self.put(file_browser, FileBrowser)

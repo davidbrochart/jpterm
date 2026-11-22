@@ -1,12 +1,11 @@
 import os
 import tempfile
 
+from anytext._context import active_app
+from anytext.app import App
+from anytext.widget import Widget
 from fps import Module
 from PIL import Image
-from textual._context import active_app
-from textual.app import App
-from textual.widget import Widget
-from textual_imageview.viewer import ImageViewer
 
 from txl.base import Contents, Editor, Editors
 
@@ -34,6 +33,8 @@ class _ImageViewer(Editor, Widget, metaclass=ImageViewerMeta):
         if not self.data:
             return
 
+        from textual_imageview.viewer import ImageViewer
+
         f = tempfile.NamedTemporaryFile(delete=False)
         try:
             f.write(self.data)
@@ -48,7 +49,7 @@ class _ImageViewer(Editor, Widget, metaclass=ImageViewerMeta):
 
     def on_change(self, target, event):
         self.data = self.ydoc.source
-        self.update_viewer()
+        self.call_later(self.update_viewer)
 
 
 class ImageViewerModule(Module):

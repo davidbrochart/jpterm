@@ -4,9 +4,9 @@ from urllib import parse
 
 import httpx2
 from anyio import Event, create_memory_object_stream, create_task_group, sleep
+from anytext.widget import Widget
+from anytext.widgets._header import HeaderTitle
 from fps import Module
-from textual.widget import Widget
-from textual.widgets._header import HeaderTitle
 
 from txl.base import Header, Launcher, TerminalFactory, Terminals
 from txl.stapled import StapledObjectStream

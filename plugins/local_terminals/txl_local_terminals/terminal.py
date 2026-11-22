@@ -8,8 +8,8 @@ import termios
 from typing import Any
 
 from anyio import Event, create_memory_object_stream, wait_readable
-from textual.widget import Widget
-from textual.widgets._header import HeaderTitle
+from anytext.widget import Widget
+from anytext.widgets._header import HeaderTitle
 
 from txl.base import Header, TerminalFactory, Terminals
 from txl.stapled import StapledObjectStream

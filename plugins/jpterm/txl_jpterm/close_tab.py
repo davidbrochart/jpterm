@@ -1,7 +1,7 @@
-from textual.app import ComposeResult
-from textual.containers import Horizontal, Vertical
-from textual.screen import ModalScreen
-from textual.widgets import Button, Static
+from anytext.app import ComposeResult
+from anytext.containers import Horizontal, Vertical
+from anytext.screen import ModalScreen
+from anytext.widgets import Button, Static
 
 
 class ConfirmCloseTab(ModalScreen[bool]):
