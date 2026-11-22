@@ -2,6 +2,37 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 0.4.0
+
+- Migrate the interface to Anytext 9.4 and the CLI to a shared Cyclopts command tree.
+- Add Anyshell 0.6 integration for document commands, styled terminal output, and the full in-process TUI.
+- Keep jpterm's header, footer, pane focus, and Ctrl+Q lifecycle independent of the hosting shell.
+- Start FPS directly through its module API and remove the legacy Click CLI wrapper.
+- Fix terminal rendering and wait for document layouts to settle before capturing output.
+
+This release also releases:
+
+- `txl` 0.4.0
+- `txl_cell` 0.3.11
+- `txl_console` 0.3.11
+- `txl_editors` 0.3.10
+- `txl_file_browser` 0.3.10
+- `txl_image_viewer` 0.3.10
+- `txl_jpterm` 0.3.11
+- `txl_kernel` 0.3.13
+- `txl_launcher` 0.3.10
+- `txl_local_contents` 0.3.11
+- `txl_local_kernels` 0.3.11
+- `txl_local_terminals` 0.3.11
+- `txl_markdown_viewer` 0.3.10
+- `txl_notebook_editor` 0.3.11
+- `txl_remote_contents` 0.3.11
+- `txl_remote_kernels` 0.3.11
+- `txl_remote_terminals` 0.3.10
+- `txl_terminal` 0.3.10
+- `txl_text_editor` 0.3.10
+- `txl_widgets` 0.3.11
+
 ## 0.3.13
 
 - Add `jpterm execute` to run a whole notebook or a selected cell, locally or on a Jupyter server.
